@@ -7,6 +7,8 @@ void init(GraficObject *device_object, char* device_name){
     init(device_object, 0,0, device_name);
 }
 void init(GraficObject *device_object, int platform ,int device, char* device_name){
+    // --- Fix Initialize the struct to prevent garbage values in C++ members ---
+    memset(device_object, 0, sizeof(GraficObject));
     //get all platforms (drivers)
     std::vector<cl::Platform> all_platforms;
     cl::Platform::get(&all_platforms);
@@ -42,7 +44,8 @@ void init(GraficObject *device_object, int platform ,int device, char* device_na
 bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix){
    device_object->d_A = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_matrix);
    device_object->d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_b_matrix);
-   device_object->d_C = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_c_matrix);
+   // --- FIX: Switched to CL_MEM_READ_WRITE because clblast::Gemm() writes ---
+   device_object->d_C = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_c_matrix);
    // inicialice Arrays
    return true;
 }

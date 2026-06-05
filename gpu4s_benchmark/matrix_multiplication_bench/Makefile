@@ -11,7 +11,9 @@ CFLAGS  = -O3
 # CPU compiler flags:
 CPUFLAGS  = -O3 
 # NVCC compiler flags
-NVCCFLAGS = -generate-code=arch=compute_auto,code=sm_auto -O3
+# Automatically targets the host machine's local GPU (Supported in CUDA 11.5.1+)
+# Note: For cross-compiling or older legacy clusters, explicitly set a target (e.g., -arch=sm_72)
+NVCCFLAGS = --arch=native -O3   
 # CUDA FLAGS
 CUFLAGS = -I/usr/local/cuda/include/ -L/usr/local/cuda/lib64 -lcuda -lcudart 
 # OPENCL FLAGS
@@ -24,9 +26,18 @@ HIPFLAGS = -I/opt/rocm/hip/include -L/opt/rocm/hip/lib
 OBLASFLAG = -I/opt/OpenBLAS/include/ -L/opt/OpenBLAS/lib -lopenblas
 # ATLAS INCLUDE
 ATLASFLAG = -I/usr/local/atlas/include -L/usr/local/atlas/lib -lcblas -latlas
-#android NDK
-NDK_PATH = /home/noah/Documents/BSC/Android/Sdk/android-ndk-r27d/toolchains/llvm/prebuilt/linux-x86_64/bin/
-CLANG = $(NDK_PATH)aarch64-linux-android21-clang++ # android 5 64-Bits
+
+# --- android NDK port ---
+NDK_VERSION ?= 27.3.13750724
+NDK_PATH = $(ANDROID_HOME)/ndk/$(NDK_VERSION)
+
+LLVM_PREBUILT := $(NDK_PATH)/toolchains/llvm/prebuilt/linux-x86_64/
+# android 5 64-Bits clang compilator
+CLANG = $(LLVM_PREBUILT)/bin/aarch64-linux-android21-clang++ 
+#check
+$(if $(wildcard $(CLANG)),,$(warning $(shell printf '\033[1;35m') warning:$(shell printf '\033[1;37m') Android NDK Missing, Expected at $(CLANG). See README.md#12 for instruction$(shell printf '\033[0m')))
+
+#android ldflag
 ANDROID_LDFLAGS = -static-libstdc++ -static-openmp 
 #android opencl
 ANDROID_OPFLAGS = -I$(OPFOLDER)opencl_headers -L$(OPFOLDER) -lOpenCL
@@ -165,7 +176,6 @@ lib_opencl.o: $(OPFOLDER)lib_opencl.cpp
 main_opencl: main.cpp lib_opencl.o cpu_functions.o
 	mkdir -p $(OUTPUTFOLDER) 
 	$(CC) -D$(DATATYPE) -DOPENCL main.cpp $(OPFOLDER)lib_opencl.o  $(CPUFUNCTIONFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_opencl_$(shell echo $(DATATYPE) | tr A-Z a-z)_$(BLOCKSIZESQUARED) $(CFLAGS) $(OPFLAGS) 
-
 # End OpenCL
 
 # Android OpenCL Part
@@ -211,12 +221,11 @@ android_main_opencl_opt: main.cpp $(OPFOLDER)android_lib_opencl_opt.o $(CPUFUNCT
 opencl-lib:  main_opencl_lib
 
 lib_opencl_lib.o: $(OPFOLDER)lib_opencl_lib.cpp 
-	$(CC) -D$(DATATYPE) -DOPENCL -c $(OPFOLDER)lib_opencl_lib.cpp -o $(OPFOLDER)lib_opencl_lib.o $(CFLAGS) $(OPFLAGS) -I/home/irodrig/clBlast/include/ -L/home/irodrig/clBlast/lib/ -lclblast
+	$(CC) -D$(DATATYPE) -DOPENCL -c $(OPFOLDER)lib_opencl_lib.cpp -o $(OPFOLDER)lib_opencl_lib.o $(CFLAGS) $(OPFLAGS) -lclblast
 
 main_opencl_lib: main.cpp lib_opencl_lib.o cpu_functions.o
 	mkdir -p $(OUTPUTFOLDER) 
-	$(CC) -D$(DATATYPE) -DOPENCL main.cpp $(OPFOLDER)lib_opencl_lib.o  $(CPUFUNCTIONFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_opencl_lib_$(shell echo $(DATATYPE) | tr A-Z a-z) $(CFLAGS) $(OPFLAGS)  -I/home/irodrig/clBlast/include/ -L/home/irodrig/clBlast/lib/ -lclblast
-
+	$(CC) -D$(DATATYPE) -DOPENCL main.cpp $(OPFOLDER)lib_opencl_lib.o  $(CPUFUNCTIONFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_opencl_lib_$(shell echo $(DATATYPE) | tr A-Z a-z) $(CFLAGS) $(OPFLAGS)  -lclblast
 # End OpenCL library
 
 

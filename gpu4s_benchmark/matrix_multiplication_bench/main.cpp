@@ -247,6 +247,10 @@ void init_arguments(BenchmarkParameters* arguments_parameters){
 	arguments_parameters->csv_format = false;
 	arguments_parameters->mute_messages = false;
 	arguments_parameters->csv_format_timestamp = false;
+	// --- Properly clear character arrays ---
+	arguments_parameters->input_file_A[0] = '\0';
+	arguments_parameters->input_file_B[0] = '\0';
+	arguments_parameters->output_file[0] = '\0';
 }
 
 

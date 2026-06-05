@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+
+
+# OpenCL Dependency Downloads
+opencl/opencl_headers/
+opencl/tmp/
