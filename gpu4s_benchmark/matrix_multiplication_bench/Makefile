@@ -2,7 +2,7 @@
 # Compilers 
 CC = g++
 NVCC = /usr/local/cuda/bin/nvcc
-HIP = /opt/rocm/hip/bin/hipcc
+HIP = hipcc #ubuntu : /opt/rocm/hip/bin/hipcc
 # the build target executable:
 TARGET = matrix_multiplication
 # FLAGS 
@@ -13,7 +13,7 @@ CPUFLAGS  = -O3
 # NVCC compiler flags
 # Automatically targets the host machine's local GPU (Supported in CUDA 11.5.1+)
 # Note: For cross-compiling or older legacy clusters, explicitly set a target (e.g., -arch=sm_72)
-NVCCFLAGS = --arch=native -O3   
+NVCCFLAGS = -arch=native -O3   
 # CUDA FLAGS
 CUFLAGS = -I/usr/local/cuda/include/ -L/usr/local/cuda/lib64 -lcuda -lcudart 
 # OPENCL FLAGS
@@ -21,9 +21,9 @@ OPFLAGS = -I/usr/local/cuda/include/   -L/oldroot/root/usr/lib/x86_64-linux-gnu/
 # OPENMP FLAGS
 OMPFLAGS = -fopenmp -lm
 # HIP FLAGS
-HIPFLAGS = -I/opt/rocm/hip/include -L/opt/rocm/hip/lib
+HIPFLAGS = -I/opt/rocm/hip/include -L/opt/rocm/hip/lib -I/usr/include -L/usr/lib64
 # OPENBLAS INCLUDE
-OBLASFLAG = -I/opt/OpenBLAS/include/ -L/opt/OpenBLAS/lib -lopenblas
+OBLASFLAG = -I/opt/OpenBLAS/include/ -I/usr/include/openblas -L/opt/OpenBLAS/lib -lopenblas
 # ATLAS INCLUDE
 ATLASFLAG = -I/usr/local/atlas/include -L/usr/local/atlas/lib -lcblas -latlas
 
@@ -44,8 +44,11 @@ ANDROID_OPFLAGS = -I$(OPFOLDER)opencl_headers -L$(OPFOLDER) -lOpenCL
 
 
 # LIBRARY: ATLAS or OPENBLAS
-LIBRARY=ATLAS
-LIBFLAGS=$(ATLASFLAG)
+# LIBRARY=ATLAS
+# LIBFLAGS=$(ATLASFLAG)
+
+LIBRARY=OPENBLAS
+LIBFLAGS=$(OBLASFLAG)
 
 # Littelendian and Bigendian flags, by default if value is not set is Littelendian if value is set to -DBIGENDIAN is Bigendian
 # -DBIGENDIAN
@@ -130,7 +133,7 @@ $(OPFOLDER)libOpenCL.so: $(OPFOLDER)opencl_stub.c
 
 # CPU FUNCTIONS part
 cpu_functions.o: $(CPUFUNCTIONFOLDER)cpu_functions.cpp
-	$(CC) $(ENDIANFLAGS) -D$(DATATYPE) -c $(CPUFUNCTIONFOLDER)cpu_functions.cpp -o $(CPUFUNCTIONFOLDER)cpu_functions.o $(CFLAGS) 
+	$(CC) $(ENDIANFLAGS) -D$(DATATYPE) -fPIC  -c $(CPUFUNCTIONFOLDER)cpu_functions.cpp -o $(CPUFUNCTIONFOLDER)cpu_functions.o $(CFLAGS) 
 # End CPU FUNCTIONS
 
 # CPU ANDROID FUNCTIONS part
@@ -287,7 +290,7 @@ android_main_openmp_opt: main.cpp android_lib_omp_opt.o android_cpu_functions.o
 openmp-lib:  main_openmp_lib
 
 lib_omp_lib.o: $(OMPFOLDER)lib_omp_lib.cpp 
-	$(CC) -D$(DATATYPE) -D$(LIBRARY) -DBLOCK_SIZE=$(BLOCKSIZE) -DOPENMP -c $(OMPFOLDER)lib_omp_lib.cpp -o $(OMPFOLDER)lib_omp_lib.o $(CFLAGS) $(OMPFLAGS) $(LIBFLAGS)
+	$(CC) -D$(DATATYPE) -D$(LIBRARY) -DBLOCK_SIZE=$(BLOCKSIZE) -DOPENMP -c $(OMPFOLDER)lib_omp_lib.cpp -o $(OMPFOLDER)lib_omp_lib.o $(CFLAGS) $(OMPFLAGS) $(LIBFLAGS)   
 
 main_openmp_lib: main.cpp lib_omp_lib.o cpu_functions.o
 	mkdir -p $(OUTPUTFOLDER) 
