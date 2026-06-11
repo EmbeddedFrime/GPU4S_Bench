@@ -2,6 +2,13 @@
 #include <cmath>
 #include "../benchmark_library.h"
 #include <clblast.h>
+#ifdef ANDROID
+    #include <chrono>
+
+    // chrono timestamps for kernel timing (CLBlast event profiling unreliable on Android)
+    static std::chrono::high_resolution_clock::time_point kernel_start;
+    static std::chrono::high_resolution_clock::time_point kernel_end;
+#endif
 
 void init(GraficObject *device_object, char* device_name){
     init(device_object, 0,0, device_name);
@@ -67,7 +74,18 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
     #ifdef INT
     printf("CLBLAST NOT SUPPORT INT OPERATIOS\n");
     #else
-    auto status = clblast::Gemm(clblast::Layout::kRowMajor,clblast::Transpose::kNo, clblast::Transpose::kNo, n, n, n, alpha, (*device_object->d_A)() , 0, a_ld, (*device_object->d_B)(), 0, b_ld, beta, (*device_object->d_C)(), 0, c_ld,&(*device_object->queue)(), &(*device_object->evt)());
+        #ifdef ANDROID
+            // Ensure queue is idle before measuring
+            device_object->queue->finish();
+            kernel_start = std::chrono::high_resolution_clock::now();
+        #endif
+        auto status = clblast::Gemm(clblast::Layout::kRowMajor,clblast::Transpose::kNo, clblast::Transpose::kNo, n, n, n, alpha, (*device_object->d_A)() , 0, a_ld, (*device_object->d_B)(), 0, b_ld, beta, (*device_object->d_C)(), 0, c_ld,&(*device_object->queue)(), &(*device_object->evt)());
+
+        // Wait for completion before stopping the clock
+        device_object->queue->finish();
+        #ifdef ANDROID
+            kernel_end = std::chrono::high_resolution_clock::now();
+        #endif
     #endif
 }
 
@@ -78,11 +96,19 @@ void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size){
 float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     device_object->evt_copyC->wait();
     float elapsed_h_d = 0, elapsed = 0, elapsed_d_h = 0;
+
     elapsed_h_d = device_object->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     elapsed_h_d += device_object->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
+    
     elapsed = device_object->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
+
+    #ifdef ANDROID
+    // --- FIX: Use chrono instead of CLBlast event profiling (unreliable on Android) ---
+        elapsed = std::chrono::duration<float, std::milli>(kernel_end - kernel_start).count() * 1000000.0f;
+    #endif
+
     elapsed_d_h = device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Device->Host: %.10f \n", );
 

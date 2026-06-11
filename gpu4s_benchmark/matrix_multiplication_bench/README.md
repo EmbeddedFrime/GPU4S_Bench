@@ -8,7 +8,7 @@ To compare the performance of embedded CPUs and GPUs, I conducted a benchmark te
 
 
 
-## Pre-requisites
+## Prerequisites
 ### 1. Android NDK r27d (27.3.13750724)
  
 First, you need to download the [Android NDK](https://github.com/android/ndk/wiki
@@ -130,11 +130,18 @@ Before executing, transfer the cross-compiled binaries from your ./bin/ director
 
 ```bash
 # Push binaries to the device
+#CPU :
 adb push ./bin/matrix_multiplication_android_cpu_float_256 /data/local/tmp/matrix_android_cpu
+#OpenMP :
 adb push ./bin/matrix_multiplication_android_omp_float /data/local/tmp/matrix_android_openmp
+#OpenMP Optimized :
 adb push ./bin/matrix_multiplication_android_omp_opt_float /data/local/tmp/matrix_android_openmp_opt
+#OpenCL :
 adb push ./bin/matrix_multiplication_android_opencl_float_256 /data/local/tmp/matrix_android_opencl
+#OpenCL Optimized :
 adb push ./bin/matrix_multiplication_android_opencl_opt_float_256 /data/local/tmp/matrix_android_opencl_opt
+#OpenCL with library :
+adb push ./bin/matrix_multiplication_android_opencl_lib_float /data/local/tmp/matrix_android_opencl_lib
 
 # Grant execution permissions
 adb shell chmod 755 /data/local/tmp/matrix_android_*
@@ -152,6 +159,7 @@ adb shell /data/local/tmp/matrix_android_openmp_opt -s 1024 -t
 # Android OpenCL Execution (QUALCOMM Adreno)
 adb shell /data/local/tmp/matrix_android_opencl -s 1024 -t
 adb shell /data/local/tmp/matrix_android_opencl_opt -s 1024 -t
+adb shell /data/local/tmp/matrix_android_opencl_lib -s 1024 -t
 ```
 
 ### 3. Performance Metric Sheet

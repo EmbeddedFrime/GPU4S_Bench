@@ -1,23 +1,23 @@
 #!/bin/bash
-# Exit immediately if any command fails
-set -e
-#pull the latest release tag from the OpenCL-Headers repository
-LATEST_TAG_H=$(curl -s https://api.github.com/repos/KhronosGroup/OpenCL-Headers/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+set -e # Exit immediately if any command fails
 
-# Download OpenCL repository for header files
-git clone -b "$LATEST_TAG_H" --depth 1 -c advice.detachedHead=false https://github.com/KhronosGroup/OpenCL-Headers.git ./opencl/tmp
+# --- Tested on v2026.05.29 ---
+# Change this tag if you need a newer OpenCL specifications
+OPENCL_RELEASE_TAG=v2026.05.29
 
-# Rm & Move the CL directory with openCL.h to the opencl_headers directory
-rm -rf ./opencl/opencl_headers/CL && mkdir -p ./opencl/opencl_headers/CL && mv ./opencl/tmp/CL/* ./opencl/opencl_headers/CL
+# --- Download OpenCL C Headers ---
+if [ ! -d "./opencl/opencl_headers/CL" ]; then
+    git clone -b "$OPENCL_RELEASE_TAG" --depth 1 -c advice.detachedHead=false https://github.com/KhronosGroup/OpenCL-Headers.git ./opencl/tmp
+    
+    # Structure the target directory
+    rm -rf ./opencl/opencl_headers/CL && mkdir -p ./opencl/opencl_headers/CL && mv ./opencl/tmp/CL/* ./opencl/opencl_headers/CL  && rm -rf ./opencl/tmp
+fi
 
-#pull the latest release tag from the OpenCL-HPP repository
-LATEST_TAG_HPP=$(curl -s https://api.github.com/repos/KhronosGroup/OpenCL-CLHPP/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+# --- Download opencl.hpp c++ Header ---
+if [ ! -f "./opencl/opencl_headers/CL/opencl.hpp" ]; then
+    curl -o ./opencl/opencl_headers/CL/opencl.hpp https://raw.githubusercontent.com/KhronosGroup/OpenCL-CLHPP/${OPENCL_RELEASE_TAG}/include/CL/opencl.hpp
+fi
 
-# Download the opencl.hpp header file
-curl -o ./opencl/opencl_headers/CL/opencl.hpp https://raw.githubusercontent.com/KhronosGroup/OpenCL-CLHPP/${LATEST_TAG_HPP}/include/CL/opencl.hpp
+#For the older version of openCL :
+#curl -o ./opencl/opencl_headers/CL/cl2.hpp https://raw.githubusercontent.com/#KhronosGroup/OpenCL-CLHPP/${OPENCL_RELEASE_TAG}/include/CL/cl2.hpp
 
-#For old version of openCL :
-#curl -o ./opencl/opencl_headers/CL/opencl.hpp https://raw.githubusercontent.com/#KhronosGroup/OpenCL-CLHPP/${LATEST_TAG_HPP}/include/CL/cl2.hpp
-
-# Remove the temporary directory
-rm -rf ./opencl/tmp
