@@ -42,7 +42,9 @@ ANDROID_LDFLAGS = -static-libstdc++ -static-openmp
 #android opencl
 ANDROID_OPFLAGS = -I$(OPFOLDER)opencl_headers -L$(OPFOLDER) -lOpenCL
 #android clblast
-ANDROID_CLBLAST_FLAGS = -L$(OPFOLDER) -L$(OPFOLDER)opencl_headers -lclblast
+ANDROID_CLBLAST_FLAGS = -L./$(OPFOLDER) -I./$(OPFOLDER)opencl_headers -lclblast
+#android openmp
+ANDROID_OBLASFLAG = -L./$(OMPFOLDER) -I./$(OMPFOLDER)openmp_headers  -lopenblas
 
 
 # LIBRARY: ATLAS or OPENBLAS
@@ -312,17 +314,17 @@ main_openmp_lib: main.cpp lib_omp_lib.o cpu_functions.o
 # End OpenMP library
 
 
-# OpenMP Part library
+# Android OpenMP Part library
 .PHONY: android_openmp-lib
 android_openmp-lib:  android_main_openmp_lib
 
 android_lib_omp_lib.o: $(OMPFOLDER)lib_omp_lib.cpp 
-	$(CLANG) -D$(DATATYPE) -D$(LIBRARY) -DBLOCK_SIZE=$(BLOCKSIZE) -DOPENMP -c $(OMPFOLDER)lib_omp_lib.cpp -o $(OMPFOLDER)android_lib_omp_lib.o $(CFLAGS) $(OMPFLAGS) $(LIBFLAGS)   
+	$(CLANG) -D$(DATATYPE) -D$(LIBRARY) -DBLOCK_SIZE=$(BLOCKSIZE) -DOPENMP -c $(OMPFOLDER)lib_omp_lib.cpp -o $(OMPFOLDER)android_lib_omp_lib.o $(CFLAGS) $(OMPFLAGS)  $(ANDROID_OBLASFLAG)
 
 android_main_openmp_lib: main.cpp android_lib_omp_lib.o android_cpu_functions.o
 	mkdir -p $(OUTPUTFOLDER) 
-	$(CLANG) -D$(DATATYPE) -D$(LIBRARY) -DOPENMP main.cpp $(OMPFOLDER)android_lib_omp_lib.o  $(CPUFUNCTIONFOLDER)android_cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_android_omp_lib_$(shell echo $(DATATYPE) | tr A-Z a-z) $(CFLAGS) $(OMPFLAGS) $(ANDROID_LDFLAGS) $(LIBFLAGS)
-# End OpenMP library
+	$(CLANG) -D$(DATATYPE) -D$(LIBRARY) -DOPENMP main.cpp $(OMPFOLDER)android_lib_omp_lib.o  $(CPUFUNCTIONFOLDER)android_cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_android_omp_lib_$(shell echo $(DATATYPE) | tr A-Z a-z) $(CFLAGS) $(OMPFLAGS) $(ANDROID_LDFLAGS) $(ANDROID_OBLASFLAG)
+# End Android OpenMP library
 
 # CUDA part
 .PHONY: cuda

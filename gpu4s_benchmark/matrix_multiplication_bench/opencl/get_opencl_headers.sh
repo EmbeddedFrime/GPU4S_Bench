@@ -5,6 +5,11 @@ set -e # Exit immediately if any command fails
 # Change this tag if you need a newer OpenCL specifications
 OPENCL_RELEASE_TAG=v2026.05.29
 
+# --- Tested on 1.7.0 ---
+# Change this tag if you need a newer OpenCL specifications
+CBLAST_RELEASE_TAG=1.7.0
+
+
 # --- Download OpenCL C Headers ---
 if [ ! -d "./opencl/opencl_headers/CL" ]; then
     git clone -b "$OPENCL_RELEASE_TAG" --depth 1 -c advice.detachedHead=false https://github.com/KhronosGroup/OpenCL-Headers.git ./opencl/tmp
@@ -20,4 +25,12 @@ fi
 
 #For the older version of openCL :
 #curl -o ./opencl/opencl_headers/CL/cl2.hpp https://raw.githubusercontent.com/#KhronosGroup/OpenCL-CLHPP/${OPENCL_RELEASE_TAG}/include/CL/cl2.hpp
+
+
+
+# --- Download opencl.hpp c++ Header ---
+if [ ! -f "./opencl/opencl_headers/CL/clblast.h" ]; then
+    curl -o ./opencl/opencl_headers/clblast.h https://raw.githubusercontent.com/CNugteren/CLBlast/${CBLAST_RELEASE_TAG}/include/clblast.h
+fi
+
 

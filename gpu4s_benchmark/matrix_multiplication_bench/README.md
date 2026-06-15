@@ -136,6 +136,8 @@ adb push ./bin/matrix_multiplication_android_cpu_float_256 /data/local/tmp/matri
 adb push ./bin/matrix_multiplication_android_omp_float /data/local/tmp/matrix_android_openmp
 #OpenMP Optimized :
 adb push ./bin/matrix_multiplication_android_omp_opt_float /data/local/tmp/matrix_android_openmp_opt
+#OpenMP lib
+adb push ./bin/matrix_multiplication_android_omp_lib_float /data/local/tmp/matrix_android_openmp_lib
 #OpenCL :
 adb push ./bin/matrix_multiplication_android_opencl_float_256 /data/local/tmp/matrix_android_opencl
 #OpenCL Optimized :
@@ -155,6 +157,7 @@ adb shell /data/local/tmp/matrix_android_cpu -s 1024 -t
 # Android OpenMP Execution
 adb shell /data/local/tmp/matrix_android_openmp -s 1024 -t
 adb shell /data/local/tmp/matrix_android_openmp_opt -s 1024 -t
+adb shell /data/local/tmp/matrix_android_openmp_lib -s 1024 -t
 
 # Android OpenCL Execution (QUALCOMM Adreno)
 adb shell /data/local/tmp/matrix_android_opencl -s 1024 -t
