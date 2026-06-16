@@ -32,23 +32,29 @@ NDK_VERSION ?= 27.3.13750724
 NDK_PATH = $(ANDROID_HOME)/ndk/$(NDK_VERSION)
 
 LLVM_PREBUILT := $(NDK_PATH)/toolchains/llvm/prebuilt/linux-x86_64/
-# android 5 64-Bits clang compilator
-CLANG = $(LLVM_PREBUILT)/bin/aarch64-linux-android21-clang++ 
+# android 5 64-Bits clang compilator Or #32 bits : armv7a-linux-androideabi21-clang 
+CLANG =	$(LLVM_PREBUILT)/bin/aarch64-linux-android21-clang++	
+
+
+# Or  32 bits =:  armeabi-v7a	
+ABI  ?=	arm64-v8a
+
 #check
 $(if $(wildcard $(CLANG)),,$(warning $(shell printf '\033[1;35m') warning:$(shell printf '\033[1;37m') Android NDK Missing, Expected at $(CLANG). See README.md#12 for instruction$(shell printf '\033[0m')))
 
 #android ldflag
-ANDROID_LDFLAGS = -static-libstdc++ -static-openmp 
+ANDROID_LDFLAGS 		= -static-libstdc++ -static-openmp 
 #android opencl
-ANDROID_OPFLAGS = -I$(OPFOLDER)opencl_headers -L$(OPFOLDER) -lOpenCL
+ANDROID_OPENCL_FLAGS  	= -I$(ANDROID_INC) -L$(ANDROID_LIB)$(ABI)/ -lOpenCL
 #android clblast
-ANDROID_CLBLAST_FLAGS = -L./$(OPFOLDER) -I./$(OPFOLDER)opencl_headers -lclblast
+ANDROID_CLBLAST_FLAGS 	= -I$(ANDROID_INC) -L$(ANDROID_LIB)$(ABI)/  -lclblast
 #android openmp
-ANDROID_OBLASFLAG = -L./$(OMPFOLDER) -I./$(OMPFOLDER)openmp_headers  -lopenblas
+ANDROID_OPENMP-LIB_FLAG = -I$(ANDROID_INC) -L$(ANDROID_LIB)$(ABI)/  -I$(ANDROID_INC)$(ABI)/ -lopenblas
+
 
 
 # LIBRARY: ATLAS or OPENBLAS
-# LIBRARY=ATLAS
+# LIBRARY=ATLA
 # LIBFLAGS=$(ATLASFLAG)
 
 LIBRARY=OPENBLAS
@@ -78,6 +84,10 @@ OMPFOLDER = ./openmp/
 HIPFOLDER = ./hip/
 # CPU FOLDER
 CPUFOLDER = ./cpu/
+# ANDROID FOLDER
+ANDROID_LIB = ./android/libs/
+ANDROID_INC = ./android/include/
+
 # OUTPUT FOLDER
 OUTPUTFOLDER = ./bin/
 
@@ -124,14 +134,15 @@ OpenMP-lib: openmp-lib
 all-android: android_cpu android_openmp android_opencl android_opencl-opt android_openmp-opt android_opencl-lib android_openmp-lib
 
 # android OpenCl header dependency
-$(OPFOLDER)opencl_headers/CL/opencl.hpp:
+$(ANDROID_INC)CL/opencl.hpp:
 	@chmod +x $(OPFOLDER)get_opencl_headers.sh
 	@./$(OPFOLDER)get_opencl_headers.sh
 # End Android openCL 
 
-# Android openCL stub part
-$(OPFOLDER)libOpenCL.so: $(OPFOLDER)opencl_stub.c
-	$(CLANG) -shared -fPIC  $(OPFOLDER)opencl_stub.c -o $(OPFOLDER)libOpenCL.so 
+# android clblast header dependency
+$(ANDROID_INC)CL/clblast.h:
+	@chmod +x $(OPFOLDER)get_clblast_headers.sh
+	@./$(OPFOLDER)get_clblast_headers.sh
 # End Android openCL 
 
 
@@ -189,12 +200,12 @@ main_opencl: main.cpp lib_opencl.o cpu_functions.o
 .PHONY: android_opencl
 android_opencl: android_main_opencl
 
-$(OPFOLDER)android_lib_opencl.o: $(OPFOLDER)lib_opencl.cpp  $(OPFOLDER)opencl_headers/CL/opencl.hpp
-	$(CLANG) -D$(DATATYPE) -DBLOCK_SIZE=$(BLOCKSIZE) -DOPENCL -c $(OPFOLDER)lib_opencl.cpp -o $(OPFOLDER)android_lib_opencl.o $(CFLAGS) $(ANDROID_OPFLAGS)
+$(OPFOLDER)android_lib_opencl.o: $(OPFOLDER)lib_opencl.cpp  $(ANDROID_INC)CL/opencl.hpp
+	$(CLANG) -D$(DATATYPE) -DBLOCK_SIZE=$(BLOCKSIZE) -DOPENCL -c $(OPFOLDER)lib_opencl.cpp -o $(OPFOLDER)android_lib_opencl.o $(CFLAGS) $(ANDROID_OPENCL_FLAGS)
 
-android_main_opencl: main.cpp $(OPFOLDER)android_lib_opencl.o android_cpu_functions.o $(OPFOLDER)libOpenCL.so $(OPFOLDER)opencl_headers/CL/opencl.hpp
+android_main_opencl: main.cpp $(OPFOLDER)android_lib_opencl.o android_cpu_functions.o $(ANDROID_LIB)$(ABI)/libOpenCL.so $(ANDROID_INC)CL/opencl.hpp
 	mkdir -p $(OUTPUTFOLDER) 
-	$(CLANG) -D$(DATATYPE) -DOPENCL main.cpp $(OPFOLDER)android_lib_opencl.o $(CPUFUNCTIONFOLDER)android_cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_android_opencl_$(shell echo $(DATATYPE) | tr A-Z a-z)_$(BLOCKSIZESQUARED) $(CFLAGS) $(ANDROID_OPFLAGS) $(ANDROID_LDFLAGS) 
+	$(CLANG) -D$(DATATYPE) -DOPENCL main.cpp $(OPFOLDER)android_lib_opencl.o $(CPUFUNCTIONFOLDER)android_cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_android_opencl_$(shell echo $(DATATYPE) | tr A-Z a-z)_$(BLOCKSIZESQUARED) $(CFLAGS) $(ANDROID_OPENCL_FLAGS) $(ANDROID_LDFLAGS) 
 # Android End OpenCL
 
 
@@ -215,12 +226,12 @@ main_opencl_opt: main.cpp lib_opencl_opt.o cpu_functions.o
 .PHONY: android_opencl-opt
 android_opencl-opt: android_main_opencl_opt
 
-$(OPFOLDER)android_lib_opencl_opt.o: $(OPFOLDER)lib_opencl_opt.cpp  $(OPFOLDER)opencl_headers/CL/opencl.hpp
-	$(CLANG) -D$(DATATYPE) -DBLOCK_SIZE=$(BLOCKSIZE) -DOPENCL -c $(OPFOLDER)lib_opencl_opt.cpp -o $(OPFOLDER)android_lib_opencl_opt.o $(CFLAGS) $(ANDROID_OPFLAGS)
+$(OPFOLDER)android_lib_opencl_opt.o: $(OPFOLDER)lib_opencl_opt.cpp  $(ANDROID_INC)CL/opencl.hpp
+	$(CLANG) -D$(DATATYPE) -DBLOCK_SIZE=$(BLOCKSIZE) -DOPENCL -c $(OPFOLDER)lib_opencl_opt.cpp -o $(OPFOLDER)android_lib_opencl_opt.o $(CFLAGS) $(ANDROID_OPENCL_FLAGS)
 
-android_main_opencl_opt: main.cpp $(OPFOLDER)android_lib_opencl_opt.o android_cpu_functions.o $(OPFOLDER)libOpenCL.so $(OPFOLDER)opencl_headers/CL/opencl.hpp
+android_main_opencl_opt: main.cpp $(OPFOLDER)android_lib_opencl_opt.o android_cpu_functions.o $(ANDROID_LIB)$(ABI)/libOpenCL.so $(ANDROID_INC)CL/opencl.hpp
 	mkdir -p $(OUTPUTFOLDER) 
-	$(CLANG) -D$(DATATYPE) -DOPENCL main.cpp $(OPFOLDER)android_lib_opencl_opt.o $(CPUFUNCTIONFOLDER)android_cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_android_opencl_opt_$(shell echo $(DATATYPE) | tr A-Z a-z)_$(BLOCKSIZESQUARED) $(CFLAGS) $(ANDROID_OPFLAGS) $(ANDROID_LDFLAGS) 
+	$(CLANG) -D$(DATATYPE) -DOPENCL main.cpp $(OPFOLDER)android_lib_opencl_opt.o $(CPUFUNCTIONFOLDER)android_cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_android_opencl_opt_$(shell echo $(DATATYPE) | tr A-Z a-z)_$(BLOCKSIZESQUARED) $(CFLAGS) $(ANDROID_OPENCL_FLAGS) $(ANDROID_LDFLAGS) 
 # Android End OpenCL optimized
 
 # OpenCL Part library
@@ -240,12 +251,12 @@ main_opencl_lib: main.cpp lib_opencl_lib.o cpu_functions.o
 .PHONY: android_opencl-lib
 android_opencl-lib: android_main_opencl_lib
 
-$(OPFOLDER)android_lib_opencl_lib.o: $(OPFOLDER)lib_opencl_lib.cpp $(OPFOLDER)opencl_headers/CL/opencl.hpp
-	$(CLANG) -D$(DATATYPE) -DOPENCL -DANDROID -c $(OPFOLDER)lib_opencl_lib.cpp -o $(OPFOLDER)android_lib_opencl_lib.o $(CFLAGS) $(ANDROID_OPFLAGS) $(ANDROID_CLBLAST_FLAGS)
+$(OPFOLDER)android_lib_opencl_lib.o: $(OPFOLDER)lib_opencl_lib.cpp $(ANDROID_INC)CL/opencl.hpp $(ANDROID_INC)CL/clblast.h
+	$(CLANG) -D$(DATATYPE) -DOPENCL -DANDROID -c $(OPFOLDER)lib_opencl_lib.cpp -o $(OPFOLDER)android_lib_opencl_lib.o $(CFLAGS) $(ANDROID_OPENCL_FLAGS) $(ANDROID_CLBLAST_FLAGS)
 
-android_main_opencl_lib: main.cpp $(OPFOLDER)android_lib_opencl_lib.o android_cpu_functions.o $(OPFOLDER)libOpenCL.so $(OPFOLDER)opencl_headers/CL/opencl.hpp
+android_main_opencl_lib: main.cpp $(OPFOLDER)android_lib_opencl_lib.o android_cpu_functions.o $(ANDROID_LIB)$(ABI)/libOpenCL.so $(ANDROID_INC)CL/opencl.hpp $(ANDROID_INC)CL/clblast.h
 	mkdir -p $(OUTPUTFOLDER)
-	$(CLANG) -D$(DATATYPE) -DOPENCL -DANDROID main.cpp $(OPFOLDER)android_lib_opencl_lib.o $(CPUFUNCTIONFOLDER)android_cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_android_opencl_lib_$(shell echo $(DATATYPE) | tr A-Z a-z) $(CFLAGS) $(ANDROID_OPFLAGS) $(ANDROID_LDFLAGS) $(ANDROID_CLBLAST_FLAGS)
+	$(CLANG) -D$(DATATYPE) -DOPENCL -DANDROID main.cpp $(OPFOLDER)android_lib_opencl_lib.o $(CPUFUNCTIONFOLDER)android_cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_android_opencl_lib_$(shell echo $(DATATYPE) | tr A-Z a-z) $(CFLAGS) $(ANDROID_OPENCL_FLAGS) $(ANDROID_LDFLAGS) $(ANDROID_CLBLAST_FLAGS)
 # End Android OpenCL library
 
 # OpenMP Part
@@ -319,11 +330,11 @@ main_openmp_lib: main.cpp lib_omp_lib.o cpu_functions.o
 android_openmp-lib:  android_main_openmp_lib
 
 android_lib_omp_lib.o: $(OMPFOLDER)lib_omp_lib.cpp 
-	$(CLANG) -D$(DATATYPE) -D$(LIBRARY) -DBLOCK_SIZE=$(BLOCKSIZE) -DOPENMP -c $(OMPFOLDER)lib_omp_lib.cpp -o $(OMPFOLDER)android_lib_omp_lib.o $(CFLAGS) $(OMPFLAGS)  $(ANDROID_OBLASFLAG)
+	$(CLANG) -D$(DATATYPE) -D$(LIBRARY) -DBLOCK_SIZE=$(BLOCKSIZE) -DOPENMP -c $(OMPFOLDER)lib_omp_lib.cpp -o $(OMPFOLDER)android_lib_omp_lib.o $(CFLAGS) $(OMPFLAGS)  $(ANDROID_OPENMP-LIB_FLAG) 
 
 android_main_openmp_lib: main.cpp android_lib_omp_lib.o android_cpu_functions.o
 	mkdir -p $(OUTPUTFOLDER) 
-	$(CLANG) -D$(DATATYPE) -D$(LIBRARY) -DOPENMP main.cpp $(OMPFOLDER)android_lib_omp_lib.o  $(CPUFUNCTIONFOLDER)android_cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_android_omp_lib_$(shell echo $(DATATYPE) | tr A-Z a-z) $(CFLAGS) $(OMPFLAGS) $(ANDROID_LDFLAGS) $(ANDROID_OBLASFLAG)
+	$(CLANG) -D$(DATATYPE) -D$(LIBRARY) -DOPENMP main.cpp $(OMPFOLDER)android_lib_omp_lib.o  $(CPUFUNCTIONFOLDER)android_cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_android_omp_lib_$(shell echo $(DATATYPE) | tr A-Z a-z) $(CFLAGS) $(OMPFLAGS) $(ANDROID_LDFLAGS) $(ANDROID_OPENMP-LIB_FLAG)
 # End Android OpenMP library
 
 # CUDA part
@@ -393,14 +404,12 @@ main_hip_opt: main.cpp lib_hip_opt.o cpu_functions.o
 
 
 
-
-
 # Clean
 .PHONY: clean
 clean:
 	rm -rf *.o 
 	rm -rf $(CPUFUNCTIONFOLDER)*.o
-	rm -rf $(OPFOLDER)*.o $(OPFOLDER)opencl_headers $(OPFOLDER)tmp
+	rm -rf $(OPFOLDER)*.o $(OPFOLDER)tmp
 	rm -rf $(OMPFOLDER)*.o
 	rm -rf $(HIPFOLDER)*.o
 	rm -rf $(CUFOLDER)*.o

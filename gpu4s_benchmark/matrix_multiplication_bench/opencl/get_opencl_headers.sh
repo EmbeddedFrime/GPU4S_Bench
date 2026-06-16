@@ -5,32 +5,22 @@ set -e # Exit immediately if any command fails
 # Change this tag if you need a newer OpenCL specifications
 OPENCL_RELEASE_TAG=v2026.05.29
 
-# --- Tested on 1.7.0 ---
-# Change this tag if you need a newer OpenCL specifications
-CBLAST_RELEASE_TAG=1.7.0
-
+ANDROID_INC=./android/include/
 
 # --- Download OpenCL C Headers ---
-if [ ! -d "./opencl/opencl_headers/CL" ]; then
-    git clone -b "$OPENCL_RELEASE_TAG" --depth 1 -c advice.detachedHead=false https://github.com/KhronosGroup/OpenCL-Headers.git ./opencl/tmp
+if [ ! -d "$ANDROID_INC/CL" ]; then
+    git clone -b "$OPENCL_RELEASE_TAG" --depth 1 -c advice.detachedHead=false https://github.com/KhronosGroup/OpenCL-Headers.git $ANDROID_INC/tmp
     
     # Structure the target directory
-    rm -rf ./opencl/opencl_headers/CL && mkdir -p ./opencl/opencl_headers/CL && mv ./opencl/tmp/CL/* ./opencl/opencl_headers/CL  && rm -rf ./opencl/tmp
+    rm -rf $ANDROID_INC/CL && mkdir -p $ANDROID_INC/CL && mv $ANDROID_INC/tmp/CL/* $ANDROID_INC/CL  && rm -rf $ANDROID_INC/tmp
 fi
 
 # --- Download opencl.hpp c++ Header ---
-if [ ! -f "./opencl/opencl_headers/CL/opencl.hpp" ]; then
-    curl -o ./opencl/opencl_headers/CL/opencl.hpp https://raw.githubusercontent.com/KhronosGroup/OpenCL-CLHPP/${OPENCL_RELEASE_TAG}/include/CL/opencl.hpp
+if [ ! -f "$ANDROID_INC/CL/opencl.hpp" ]; then
+    curl -o $ANDROID_INC/CL/opencl.hpp https://raw.githubusercontent.com/KhronosGroup/OpenCL-CLHPP/${OPENCL_RELEASE_TAG}/include/CL/opencl.hpp
 fi
-
 #For the older version of openCL :
-#curl -o ./opencl/opencl_headers/CL/cl2.hpp https://raw.githubusercontent.com/#KhronosGroup/OpenCL-CLHPP/${OPENCL_RELEASE_TAG}/include/CL/cl2.hpp
+#curl -o $ANDROID_INC/CL/cl2.hpp https://raw.githubusercontent.com/#KhronosGroup/OpenCL-CLHPP/${OPENCL_RELEASE_TAG}/include/CL/cl2.hpp
 
-
-
-# --- Download opencl.hpp c++ Header ---
-if [ ! -f "./opencl/opencl_headers/CL/clblast.h" ]; then
-    curl -o ./opencl/opencl_headers/clblast.h https://raw.githubusercontent.com/CNugteren/CLBlast/${CBLAST_RELEASE_TAG}/include/clblast.h
-fi
 
 
