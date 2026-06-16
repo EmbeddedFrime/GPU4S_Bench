@@ -215,3 +215,50 @@ https://www.openmathlib.org/OpenBLAS/docs/install/#__tabbed_1_3
 
 how to install  CLBBlast : 
 https://github.com/CNugteren/CLBlast/blob/master/doc/installation.md
+
+
+
+
+### 1. CMake Build for Android
+```
+cmake -B build-android \
+  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_HOME/ndk/27.3.13750724/build/cmake/android.toolchain.cmake \
+  -DANDROID_ABI=arm64-v8a \
+  -DANDROID_PLATFORM=android-21
+  ```
+
+### 2. Compile your target
+```
+cmake --build build-android --target android_matrix_mult_cpu
+```
+
+
+### 1. CMake Build for Android
+```
+cmake -B build-android \
+  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_HOME/ndk/27.3.13750724/build/cmake/android.toolchain.cmake \
+  -DANDROID_ABI=arm64-v8a \
+  -DANDROID_PLATFORM=android-21
+
+cmake --build build-android --target cpu
+```
+
+### 2. Push it to your phone and run it
+```
+adb push ./build-android/bin/matrix_mult_cpu /data/local/tmp/matrix_android_cpu
+adb shell chmod 755 /data/local/tmp/matrix_android_cpu
+adb shell /data/local/tmp/matrix_android_cpu -s 1024 -t
+```
+
+
+### 1. CMake Build for computer
+```
+cmake -B build
+
+cmake --build build --target cpu
+```
+
+### 2. execute it on your computer
+```
+./build/bin/matrix_mult_cpu -s 1024 -t
+```
