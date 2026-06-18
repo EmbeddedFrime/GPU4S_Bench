@@ -2,15 +2,13 @@ cmake_minimum_required(VERSION 3.27)
 project(matrix_mult CXX) 
 
 
-# ====== CMake Configuration ======
 
-# --- Global Settings ---
-set(CMAKE_CXX_STANDARD 17)    # force clang 17 or g++ 17 compiler
-set(CMAKE_BUILD_TYPE Release) # add production-level optimization
+# ====== CMake Configuration ======
 
 # --- Global Variable ---
 set(OPENCL_VERSION  300       CACHE STRING "API OpenCL Version : 200, 210, 220, 300, 310")
-set(BLOCKSIZE       16         CACHE STRING "Block size for tiled kernels")
+set(BLOCKSIZE       16        CACHE STRING "Block size for tiled kernels")
+set(OPT_FLAG       "-O3"      CACHE STRING "Compiler optimization level : -O2, -O3, -Ofast")
 set(DATATYPE       "FLOAT"    CACHE STRING "Data type: FLOAT, DOUBLE, INT")
 set(CUDA_ARCH      "native"   CACHE STRING "API CUDA version: native, sm_72-86")
 set(BLA_VENDOR     "OpenBLAS" CACHE STRING "BLAS lib : ATLAS, OpenBLAS")
@@ -24,10 +22,16 @@ endif(ANDROID)
 # --- Define Output directory ---
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/)
 
+# --- Global Settings ---
+set(CMAKE_CXX_STANDARD 17)    # force clang 17 or g++ 17 compiler
+set(CMAKE_BUILD_TYPE Release) # add production-level optimization
+set(CMAKE_POSITION_INDEPENDENT_CODE ON) # set -fPIC flag
+add_compile_options(${OPT_FLAG})
 
 
 
 # ====== Package/language Handler ======
+
 if(NOT ANDROID)
     # Searching for package installation
     find_package(OpenCL QUIET) 
@@ -51,7 +55,7 @@ if(NOT ANDROID)
         enable_language(CUDA)
     endif()
 
-    # --- CUDA ---
+    # --- HIP ---
     find_package(hip QUIET)
     if(hip_FOUND)
         enable_language(HIP)
@@ -76,7 +80,6 @@ target_compile_definitions(${PROJECT_NAME}_cpu PRIVATE
     ${DATATYPE}
     BLOCK_SIZE=${BLOCKSIZE}
 )
-target_compile_options(${PROJECT_NAME}_cpu PRIVATE -O3)
 
 add_custom_target(cpu DEPENDS ${PROJECT_NAME}_cpu)
 add_custom_target(CPU DEPENDS ${PROJECT_NAME}_cpu)
@@ -98,7 +101,6 @@ if(ANDROID OR OpenCL_FOUND)
             OPENCL  # define OPENCL
     )
 
-    target_compile_options(${PROJECT_NAME}_opencl PRIVATE -O3)
 
     if(ANDROID)
         # --- specefic android opencl include and libs ---
@@ -111,8 +113,8 @@ if(ANDROID OR OpenCL_FOUND)
     endif()
 
     #  Shortcuts 
-    add_custom_target(opencl-n DEPENDS ${PROJECT_NAME}_opencl)
-    add_custom_target(OpenCL-n DEPENDS ${PROJECT_NAME}_opencl)
+    add_custom_target(cl DEPENDS ${PROJECT_NAME}_opencl)
+    add_custom_target(OpenCL DEPENDS ${PROJECT_NAME}_opencl)
 
 
 
@@ -137,7 +139,7 @@ if(ANDROID OR OpenCL_FOUND)
             OPENCL  # define OPENCL
     )
 
-    target_compile_options(${PROJECT_NAME}_opencl_opt PRIVATE -O3)
+    target_compile_options(${PROJECT_NAME}_opencl_opt PRIVATE OPT_FLAG)
 
     if(ANDROID)
         # --- specefic android opencl include and libs ---
@@ -173,8 +175,6 @@ if(ANDROID OR ( OpenCL_FOUND AND CLBlast_FOUND ))
             CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
             OPENCL  # define OPENCL
     )
-
-    target_compile_options(${PROJECT_NAME}_opencl_lib PRIVATE -O3)
 
     if(ANDROID)
         # --- specefic android opencl & clblast include and libs ---
@@ -223,7 +223,6 @@ if(ANDROID OR OpenMP_CXX_FOUND)
         BLOCK_SIZE=${BLOCKSIZE}
         OPENMP
     )
-    target_compile_options(${PROJECT_NAME}_openmp PRIVATE -O3)
 
     if(ANDROID)
         # --- specific android openmp flags ---
@@ -264,7 +263,6 @@ if(ANDROID OR OpenMP_CXX_FOUND )
         BLOCK_SIZE=${BLOCKSIZE}
         OPENMP
     )
-    target_compile_options(${PROJECT_NAME}_openmp_opt PRIVATE -O3)
 
     if(ANDROID)
         # --- specific android openmp flags ---
@@ -307,11 +305,9 @@ if(ANDROID OR ( OpenMP_CXX_FOUND AND (BLAS_FOUND OR OpenBLAS_FOUND) ))
         OPENMP
         "$<UPPER_CASE:${BLA_VENDOR}>"
     )
-    target_compile_options(${PROJECT_NAME}_openmp_lib PRIVATE -O3)
 
     if(ANDROID)
         # --- specific android openmp flags ---
-        target_compile_options(${PROJECT_NAME}_openmp_lib PRIVATE -fopenmp)
         
         target_include_directories(${PROJECT_NAME}_openmp_lib PRIVATE 
             ${ANDROID_INC}
@@ -367,12 +363,12 @@ if(NOT ANDROID AND CUDAToolkit_FOUND)
         BLOCK_SIZE=${BLOCKSIZE}
         CUDA
     )
-    target_compile_options(${PROJECT_NAME}_cuda PRIVATE -O3)
+
     set_target_properties(${PROJECT_NAME}_cuda PROPERTIES
-        CUDA_ARCHITECTURES ${CUDA_ARCH}   # equivalent to -arch=native in your Makefile
+        CUDA_ARCHITECTURES ${CUDA_ARCH}   # equivalent to -arch= in Makefile
     )
 
-    # --- specific computer openmp libs ---
+    # --- specific cuda libs ---
     target_link_libraries(${PROJECT_NAME}_cuda PRIVATE 
         CUDA::cudart 
     )
@@ -381,7 +377,7 @@ if(NOT ANDROID AND CUDAToolkit_FOUND)
     add_custom_target(cuda DEPENDS ${PROJECT_NAME}_cuda)
     add_custom_target(CUDA DEPENDS ${PROJECT_NAME}_cuda)
 
-else()
+elseif(NOT ANDROID)
     # Fallback warning message
     message(WARNING "CUDA installation was not found on this system. Skipping CUDA target.")
 endif()
@@ -400,11 +396,10 @@ if(NOT ANDROID AND CUDAToolkit_FOUND)
         BLOCK_SIZE=${BLOCKSIZE}
         CUDA
     )
-    target_compile_options(${PROJECT_NAME}_cuda_opt PRIVATE -O3)
     set_target_properties(${PROJECT_NAME}_cuda_opt PROPERTIES
         CUDA_ARCHITECTURES ${CUDA_ARCH}   
     )
-    # --- specific computer openmp libs ---
+    # --- specific cuda libs ---
     target_link_libraries(${PROJECT_NAME}_cuda_opt PRIVATE 
         CUDA::cudart 
     )
@@ -413,7 +408,7 @@ if(NOT ANDROID AND CUDAToolkit_FOUND)
     add_custom_target(cuda-opt DEPENDS ${PROJECT_NAME}_cuda_opt)
     add_custom_target(CUDA-opt DEPENDS ${PROJECT_NAME}_cuda_opt)
 
-else()
+elseif(NOT ANDROID)
     # Fallback warning message
     message(WARNING "CUDA installation was not found on this system. Skipping CUDA-opt target.")
 endif()
@@ -432,7 +427,6 @@ if(NOT ANDROID AND CUDAToolkit_FOUND)
         BLOCK_SIZE=${BLOCKSIZE}
         CUDA
     )
-    target_compile_options(${PROJECT_NAME}_cuda_lib PRIVATE -O3)
     set_target_properties(${PROJECT_NAME}_cuda_lib PROPERTIES
         CUDA_ARCHITECTURES ${CUDA_ARCH}   
     )
@@ -446,7 +440,7 @@ if(NOT ANDROID AND CUDAToolkit_FOUND)
     add_custom_target(cuda-lib DEPENDS ${PROJECT_NAME}_cuda_lib)
     add_custom_target(CUDA-lib DEPENDS ${PROJECT_NAME}_cuda_lib)
 
-else()
+elseif(NOT ANDROID)
     # Fallback warning message
     message(WARNING "CUDA installation was not found on this system. Skipping CUDA-lib target.")
 endif()
@@ -455,33 +449,64 @@ endif()
 
 # --- HIP target ---
 if(NOT ANDROID AND hip_FOUND)
-    # --- multiple device compilation ---
+    # --- mixed device compilation ---
     add_executable(${PROJECT_NAME}_hip
-        main.cpp
-        hip/lib_hip.cpp
-        cpu_functions/cpu_functions.cpp
+        main.cpp                         
+        hip/lib_hip.cpp                  
+        cpu_functions/cpu_functions.cpp   
     )
+
+    # Tell CMake lib_hip file contains HIP API code
+    set_source_files_properties(hip/lib_hip.cpp PROPERTIES LANGUAGE HIP)
+
     target_compile_definitions(${PROJECT_NAME}_hip PRIVATE
         ${DATATYPE}
         BLOCK_SIZE=${BLOCKSIZE}
         HIP
     )
-    target_compile_options(${PROJECT_NAME}_hip PRIVATE -O3)
 
-    # --- specific computer openmp libs ---
+
     target_link_libraries(${PROJECT_NAME}_hip PRIVATE 
         hip::host
-        hip::device 
     )
 
     # --- Shortcuts ---
-    add_custom_target(hipb DEPENDS ${PROJECT_NAME}_hip)
-    add_custom_target(HIPB DEPENDS ${PROJECT_NAME}_hip)
+    add_custom_target(hip- DEPENDS ${PROJECT_NAME}_hip)
+    add_custom_target(HIP DEPENDS ${PROJECT_NAME}_hip)
 
-else()
-    # Fallback warning message
+elseif(NOT ANDROID)
     message(WARNING "HIP installation was not found on this system. Skipping HIP target.")
 endif()
 
+
+# --- HIP-opt target ---
+if(NOT ANDROID AND hip_FOUND)
+    # --- mixed device compilation ---
+    add_executable(${PROJECT_NAME}_hip_opt
+        main.cpp                        
+        hip/lib_hip_opt.cpp                  
+        cpu_functions/cpu_functions.cpp  
+    )
+
+    # Tell CMake lib_hip file contains HIP API code
+    set_source_files_properties(hip/lib_hip_opt.cpp PROPERTIES LANGUAGE HIP)
+
+    target_compile_definitions(${PROJECT_NAME}_hip_opt PRIVATE
+        ${DATATYPE}
+        BLOCK_SIZE=${BLOCKSIZE}
+        HIP
+    )
+
+    target_link_libraries(${PROJECT_NAME}_hip_opt PRIVATE 
+        hip::host
+    )
+
+    # --- Shortcuts ---
+    add_custom_target(hip-opt DEPENDS ${PROJECT_NAME}_hip_opt)
+    add_custom_target(HIP-opt DEPENDS ${PROJECT_NAME}_hip_opt)
+
+elseif(NOT ANDROID)
+    message(WARNING "HIP installation was not found on this system. Skipping HIP-opt target.")
+endif()
 
 
