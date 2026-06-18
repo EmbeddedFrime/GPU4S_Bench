@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.27)
 project(matrix_mult CXX) 
 
 
@@ -9,16 +9,16 @@ set(CMAKE_CXX_STANDARD 17)    # force clang 17 or g++ 17 compiler
 set(CMAKE_BUILD_TYPE Release) # add production-level optimization
 
 # --- Global Variable ---
-set(OPENCL_VERSION  300   CACHE STRING "API OpenCL Version : 200, 210, 220, 300, 310")
-set(BLOCKSIZE       4      CACHE STRING "Block size for tiled kernels")
-set(DATATYPE       "FLOAT" CACHE STRING "Data type: FLOAT, DOUBLE, INT")
-set(COMPUTER true)
+set(OPENCL_VERSION  300       CACHE STRING "API OpenCL Version : 200, 210, 220, 300, 310")
+set(BLOCKSIZE       16         CACHE STRING "Block size for tiled kernels")
+set(DATATYPE       "FLOAT"    CACHE STRING "Data type: FLOAT, DOUBLE, INT")
+set(CUDA_ARCH      "native"   CACHE STRING "API CUDA version: native, sm_72-86")
+set(BLA_VENDOR     "OpenBLAS" CACHE STRING "BLAS lib : ATLAS, OpenBLAS")
 
 # --- Android Variable ---
 if(ANDROID)
     set(ANDROID_INC ${CMAKE_SOURCE_DIR}/android/include/)
     set(ANDROID_LIB ${CMAKE_SOURCE_DIR}/android/libs/)
-    set(COMPUTER false)
 endif(ANDROID)
 
 # --- Define Output directory ---
@@ -27,12 +27,38 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/)
 
 
 
-# ====== Package Handler ======
-if(COMPUTER)
+# ====== Package/language Handler ======
+if(NOT ANDROID)
     # Searching for package installation
     find_package(OpenCL QUIET) 
     find_package(CLBlast QUIET) 
-endif(COMPUTER)
+    find_package(OpenMP QUIET)
+
+    # --- OpenBLAS & ATLAS ---
+    find_package(BLAS QUIET) 
+    if(BLAS_FOUND)
+        find_path(BLAS_INCLUDE_DIRS 
+            NAMES cblas.h cblas_atlas.h
+            PATH_SUFFIXES openblas blas atlas
+        )
+    endif()
+
+    # --- CUDA ---
+    find_package(CUDAToolkit QUIET)
+
+    if(CUDAToolkit_FOUND AND CUDAToolkit_NVCC_EXECUTABLE)
+        set(CMAKE_CUDA_COMPILER ${CUDAToolkit_NVCC_EXECUTABLE})
+        enable_language(CUDA)
+    endif()
+
+    # --- CUDA ---
+    find_package(hip QUIET)
+    if(hip_FOUND)
+        enable_language(HIP)
+    endif()
+
+endif()
+
 
 
 
@@ -52,8 +78,9 @@ target_compile_definitions(${PROJECT_NAME}_cpu PRIVATE
 )
 target_compile_options(${PROJECT_NAME}_cpu PRIVATE -O3)
 
-add_custom_target(CPU DEPENDS ${PROJECT_NAME}_cpu)
 add_custom_target(cpu DEPENDS ${PROJECT_NAME}_cpu)
+add_custom_target(CPU DEPENDS ${PROJECT_NAME}_cpu)
+
 
 
 # --- openCL target ---
@@ -83,11 +110,11 @@ if(ANDROID OR OpenCL_FOUND)
         target_link_libraries(${PROJECT_NAME}_opencl PRIVATE OpenCL::OpenCL)
     endif()
 
-    # --- Shortcuts ---
-    add_custom_target(opencl DEPENDS ${PROJECT_NAME}_opencl)
-    add_custom_target(Opencl DEPENDS ${PROJECT_NAME}_opencl)
-    add_custom_target(openCL DEPENDS ${PROJECT_NAME}_opencl)
-    add_custom_target(OpenCL DEPENDS ${PROJECT_NAME}_opencl)
+    #  Shortcuts 
+    add_custom_target(opencl-n DEPENDS ${PROJECT_NAME}_opencl)
+    add_custom_target(OpenCL-n DEPENDS ${PROJECT_NAME}_opencl)
+
+
 
 else ()
     # Fallback warning message 
@@ -124,8 +151,6 @@ if(ANDROID OR OpenCL_FOUND)
 
     # --- Shortcuts ---
     add_custom_target(opencl-opt DEPENDS ${PROJECT_NAME}_opencl_opt)
-    add_custom_target(Opencl-opt DEPENDS ${PROJECT_NAME}_opencl_opt)
-    add_custom_target(openCL-opt DEPENDS ${PROJECT_NAME}_opencl_opt)
     add_custom_target(OpenCL-opt DEPENDS ${PROJECT_NAME}_opencl_opt)
 
 else ()
@@ -169,26 +194,294 @@ if(ANDROID OR ( OpenCL_FOUND AND CLBlast_FOUND ))
 
     # --- Shortcuts ---
     add_custom_target(opencl-lib DEPENDS ${PROJECT_NAME}_opencl_lib)
-    add_custom_target(Opencl-lib DEPENDS ${PROJECT_NAME}_opencl_lib)
-    add_custom_target(openCL-lib DEPENDS ${PROJECT_NAME}_opencl_lib)
     add_custom_target(OpenCL-lib DEPENDS ${PROJECT_NAME}_opencl_lib)
 
 else ()
     # Fallback warning message 
-    if(OpenCL_FOUND)
-        set(MISING_LIB "CLBlast")
-    elseif(CLBlast_FOUND)
-        set(MISING_LIB "OpenCL")
+    if(NOT OpenCL_FOUND AND NOT CLBlast_FOUND)
+        set(MISSING_LIB "CLBlast and OpenCL")
+    elseif(NOT CLBlast_FOUND)
+        set(MISSING_LIB "CLBlast")
+    elseif(NOT OpenCL_FOUND)
+        set(MISSING_LIB "OpenCL")
     endif()
-        message(WARNING "${MISING_LIB} installation was not found on this system. Skipping OpenCL-lib target.")
+        message(WARNING "${MISSING_LIB} installation was not found on this system. Skipping OpenCL-lib target.")
 endif()
 
 
-    
+
+# --- OpenMP target ---
+if(ANDROID OR OpenMP_CXX_FOUND)
+    # --- multiple device compilation ---
+    add_executable(${PROJECT_NAME}_openmp
+        main.cpp
+        openmp/lib_omp.cpp
+        cpu_functions/cpu_functions.cpp
+    )
+    target_compile_definitions(${PROJECT_NAME}_openmp PRIVATE
+        ${DATATYPE}
+        BLOCK_SIZE=${BLOCKSIZE}
+        OPENMP
+    )
+    target_compile_options(${PROJECT_NAME}_openmp PRIVATE -O3)
+
+    if(ANDROID)
+        # --- specific android openmp flags ---
+        target_compile_options(${PROJECT_NAME}_openmp PRIVATE -fopenmp)
+        target_link_libraries(${PROJECT_NAME}_openmp PRIVATE 
+            -static-openmp  -fopenmp  #openmp flags
+            -lm     #add math lib
+        )
+
+    elseif(OpenMP_CXX_FOUND)
+        # --- specific computer openmp libs ---
+        target_link_libraries(${PROJECT_NAME}_openmp PRIVATE 
+            OpenMP::OpenMP_CXX #auto openmp flags
+            m   # equivalent to -lm 
+        )
+    endif()
+
+    # --- Shortcuts ---
+    add_custom_target(OpenMP DEPENDS ${PROJECT_NAME}_openmp)
+    add_custom_target(openmp DEPENDS ${PROJECT_NAME}_openmp)
+
+else()
+    # Fallback warning message
+    message(WARNING "OpenMP installation was not found on this system. Skipping OpenMP target.")
+endif()
+
+
+# --- OpenMP-opt target ---
+if(ANDROID OR OpenMP_CXX_FOUND )
+    # --- multiple device compilation ---
+    add_executable(${PROJECT_NAME}_openmp_opt
+        main.cpp
+        openmp/lib_omp_opt.cpp
+        cpu_functions/cpu_functions.cpp
+    )
+    target_compile_definitions(${PROJECT_NAME}_openmp_opt PRIVATE
+        ${DATATYPE}
+        BLOCK_SIZE=${BLOCKSIZE}
+        OPENMP
+    )
+    target_compile_options(${PROJECT_NAME}_openmp_opt PRIVATE -O3)
+
+    if(ANDROID)
+        # --- specific android openmp flags ---
+        target_compile_options(${PROJECT_NAME}_openmp_opt PRIVATE -fopenmp)
+        target_link_libraries(${PROJECT_NAME}_openmp_opt PRIVATE 
+            -static-openmp  -fopenmp  #openmp flags
+            -lm     #add math lib
+        )
+
+    elseif(OpenMP_CXX_FOUND)
+        # --- specific computer openmp libs ---
+        target_link_libraries(${PROJECT_NAME}_openmp_opt PRIVATE 
+            OpenMP::OpenMP_CXX #auto openmp flags
+            m   # equivalent to -lm 
+        )
+    endif()
+
+    # --- Shortcuts ---
+    add_custom_target(OpenMP-opt DEPENDS ${PROJECT_NAME}_openmp_opt)
+    add_custom_target(openmp-opt DEPENDS ${PROJECT_NAME}_openmp_opt)
+
+else()
+    # Fallback warning message
+    message(WARNING "OpenMP installation was not found on this system. Skipping OpenMP-opt target.")
+endif()
 
 
 
+# --- OpenMP-lib target ---
+if(ANDROID OR ( OpenMP_CXX_FOUND AND (BLAS_FOUND OR OpenBLAS_FOUND) ))
+    # --- multiple device compilation ---
+    add_executable(${PROJECT_NAME}_openmp_lib
+        main.cpp
+        openmp/lib_omp_lib.cpp
+        cpu_functions/cpu_functions.cpp
+    )
+    target_compile_definitions(${PROJECT_NAME}_openmp_lib PRIVATE
+        ${DATATYPE}
+        BLOCK_SIZE=${BLOCKSIZE}
+        OPENMP
+        "$<UPPER_CASE:${BLA_VENDOR}>"
+    )
+    target_compile_options(${PROJECT_NAME}_openmp_lib PRIVATE -O3)
 
+    if(ANDROID)
+        # --- specific android openmp flags ---
+        target_compile_options(${PROJECT_NAME}_openmp_lib PRIVATE -fopenmp)
+        
+        target_include_directories(${PROJECT_NAME}_openmp_lib PRIVATE 
+            ${ANDROID_INC}
+            ${ANDROID_INC}${ANDROID_ABI}
+        )
+        
+        target_link_libraries(${PROJECT_NAME}_openmp_lib PRIVATE 
+            ${ANDROID_LIB}${ANDROID_ABI}/libopenblas.a #static openblas
+            -static-openmp  -fopenmp  #openmp flags
+            -lm     #add math lib
+        )
+
+    elseif(OpenMP_CXX_FOUND AND BLAS_INCLUDE_DIRS)
+
+        target_include_directories(${PROJECT_NAME}_openmp_lib PRIVATE ${BLAS_INCLUDE_DIRS})
+
+        target_link_libraries(${PROJECT_NAME}_openmp_lib PRIVATE
+            BLAS::BLAS  #handle ATLAS and OpenBLAS
+            OpenMP::OpenMP_CXX
+            m
+        )
+
+    endif()
+
+    # --- Shortcuts ---
+    add_custom_target(OpenMP-lib DEPENDS ${PROJECT_NAME}_openmp_lib)
+    add_custom_target(openmp-lib DEPENDS ${PROJECT_NAME}_openmp_lib)
+
+else()
+    # Fallback warning message 
+    if(NOT OpenMP_CXX_FOUND AND ( NOT BLAS_FOUND AND NOT OpenBLAS_FOUND ))
+        set(MISSING_LIB "OpenBLAS and OpenMP")
+    elseif(NOT BLAS_FOUND AND NOT OpenBLAS_FOUND)
+        set(MISSING_LIB "OpenBLAS")
+    elseif(NOT OpenMP_CXX_FOUND)
+        set(MISSING_LIB "OpenMP")
+    endif()
+        message(WARNING "${MISSING_LIB} installation was not found on this system. Skipping OpenMP-lib target.")
+endif()
+
+
+
+# --- CUDA target ---
+if(NOT ANDROID AND CUDAToolkit_FOUND)
+    # --- multiple device compilation ---
+    add_executable(${PROJECT_NAME}_cuda
+        main.cpp
+        cuda/lib_cuda.cu
+        cpu_functions/cpu_functions.cpp
+    )
+    target_compile_definitions(${PROJECT_NAME}_cuda PRIVATE
+        ${DATATYPE}
+        BLOCK_SIZE=${BLOCKSIZE}
+        CUDA
+    )
+    target_compile_options(${PROJECT_NAME}_cuda PRIVATE -O3)
+    set_target_properties(${PROJECT_NAME}_cuda PROPERTIES
+        CUDA_ARCHITECTURES ${CUDA_ARCH}   # equivalent to -arch=native in your Makefile
+    )
+
+    # --- specific computer openmp libs ---
+    target_link_libraries(${PROJECT_NAME}_cuda PRIVATE 
+        CUDA::cudart 
+    )
+
+    # --- Shortcuts ---
+    add_custom_target(cuda DEPENDS ${PROJECT_NAME}_cuda)
+    add_custom_target(CUDA DEPENDS ${PROJECT_NAME}_cuda)
+
+else()
+    # Fallback warning message
+    message(WARNING "CUDA installation was not found on this system. Skipping CUDA target.")
+endif()
+
+
+# --- CUDA-opt target ---
+if(NOT ANDROID AND CUDAToolkit_FOUND)
+    # --- multiple device compilation ---
+    add_executable(${PROJECT_NAME}_cuda_opt
+        main.cpp
+        cuda/lib_cuda_opt.cu
+        cpu_functions/cpu_functions.cpp
+    )
+    target_compile_definitions(${PROJECT_NAME}_cuda_opt PRIVATE
+        ${DATATYPE}
+        BLOCK_SIZE=${BLOCKSIZE}
+        CUDA
+    )
+    target_compile_options(${PROJECT_NAME}_cuda_opt PRIVATE -O3)
+    set_target_properties(${PROJECT_NAME}_cuda_opt PROPERTIES
+        CUDA_ARCHITECTURES ${CUDA_ARCH}   
+    )
+    # --- specific computer openmp libs ---
+    target_link_libraries(${PROJECT_NAME}_cuda_opt PRIVATE 
+        CUDA::cudart 
+    )
+
+    # --- Shortcuts ---
+    add_custom_target(cuda-opt DEPENDS ${PROJECT_NAME}_cuda_opt)
+    add_custom_target(CUDA-opt DEPENDS ${PROJECT_NAME}_cuda_opt)
+
+else()
+    # Fallback warning message
+    message(WARNING "CUDA installation was not found on this system. Skipping CUDA-opt target.")
+endif()
+
+
+# --- CUDA-lib target ---
+if(NOT ANDROID AND CUDAToolkit_FOUND)
+    # --- multiple device compilation ---
+    add_executable(${PROJECT_NAME}_cuda_lib
+        main.cpp
+        cuda/lib_cuda_lib.cu
+        cpu_functions/cpu_functions.cpp
+    )
+    target_compile_definitions(${PROJECT_NAME}_cuda_lib PRIVATE
+        ${DATATYPE}
+        BLOCK_SIZE=${BLOCKSIZE}
+        CUDA
+    )
+    target_compile_options(${PROJECT_NAME}_cuda_lib PRIVATE -O3)
+    set_target_properties(${PROJECT_NAME}_cuda_lib PROPERTIES
+        CUDA_ARCHITECTURES ${CUDA_ARCH}   
+    )
+    # --- specific computer openmp libs ---
+    target_link_libraries(${PROJECT_NAME}_cuda_lib PRIVATE 
+        CUDA::cudart 
+        CUDA::cublas
+    )
+
+    # --- Shortcuts ---
+    add_custom_target(cuda-lib DEPENDS ${PROJECT_NAME}_cuda_lib)
+    add_custom_target(CUDA-lib DEPENDS ${PROJECT_NAME}_cuda_lib)
+
+else()
+    # Fallback warning message
+    message(WARNING "CUDA installation was not found on this system. Skipping CUDA-lib target.")
+endif()
+
+
+
+# --- HIP target ---
+if(NOT ANDROID AND hip_FOUND)
+    # --- multiple device compilation ---
+    add_executable(${PROJECT_NAME}_hip
+        main.cpp
+        hip/lib_hip.cpp
+        cpu_functions/cpu_functions.cpp
+    )
+    target_compile_definitions(${PROJECT_NAME}_hip PRIVATE
+        ${DATATYPE}
+        BLOCK_SIZE=${BLOCKSIZE}
+        HIP
+    )
+    target_compile_options(${PROJECT_NAME}_hip PRIVATE -O3)
+
+    # --- specific computer openmp libs ---
+    target_link_libraries(${PROJECT_NAME}_hip PRIVATE 
+        hip::host
+        hip::device 
+    )
+
+    # --- Shortcuts ---
+    add_custom_target(hipb DEPENDS ${PROJECT_NAME}_hip)
+    add_custom_target(HIPB DEPENDS ${PROJECT_NAME}_hip)
+
+else()
+    # Fallback warning message
+    message(WARNING "HIP installation was not found on this system. Skipping HIP target.")
+endif()
 
 
 

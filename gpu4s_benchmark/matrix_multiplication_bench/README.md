@@ -245,9 +245,9 @@ cmake --build build-android --target cpu
 
 ### 2. Push it to your phone and run it
 ```
-adb push ./build-android/bin/matrix_mult_cpu /data/local/tmp/matrix_android_cpu
-adb shell chmod 755 /data/local/tmp/matrix_android_cpu
-adb shell /data/local/tmp/matrix_android_cpu -s 1024 -t
+adb push ./build-android/bin/* /data/local/tmp/
+adb shell chmod 755 /data/local/tmp/*
+adb shell /data/local/tmp/matrix_cpu -s 1024 -t
 ```
 
 
