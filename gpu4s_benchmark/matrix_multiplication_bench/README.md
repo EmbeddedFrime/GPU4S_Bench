@@ -262,3 +262,8 @@ cmake --build build --target cpu
 ```
 ./build/bin/matrix_mult_cpu -s 1024 -t
 ```
+
+
+speak about all the parameter you can change in the benchmark and how to change them, like the size of the matrix, the block size, the data type, the number of threads, etc.
+
+EXPORT ... 
