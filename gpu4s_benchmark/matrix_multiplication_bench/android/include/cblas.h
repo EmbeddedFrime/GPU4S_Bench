@@ -30,7 +30,7 @@
 #define CBLAS_H
 
 #include <stddef.h>
-#include "openblas_config.h"
+#include "common.h"
 
 #ifdef __cplusplus
 extern "C" {

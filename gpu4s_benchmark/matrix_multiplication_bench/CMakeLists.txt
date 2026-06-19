@@ -12,13 +12,13 @@ set(DATATYPE       "FLOAT"    CACHE STRING "Data type: FLOAT, DOUBLE, INT")
 set(CUDA_ARCH      "native"   CACHE STRING "API CUDA version: native, sm_72-86")
 set(BLA_VENDOR     "OpenBLAS" CACHE STRING "BLAS lib : ATLAS, OpenBLAS")
 
+
 # --- Android Variable ---
 if(ANDROID)
     set(ANDROID_INC ${CMAKE_SOURCE_DIR}/android/include/)
-    set(ANDROID_LIB ${CMAKE_SOURCE_DIR}/android/libs/)
-
-    
+    set(ANDROID_LIB ${CMAKE_SOURCE_DIR}/android/libs/) 
 endif(ANDROID)
+
 
 # --- Define Output directory ---
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/)
@@ -64,65 +64,159 @@ if(NOT ANDROID)
 
 endif()
 
+# ====== User warning ======
+if(NOT ANDROID)
 
+    if(NOT OpenCL_FOUND)
+        message(WARNING "OpenCL installation was not found on this system. Skipping opencl targets.")
+    endif()
 
+    if(NOT CLBlast_FOUND)
+        message(WARNING "CLBlast installation was not found on this system. Skipping OpenCL-lib target.")
+    endif()
 
+    if(NOT OpenMP_CXX_FOUND)
+        message(WARNING "OpenMP installation was not found on this system. Skipping OpenCL-lib target.")
+    endif()
+    # --- ATLAS OR OPENBLAS
+    if(NOT BLAS_INCLUDE_DIRS)
+        message(WARNING "${BLA_VENDOR} installation was not found on this system. Skipping OpenMP-lib target.")
+    endif()
+
+    if(NOT CUDAToolkit_FOUND)
+        message(WARNING "CUDA installation was not found on this system. Skipping CUDA targets.")
+    endif()
+
+    if(NOT hip_FOUND)
+        message(WARNING "HIP installation was not found on this system. Skipping HIP targets.")
+    endif()
+
+else()
+    include(FetchContent)
+
+    # --- Download clblast Headers ---
+    if(NOT EXISTS "${ANDROID_INC}/clblast.h")
+        message(STATUS "Downloading 1.7.0 clblast.h header...")
+        file(DOWNLOAD 
+            "https://raw.githubusercontent.com/CNugteren/CLBlast/1.7.0/include/clblast.h"
+            "${ANDROID_INC}/clblast.h"
+            SHOW_PROGRESS
+        )
+    endif()
+
+    # --- Download cblas Headers ---
+    if(NOT EXISTS "${ANDROID_INC}/cblas.h")
+        message(STATUS "Downloading v0.3.33 cblas.h header...")
+        file(DOWNLOAD 
+            "https://raw.githubusercontent.com/OpenMathLib/OpenBLAS/v0.3.33/cblas.h"
+            "${ANDROID_INC}/cblas.h"
+            SHOW_PROGRESS
+        )
+    endif()
+
+    # --- Download OpenCL Headers ---
+    if(NOT EXISTS "${ANDROID_INC}/CL/opencl.hpp")
+        message(STATUS "Downloading v2026.05.29 OpenCL C++ headers...")
+        
+        # Download Khronos OpenCL C headers
+        FetchContent_Declare(opencl_headers
+            GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
+            GIT_TAG        v2026.05.29
+            GIT_SHALLOW    TRUE
+        )
+        FetchContent_MakeAvailable(opencl_headers)
+        
+        # cp the CL directory into ${ANDROID_INC}
+        file(COPY "${opencl_headers_SOURCE_DIR}/CL" DESTINATION "${ANDROID_INC}")
+
+        # Download the modern C++ wrapper (opencl.hpp)
+        file(DOWNLOAD 
+            "https://raw.githubusercontent.com/KhronosGroup/OpenCL-CLHPP/v2026.05.29/include/CL/opencl.hpp"
+            "${ANDROID_INC}/CL/opencl.hpp"
+            SHOW_PROGRESS
+        )
+    endif()
+
+    # --- Check de depandancy files ---
+    if(EXISTS ${ANDROID_LIB}${ANDROID_ABI}/libOpenCL.so)
+            set(ANDROID_OPENCL_LIB_INC TRUE)
+    else()
+        set(ANDROID_OPENCL_LIB_INC FALSE)
+        message(WARNING "Opencl android libs file was not found. Skipping OpenCL targets. See README.md")
+    endif()
+
+    if(EXISTS ${ANDROID_LIB}${ANDROID_ABI}/libclblast.a)
+        set(ANDROID_CLBLAST_LIB_INC TRUE)
+    else()
+        set(ANDROID_CLBLAST_LIB_INC FALSE)
+        message(WARNING "clblast android libs file was not found. Skipping OpenCL-lib target. See README.md")
+    endif()
+
+    if(EXISTS ${ANDROID_LIB}${ANDROID_ABI}/libopenblas.a
+    AND EXISTS ${ANDROID_INC}${ANDROID_ABI}/openblas_confg.h
+    AND BLA_VENDOR STREQUAL "OpenBLAS")
+        set(ANDROID_OPENBLAS_LIB_INC TRUE)
+    else()
+        set(ANDROID_OPENBLAS_LIB_INC FALSE)
+        message(WARNING "Openblast android libs/headers files was not found. Skipping OpenMP-lib target. See README.md")
+    endif()    
+endif()
 
 # ====== Compilation of Targets ======
 
-
-
+# --- Blueprint function ---
+#  Compile all the targets
+# --------------------------
 function(compile_target TARGET_NAME)
 
-
+# Parse arguments
 set(singleArgs  SET_CUDA) 
 set(multipleArgs SOURCES_FILES SET_HIP_FILES COMPILE_DEFS SHORTCUTS_NAMES LIBRARIES INCLUDES COMPILE_OPTIONS) 
 
-
 cmake_parse_arguments(ARG "" "${singleArgs}" "${multipleArgs}" ${ARGN})
 
-    # --- Add all the source ---
+    # --- Add all source file ---
     add_executable(${TARGET_NAME}
         main.cpp
         ${ARG_SOURCES_FILES}
         cpu_functions/cpu_functions.cpp
     )
 
-    # --- set all files as HIP API files ---
+    # --- Set specefic files as HIP API files ---
     if(ARG_SET_HIP_FILES)
         foreach(HIP_FILE IN LISTS ARG_SET_HIP_FILES)
             set_source_files_properties(${HIP_FILE} PROPERTIES LANGUAGE HIP)
         endforeach()
     endif()
 
-    # --- Add define option ---
+    # --- Add compile define option ---
     target_compile_definitions(${TARGET_NAME} PRIVATE
         ${DATATYPE}
         BLOCK_SIZE=${BLOCKSIZE}
         ${ARG_COMPILE_DEFS}
     )
 
-    # --- set compile option ---
+    # --- Set specific compiler flags ---
     if(ARG_COMPILE_OPTIONS)
         target_compile_options(${TARGET_NAME} PRIVATE ${ARG_COMPILE_OPTIONS})
     endif()
 
-    # --- set CUDA ARCHITECTURES device ---
+    # --- Set target CUDA ARCHITECTURES ---
     if(ARG_SET_CUDA)
         set_target_properties(${TARGET_NAME} PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCH})
     endif()
     
-    # --- add includes headers directory ---
+    # --- Includes header directories ---
     if(ARG_INCLUDES)
         target_include_directories(${TARGET_NAME} PRIVATE ${ARG_INCLUDES})
     endif()
     
-    # --- Add all necessarry lib ---
+    # --- Link required libraries ---
     if(ARG_LIBRARIES)
         target_link_libraries(${TARGET_NAME} PRIVATE ${ARG_LIBRARIES}) 
     endif()
 
-    # --- For each shorcut name add DEPEND to the real target name ---
+    # --- Create custom shortcut targets ---
     foreach(SHORTCUT IN LISTS ARG_SHORTCUTS_NAMES)
         add_custom_target(${SHORTCUT} DEPENDS ${TARGET_NAME})
     endforeach()
@@ -135,12 +229,10 @@ compile_target(${PROJECT_NAME}_cpu
     SHORTCUTS_NAMES         cpu CPU
 )
 
-
-#to do verification des deps .o .so .a
 # --- Android Targets---
 if(ANDROID)
 
-
+    if(ANDROID_OPENCL_LIB_INC)
     # --- OpenCL ---
     compile_target(${PROJECT_NAME}_opencl
         SOURCES_FILES      opencl/lib_opencl.cpp
@@ -161,7 +253,9 @@ if(ANDROID)
         LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
         SHORTCUTS_NAMES    opencl-opt OpenCL-opt
     )
+    endif()
 
+    if(ANDROID_OPENCL_LIB_INC AND ANDROID_CLBLAST_LIB_INC)
     # --- OpenCL-lib ---
     compile_target(${PROJECT_NAME}_opencl_lib
         SOURCES_FILES      opencl/lib_opencl_lib.cpp
@@ -174,7 +268,7 @@ if(ANDROID)
 
         SHORTCUTS_NAMES    opencl-lib OpenCL-lib
     )
-
+    endif()
 
     # --- OpenMP---
     compile_target(${PROJECT_NAME}_openmp
@@ -200,25 +294,26 @@ if(ANDROID)
         SHORTCUTS_NAMES    openmp-opt OpenMP-opt
     )
 
+    if(ANDROID_OPENBLAS_LIB_INC)
+        # --- OpenMP-lib ---
+        compile_target(${PROJECT_NAME}_openmp_lib
+            SOURCES_FILES      openmp/lib_omp_lib.cpp
+            COMPILE_DEFS       OPENMP 
+                            "$<UPPER_CASE:${BLA_VENDOR}>"
 
-    # --- OpenMP-lib ---
-    compile_target(${PROJECT_NAME}_openmp_lib
-        SOURCES_FILES      openmp/lib_omp_lib.cpp
-        COMPILE_DEFS       OPENMP 
-                           "$<UPPER_CASE:${BLA_VENDOR}>"
+            INCLUDES           ${ANDROID_INC}
+                            ${ANDROID_INC}${ANDROID_ABI}
 
-        INCLUDES           ${ANDROID_INC}
-                           ${ANDROID_INC}${ANDROID_ABI}
-
-        LIBRARIES          ${ANDROID_LIB}${ANDROID_ABI}/libopenblas.a #static openblas         
-                           -static-openmp   #openmp flags
-                           -fopenmp
-                           -lm              # add math lib
-        SHORTCUTS_NAMES    openmp-lib OpenMP-lib
-    )
+            LIBRARIES          ${ANDROID_LIB}${ANDROID_ABI}/libopenblas.a #static openblas         
+                            -static-openmp   #openmp flags
+                            -fopenmp
+                            -lm              # add math lib
+            SHORTCUTS_NAMES    openmp-lib OpenMP-lib
+        )
+    endif()
 endif(ANDROID)
 
-
+# --- Computeur targets ---
 if(NOT ANDROID)
     # --- OpenCL Targets ---
     if(OpenCL_FOUND)
@@ -252,13 +347,7 @@ if(NOT ANDROID)
                 LIBRARIES          OpenCL::OpenCL clblast
                 SHORTCUTS_NAMES    opencl-lib OpenCL-lib
             )
-        else()
-            message(WARNING "CLBlast installation was not found on this system. Skipping OpenCL-lib target.")
         endif()        
-
-    else ()
-         # Fallback warning message 
-         message(WARNING "OpenCL installation was not found on this system. Skipping opencl targets.")
     endif()
 
     # --- OpenMP Targets ---
@@ -297,14 +386,8 @@ if(NOT ANDROID)
                                    m   # equivalent to -lm 
 
                 SHORTCUTS_NAMES    openmp-lib OpenMP-lib 
-            )
-        else()
-            message(WARNING "CLBlast installation was not found on this system. Skipping OpenCL-lib target.")
+            ) 
         endif()        
-
-    else ()
-         # Fallback warning message 
-         message(WARNING "${BLA_VENDOR} installation was not found on this system. Skipping opencl targets.")
     endif()
 
 
@@ -330,15 +413,12 @@ if(NOT ANDROID)
 
         # --- CUDA-lib ---
         compile_target(${PROJECT_NAME}_cuda_lib
-            SOURCES_FILES      cuda/lib_cuda_opt.cu
+            SOURCES_FILES      cuda/lib_cuda_lib.cu
             COMPILE_DEFS       CUDA
             SET_CUDA           1
             LIBRARIES          CUDA::cudart CUDA::cublas
             SHORTCUTS_NAMES    cuda-lib CUDA-lib
         )
-    else()
-        # Fallback warning message
-        message(WARNING "CUDA installation was not found on this system. Skipping CUDA targets.")
     endif()
 
     # --- HIP targets---
@@ -360,10 +440,7 @@ if(NOT ANDROID)
             LIBRARIES           hip::host
             SHORTCUTS_NAMES     hip-opt HIP-opt
         )
-    else()
-        message(WARNING "HIP installation was not found on this system. Skipping HIP targets.")
     endif()
-
 endif(NOT ANDROID)
 
 
