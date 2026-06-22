@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.27)
+cmake_minimum_required(VERSION 3.24)
 project(matrix_mult CXX) 
 
 
@@ -104,16 +104,6 @@ else()
         )
     endif()
 
-    # --- Download cblas Headers ---
-    if(NOT EXISTS "${ANDROID_INC}/cblas.h")
-        message(STATUS "Downloading v0.3.33 cblas.h header...")
-        file(DOWNLOAD 
-            "https://raw.githubusercontent.com/OpenMathLib/OpenBLAS/v0.3.33/cblas.h"
-            "${ANDROID_INC}/cblas.h"
-            SHOW_PROGRESS
-        )
-    endif()
-
     # --- Download OpenCL Headers ---
     if(NOT EXISTS "${ANDROID_INC}/CL/opencl.hpp")
         message(STATUS "Downloading v2026.05.29 OpenCL C++ headers...")
@@ -153,7 +143,7 @@ else()
     endif()
 
     if(EXISTS ${ANDROID_LIB}${ANDROID_ABI}/libopenblas.a
-    AND EXISTS ${ANDROID_INC}${ANDROID_ABI}/openblas_confg.h
+    AND EXISTS ${ANDROID_INC}${ANDROID_ABI}/openblas_config.h
     AND BLA_VENDOR STREQUAL "OpenBLAS")
         set(ANDROID_OPENBLAS_LIB_INC TRUE)
     else()
@@ -442,6 +432,67 @@ if(NOT ANDROID)
         )
     endif()
 endif(NOT ANDROID)
+
+
+# ====== Shorcuts ======
+
+# --- all-opencl (Android) ---
+if(ANDROID AND ANDROID_OPENCL_LIB_INC AND ANDROID_CLBLAST_LIB_INC )
+    add_custom_target(all-opencl DEPENDS 
+        ${PROJECT_NAME}_opencl
+        ${PROJECT_NAME}_opencl_opt 
+        ${PROJECT_NAME}_opencl_lib
+    )
+endif()
+
+# --- all-opencl---
+if(NOT ANDROID AND OpenCL_FOUND AND CLBlast_FOUND )
+    add_custom_target(all-opencl DEPENDS 
+        ${PROJECT_NAME}_opencl
+        ${PROJECT_NAME}_opencl_opt 
+        ${PROJECT_NAME}_opencl_lib
+    )
+endif()
+
+
+# --- all-openmp (Android) ---
+if(ANDROID AND ANDROID_OPENBLAS_LIB_INC  )
+    add_custom_target(all-openmp DEPENDS 
+        ${PROJECT_NAME}_openmp 
+        ${PROJECT_NAME}_openmp_opt 
+        ${PROJECT_NAME}_openmp_lib
+    )
+endif()
+
+
+# --- all-openmp---
+if(NOT ANDROID AND OpenMP_CXX_FOUND AND BLAS_INCLUDE_DIRS )
+    add_custom_target(all-openmp DEPENDS 
+        ${PROJECT_NAME}_openmp 
+        ${PROJECT_NAME}_openmp_opt 
+        ${PROJECT_NAME}_openmp_lib
+    )
+endif()
+
+
+# --- all-hip---
+if(NOT ANDROID AND hip_FOUND)
+    add_custom_target(all-hip DEPENDS 
+        ${PROJECT_NAME}_hip 
+        ${PROJECT_NAME}_hip_opt 
+    )
+endif()
+
+
+# --- all-cuda---
+if(NOT ANDROID AND CUDAToolkit_FOUND)
+    add_custom_target(all-cuda DEPENDS 
+        ${PROJECT_NAME}_cuda 
+        ${PROJECT_NAME}_cuda_opt 
+        ${PROJECT_NAME}_cuda_lib
+    )
+endif()
+
 
 
 

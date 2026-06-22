@@ -2,82 +2,136 @@
 
 
 ## Introduction
-To compare the performance of embedded CPUs and GPUs, I conducted a benchmark test using matrix multiplication as a common computational task. The benchmark was performed on two different platforms: 
- - Laptop : AMD Ryzen 7 7840HS & NVIDIA GeForce RTX 4060 
- - DragonBoard 810 : Qualcomm Snapdragon 810 & Adreno 430 
+To compare the performance of embedded CPUs and GPUs, I conducted a benchmark test using matrix multiplication as a common computational task. The benchmark was performed differents platforms: 
+
+ - x86_64 CPU: AMD Ryzen 7 7840HS
+ - Laptop GPU: NVIDIA RTX 4060 Laptop
+ - ARM64  CPU: Qualcomm Snapdragon 810 & Qualcomm Snapdragon 8 Gen 2
+ - Phone  GPU: Adreno 430 & Adreno 740
 
 
+## Prerequisites - All targets 
 
-## Prerequisites
-### 1. Android NDK r27d (27.3.13750724)
+### 1. CMake
+In order to compile the project you should install **CMake** ≥ 3.24 — [cmake.org/download](https://cmake.org/download)
+```bash
+  # Fedora
+  sudo dnf install cmake
+  # Ubuntu
+  sudo apt install cmake
+  # Check version
+  cmake --version
+```
+
+## Prerequisites - Android targets
+
+### 1. Android NDK
  
-First, you need to download the [Android NDK](https://github.com/android/ndk/wiki
-) (I use r27d 27.3.13750724) installed in your environment to cross-compile for Android targets. Ensure that the `NDK_ROOT` environment variable points to the directory of your NDK installation in the make file.
-```makefile
-# Set the  NDK_PATH to your Android NDK installation path
-NDK_VERSION ?= 27.3.13750724
-NDK_PATH = $(ANDROID_HOME)/ndk/$(NDK_VERSION)
-```
+First, you need to download the [Android NDK](https://github.com/android/ndk/wiki) in your environment to cross-compile for Android targets.
 
-In addition you need to select the compilator for your phone device, for my example I use aarch64-linux-android that is for android 5 - 64 bits device :
-```makefile
-# Set the target architecture for Android cross-compilation
-CLANG = $(LLVM_PREBUILT)/bin/aarch64-linux-android21-clang++ 
-```
+You can use other versions of the Android NDK, but the project was built and successfully tested using **NDK r27d (27.3.13750724)**."
 
-### 3. OpenCL header .h/.hpp
-Furthermore, you must download the OpenCL header .h  and  .hpp (I used v2026.05.29):  
+**Recommanded installation instructions:**
+1. Download the [Android Command Line Tools](https://developer.android.com/studio#command-line-tools-only)
+2. Install them and set `ANDROID_HOME` and `sdkmanager`to your bash path:
+```bash
+   # Put default Android Studio path 
+   # or wherever you installed it
+   echo 'export ANDROID_HOME=$HOME/Android/Sdk' >> ~/.bashrc  
+   echo 'export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin' >> ~/.bashrc
+   source ~/.bashrc #reload bash configuration
+```
+3. Download your preferred version of the NDK using the `sdkmanager`:
+```bash
+sdkmanager --install "ndk;27.3.13750724"
+```
+<br>
+
+### 2. Android Debug Bridge (ADB)
+
+In addtion, if you want to push the binaries to your phone and execute them, you should install **ADB (Android Debug Bridge)**. 
 
 ```bash
-#pull the latest release tag from the OpenCL-Headers repository
-LATEST_TAG_H=$(curl -s https://api.github.com/repos/KhronosGroup/OpenCL-Headers/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+# Ubuntu 
+  sudo apt install android-tools-adb
+# Fedora
+  sudo dnf install android-tools
+```
+<br>
 
-# Download OpenCL repository for header files
-git clone -b "$LATEST_TAG_H" --depth 1 https://github.com/KhronosGroup/OpenCL-Headers.git ./opencl/tmp
+### 3. (BONUS) Androis Libs : libOpenCL.so, libclblast.a and libopenblas.a
 
-# Rm & Move the CL directory with openCL.h to the opencl_headers directory
-rm -rf ./opencl/opencl_headers/CL & mkdir -p ./opencl/opencl_headers/CL && mv ./opencl/tmp/CL/* ./opencl/opencl_headers/CL
+To link to OpenCL correctly and avoid device-specific linking errors, you need an **OpenCL stub library** (`libOpenCL.so`). This allows the project to compile successfully, leaving the Android OS to dynamically load the real hardware driver at runtime.
 
-# Download the opencl.hpp header file
-LATEST_TAG_HPP=$(curl -s https://api.github.com/repos/KhronosGroup/OpenCL-CLHPP/releases/latest | grep -oP '"tag_name": "\K[^"]+')
+In addtion, you need the **libclblast.a** and **libopenblas.a** static libraries to run the OpenCL-lib and OpenMP-lib benchmarks on your android device.
 
-curl -o ./opencl/opencl_headers/CL/opencl.hpp https://raw.githubusercontent.com/KhronosGroup/OpenCL-CLHPP/${LATEST_TAG_HPP}/include/CL/opencl.hpp
+By default, these files are pre-compiled for **Android API 21** targeting **armeabi-v7a** and **arm64-v8a** using **Android NDK r27d**, and are included directly in the `/android/` directory of this project.
 
-#For old version of openCL :
-#curl -o ./opencl/opencl_headers/CL/opencl.hpp https://raw.githubusercontent.com/#KhronosGroup/OpenCL-CLHPP/${LATEST_TAG_HPP}/include/CL/cl2.hpp
+If you need to target a newer architecture (like ARMv9), You can use my custom toolchains to download, compile the stub, libraries and headers:
+* **[clblast-android-toolchain](https://github.com/EmbeddedFrime/clblast-android-toolchain)** (Compiles both `libclblast.a` and the required `libOpenCL.so` stub)
+* **[openblas-android-toolchain](https://github.com/EmbeddedFrime/openblas-android-toolchain)**
 
-# Remove the temporary directory
-rm -rf ./opencl/tmp
+After compiling the libraries, replace the corresponding files in the android/ directory with the newly generated ones:
+
+<pre>
+android/
+├── include/
+│   ├── arm64-v8a/
+│   │   ├── cblas.h <span style="color:red">*</span>
+│   │   └── openblas_config.h <span style="color:red">*</span>
+│   └── armeabi-v7a/
+│       ├── cblas.h <span style="color:red">*</span>
+│       └── openblas_config.h <span style="color:red">*</span>
+└── libs/
+    ├── arm64-v8a/
+    │   ├── libOpenCL.so <span style="color:blue">*</span>
+    │   ├── libclblast.a <span style="color:blue">*</span>
+    │   └── libopenblas.a <span style="color:red">*</span>
+    └── armeabi-v7a/
+        ├── libOpenCL.so <span style="color:blue">*</span>
+        ├── libopenblas.a <span style="color:blue">*</span>
+        └── libopenblas.so <span style="color:red">*</span>
+
+OpenBLAS toolchain  <span style="color:red">*</span> 
+CLBlast toolchain <span style="color:blue">*</span>
+</pre>
+
+## Build instructions
+
+To compile the project you just need to use this simple command deponding on your target platform:
+```bash 
+# --- Computer target --- 
+#Generate raw build files 
+cmake -B build
+# compile all the frameworks
+cmake --build build 
+# e.g. Compile only the cpu target
+cmake --build build --target cpu
+
+# --- Android target ---
+# e.g. android 21, NDK r27d, arm64-v8a
+cmake -B build-android \
+  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_HOME/ndk/27.3.13750724/build/cmake/android.toolchain.cmake \
+  -DANDROID_ABI=arm64-v8a \
+  -DANDROID_PLATFORM=android-21
+
+# compile all the frameworks
+cmake --build build-android
+# e.g. Compile only the cpu target
+cmake --build build-android --target cpu
 
 ```
 
-### 3. install ADB (Bonus)
+> **Deprecated Build Instructions**
+>
+> The Makefile-based build system is **deprecated** and is retained only for legacy compatibility.
+> **Please use the CMake build system instead**, as it provides a cleaner, more maintainable, and cross-platform workflow.
 
-Also I recommad need to install ADB (Android Debug Bridge) to be able to push the compiled binaries to the phone and execute them. You can install it using the following command :
-```bash
-fedora : sudo dnf install android-tools
-Debian : sudo apt install android-tools-adb
-```
+<details>
+<summary><strong>Legacy Makefile Build (Deprecated)</strong></summary>
 
+### ⚠️ Legacy Makefile Workflow
 
-### 4. libOpenCL.so (Bonus)
-To link the OpenCL benchmark correctly, you need the `libOpenCL.so` library from your target device. Typically, you can extract this  driver directly from your phone using ADB:
-
-```bash
-# For 64-bit architectures (Recommended)
-adb pull /vendor/lib64/libOpenCL.so ./opencl/
-
-# For 32-bit architectures
-adb pull /vendor/lib/libOpenCL.so ./opencl/
-```
-
-### Alternative: Using the Compilation Stub
-
-Depending on your phone's age or vendor-specific toolchain, the pulled .so library might contain corrupted or non-standard ELF symbol tables that cause the modern PC host linker (ld.lld) to fail during compilation.
-
-To bypass this driver limitation, a local compilation stub (opencl_stub.c) is provided. This file contains empty function prototypes matching the OpenCL API signatures. The Makefile automatically compiles this stub into a clean, structurally compliant libOpenCL.so to satisfy the linker on your PC. At runtime on the phone, the operating system will seamlessly swap this stub out for the actual physical GPU driver.
-
-## Instructions: 
 Always clean the build artifacts before compiling a new architecture target configuration. Pass `DATATYPE` and `BLOCKSIZE` as environment overrides.
 
 ```bash
@@ -85,11 +139,9 @@ Always clean the build artifacts before compiling a new architecture target conf
 make clean
 ```
 
-### 1. Compile the code using the provided Makefile on both platforms
+### 1. Compile the code using the provided Makefile
 
 #### PC / Laptop Build (Fedora Host)
-
-To compile the native Linux binaries utilizing your local toolchain:
 
 ```bash
 # Compile individual backends
@@ -100,19 +152,17 @@ make opencl DATATYPE=FLOAT BLOCKSIZE=16
 
 #### Android Cross-Compilation Build
 
-To cross-compile binaries optimized for AArch64 Android architectures using the Android NDK (r27d):
-
 ```bash
 # Compile all Android targets simultaneously (CPU, OpenMP, and OpenCL)
 make all-android DATATYPE=FLOAT BLOCKSIZE=16
 ```
 
-
 ### 2. Execution Guide
 
-All benchmarks accept size parameters via the -s flag and timing flags via -t.
+All benchmarks accept size parameters via the `-s` flag and timing via `-t`.
 
 #### PC / Laptop Build (Fedora Host)
+
 ```bash
 # Native CPU Execution
 ./bin/matrix_multiplication_cpu_float_256 -s 1024 -t
@@ -126,30 +176,16 @@ All benchmarks accept size parameters via the -s flag and timing flags via -t.
 
 #### Pushing and Running on Android Devices via ADB
 
-Before executing, transfer the cross-compiled binaries from your ./bin/ directory over to the high-privilege temporary directory on the target Android device:
-
 ```bash
 # Push binaries to the device
-#CPU :
-adb push ./bin/matrix_multiplication_android_cpu_float_256 /data/local/tmp/matrix_android_cpu
-#OpenMP :
-adb push ./bin/matrix_multiplication_android_omp_float /data/local/tmp/matrix_android_openmp
-#OpenMP Optimized :
-adb push ./bin/matrix_multiplication_android_omp_opt_float /data/local/tmp/matrix_android_openmp_opt
-#OpenMP lib
-adb push ./bin/matrix_multiplication_android_omp_lib_float /data/local/tmp/matrix_android_openmp_lib
-#OpenCL :
-adb push ./bin/matrix_multiplication_android_opencl_float_256 /data/local/tmp/matrix_android_opencl
-#OpenCL Optimized :
-adb push ./bin/matrix_multiplication_android_opencl_opt_float_256 /data/local/tmp/matrix_android_opencl_opt
-#OpenCL with library :
-adb push ./bin/matrix_multiplication_android_opencl_lib_float /data/local/tmp/matrix_android_opencl_lib
+adb push ./build-android/bin/* /data/local/tmp/
 
 # Grant execution permissions
 adb shell chmod 755 /data/local/tmp/matrix_android_*
 ```
 
-Execute the benchmarks directly on the phone shell:
+Execute the benchmarks:
+
 ```bash
 # Android CPU Execution
 adb shell /data/local/tmp/matrix_android_cpu -s 1024 -t
@@ -164,6 +200,8 @@ adb shell /data/local/tmp/matrix_android_opencl -s 1024 -t
 adb shell /data/local/tmp/matrix_android_opencl_opt -s 1024 -t
 adb shell /data/local/tmp/matrix_android_opencl_lib -s 1024 -t
 ```
+
+</details>
 
 ### 3. Performance Metric Sheet
 
