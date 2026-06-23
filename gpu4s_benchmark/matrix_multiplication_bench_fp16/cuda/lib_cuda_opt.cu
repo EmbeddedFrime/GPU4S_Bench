@@ -15,14 +15,16 @@
  #define WMMA_N 16
  #define WMMA_K 16
 
- __global__ void convert_fp32_to_f16 (bench_t *in, bench_t_gpu *out, int size) {
-    int idx = blockDim.x * blockIdx.x + threadIdx.x;
-    if (idx < size) {
-       out[idx] = in[idx];
-    }
- }
 
- __global__ void matrix_multiplication_kernel_tensor(bench_t_gpu *A,bench_t_gpu *B,  bench_t *C, const int n, const int m, const int w) {
+ #ifdef FLOAT16
+    __global__ void convert_fp32_to_f16 (bench_t *in, bench_t_gpu *out, int size) {
+        int idx = blockDim.x * blockIdx.x + threadIdx.x;
+        if (idx < size) {
+        out[idx] = in[idx];
+        }
+    }
+
+     __global__ void matrix_multiplication_kernel_tensor(bench_t_gpu *A,bench_t_gpu *B,  bench_t *C, const int n, const int m, const int w) {
     // Leading dimensions. Packed with no transpositions.
     int lda = n;
     int ldb = w;
@@ -78,8 +80,11 @@
     }
  }
 
-__global__ void
-matrix_multiplication_kernel(const bench_t *A,const bench_t *B,  bench_t *C, const int n, const int m, const int w)
+#endif
+
+
+__global__ void 
+matrix_multiplication_kernel(const bench_t *A, const bench_t *B, bench_t *C, const int n, const int m, const int w)
 {
     __shared__ bench_t A_tile[BLOCK_SIZE*BLOCK_SIZE];
     __shared__ bench_t B_tile[BLOCK_SIZE*BLOCK_SIZE];
@@ -175,21 +180,6 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
     {
         return false;
     }
-    // Allocate the device input vector A_half
-    err = cudaMalloc((void **)&device_object->d_half_A, size_a_matrix * sizeof(bench_t_gpu));
-
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
-
-    // Allocate the device input vector A_half
-    err = cudaMalloc((void **)&device_object->d_half_B, size_b_matrix * sizeof(bench_t_gpu));
-
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
 
     // Allocate the device output vector C
     err = cudaMalloc((void **)&device_object->d_C, size_c_matrix * sizeof(bench_t));
@@ -199,6 +189,35 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
         return false;
     }
     return true;
+
+    #ifdef FLOAT16
+        // Allocate the device input vector A_half
+        err = cudaMalloc((void **)&device_object->d_half_A, size_a_matrix * sizeof(bench_t_gpu));
+
+        if (err != cudaSuccess)
+        {
+            return false;
+        }
+
+        // Allocate the device input vector B_half
+        err = cudaMalloc((void **)&device_object->d_half_B, size_b_matrix * sizeof(bench_t_gpu));
+
+        if (err != cudaSuccess)
+        {
+            return false;
+        }
+
+        // Allocate the device input vector C_half
+        err = cudaMalloc((void **)&device_object->d_half_C, size_b_matrix * sizeof(bench_t_gpu));
+
+        if (err != cudaSuccess)
+        {
+            return false;
+        }
+
+    #endif
+
+    
 }
 
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h_B, unsigned int size_a, unsigned int size_b){
@@ -216,22 +235,34 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h
         fprintf(stderr, "Failed to copy vector B from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
+    #ifdef FLOAT16
     // transform to half
-    dim3 dimBlock(BLOCK_SIZE);
-    dim3 dimGrid(ceil(float((size_a))/(dimBlock.x)));
-    convert_fp32_to_f16<<<dimGrid, dimBlock>>> (device_object->d_A, device_object->d_half_A,size_a);
-    dimGrid.x = ceil(float((size_b))/(dimBlock.x));
-    convert_fp32_to_f16<<<dimGrid, dimBlock>>> (device_object->d_B, device_object->d_half_B,size_b);
+        dim3 dimBlock(BLOCK_SIZE);
+        dim3 dimGrid(ceil(float((size_a))/(dimBlock.x)));
+        convert_fp32_to_f16<<<dimGrid, dimBlock>>> (device_object->d_A, device_object->d_half_A,size_a);
+        dimGrid.x = ceil(float((size_b))/(dimBlock.x));
+        convert_fp32_to_f16<<<dimGrid, dimBlock>>> (device_object->d_B, device_object->d_half_B,size_b);
+    #endif
     cudaEventRecord(*device_object->stop_memory_copy_device);
 }
 void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,unsigned int w){
-
-    dim3 dimBlock(128, 4);
-    //dim3 dimGrid(ceil(float(n)/dimBlock.x), ceil(float(m)/dimBlock.y));
-    dim3 dimGrid((n + (WMMA_M * dimBlock.x / 32 - 1)) / (WMMA_M * dimBlock.x / 32), (n + WMMA_N * dimBlock.y - 1) / (WMMA_N * dimBlock.y));
-
     cudaEventRecord(*device_object->start);
-    matrix_multiplication_kernel_tensor<<<dimGrid, dimBlock>>> (device_object->d_half_B, device_object->d_half_A, device_object->d_C,  n, m, w);
+    
+    #ifdef FLOAT16
+        dim3 dimBlock(128, 4);
+        //dim3 dimGrid(ceil(float(n)/dimBlock.x), ceil(float(m)/dimBlock.y));
+        dim3 dimGrid((n + (WMMA_M * dimBlock.x / 32 - 1)) / (WMMA_M * dimBlock.x / 32), (n + WMMA_N * dimBlock.y - 1) / (WMMA_N * dimBlock.y));
+
+        cudaEventRecord(*device_object->start);
+        matrix_multiplication_kernel_tensor<<<dimGrid, dimBlock>>> (device_object->d_half_B, device_object->d_half_A, device_object->d_C,  n, m, w);
+    #else
+        // Default tiled layout fallback for non-FP16 modes
+        dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
+        dim3 dimGrid(ceil(float(w)/dimBlock.x), ceil(float(n)/dimBlock.y));
+        matrix_multiplication_kernel<<<dimGrid, dimBlock>>>(device_object->d_A, device_object->d_B, device_object->d_C, n, m, w);
+    #endif
+
     cudaEventRecord(*device_object->stop);
 }
 
@@ -285,6 +316,14 @@ void clean(GraficObject *device_object){
         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
+
+    #if defined(FLOAT16)
+        // --- Clean memorry leak ---
+        cudaFree(device_object->d_half_A);
+        cudaFree(device_object->d_half_B);
+        cudaFree(device_object->d_half_C);
+    #endif
 
 
     // delete events

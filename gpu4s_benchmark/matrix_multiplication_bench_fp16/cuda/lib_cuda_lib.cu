@@ -3,6 +3,7 @@
 
 #define BLOCK_SIZE 16
 
+#ifdef FLOAT16
 __global__ void convert_fp32_to_f16 (bench_t *in, bench_t_gpu *out, int size) {
     int idx = blockDim.x * blockIdx.x + threadIdx.x;
     if (idx < size) {
@@ -17,6 +18,7 @@ __global__ void convert_fp32_to_f16 (bench_t *in, bench_t_gpu *out, int size) {
        out[idx] = in[idx];
     }
  }
+ #endif
 
 void init(GraficObject *device_object, char* device_name){
     init(device_object, 0,0, device_name);
@@ -63,21 +65,7 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
     {
         return false;
     }
-    // Allocate the device input vector A_half
-    err = cudaMalloc((void **)&device_object->d_half_A, size_a_matrix * sizeof(bench_t_gpu));
 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
-
-    // Allocate the device input vector A_half
-    err = cudaMalloc((void **)&device_object->d_half_B, size_b_matrix * sizeof(bench_t_gpu));
-
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
     // Allocate the device output vector C
     err = cudaMalloc((void **)&device_object->d_C, size_c_matrix * sizeof(bench_t));
 
@@ -85,13 +73,33 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
     {
         return false;
     }
-    err = cudaMalloc((void **)&device_object->d_half_C, size_c_matrix * sizeof(bench_t_gpu));
 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
-    return true;
+    #ifdef FLOAT16
+        // Allocate the device input vector A_half
+        err = cudaMalloc((void **)&device_object->d_half_A, size_a_matrix * sizeof(bench_t_gpu));
+
+        if (err != cudaSuccess)
+        {
+            return false;
+        }
+
+        // Allocate the device input vector A_half
+        err = cudaMalloc((void **)&device_object->d_half_B, size_b_matrix * sizeof(bench_t_gpu));
+
+        if (err != cudaSuccess)
+        {
+            return false;
+        }
+        
+        // Allocate the device input vector C_half
+        err = cudaMalloc((void **)&device_object->d_half_C, size_c_matrix * sizeof(bench_t_gpu));
+
+        if (err != cudaSuccess)
+        {
+            return false;
+        }
+        return true;
+    #endif
 }
 
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h_B, unsigned int size_a, unsigned int size_b){
@@ -109,12 +117,12 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h
         return;
     }
     #ifdef FLOAT16
-    // transform to half
-    dim3 dimBlock(BLOCK_SIZE);
-    dim3 dimGrid(ceil(float((size_a))/(dimBlock.x)));
-    convert_fp32_to_f16<<<dimGrid, dimBlock>>> (device_object->d_A, device_object->d_half_A,size_a);
-    dimGrid.x = ceil(float((size_b))/(dimBlock.x));
-    convert_fp32_to_f16<<<dimGrid, dimBlock>>> (device_object->d_B, device_object->d_half_B,size_b);
+        // transform to half
+        dim3 dimBlock(BLOCK_SIZE);
+        dim3 dimGrid(ceil(float((size_a))/(dimBlock.x)));
+        convert_fp32_to_f16<<<dimGrid, dimBlock>>> (device_object->d_A, device_object->d_half_A,size_a);
+        dimGrid.x = ceil(float((size_b))/(dimBlock.x));
+        convert_fp32_to_f16<<<dimGrid, dimBlock>>> (device_object->d_B, device_object->d_half_B,size_b);
     #endif
     cudaEventRecord(*device_object->stop_memory_copy_device);   
 }
@@ -131,10 +139,12 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
     cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
     #ifdef INT
     printf("CUBLAS NOT SUPPORT INT OPERATIOS\n");
-    #elif FLOAT                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
-    cublasHgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, w, alpha, device_object->d_half_B, lda, device_object->d_half_A, ldb, beta, device_object->d_half_C, ldc);
-    #else 
-    cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, w, alpha, device_object->d_B, lda, device_object->d_A, ldb, beta, device_object->d_C, ldc);
+    #elif FLOAT16
+        cublasHgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, w, alpha, device_object->d_half_B, lda, device_object->d_half_A, ldb, beta, device_object->d_half_C, ldc);
+    #elif FLOAT                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+        cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, w, alpha, device_object->d_B, lda, device_object->d_A, ldb, beta, device_object->d_C, ldc);
+    #else // DOUBLE
+        cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, w, alpha, device_object->d_B, lda, device_object->d_A, ldb, beta, device_object->d_C, ldc);
     #endif
     
     cudaEventRecord(*device_object->stop);
@@ -143,11 +153,14 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
 }
 
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size){
-
     cudaEventRecord(*device_object->start_memory_copy_host);
-    dim3 dimBlock(BLOCK_SIZE);
-    dim3 dimGrid(ceil(float((size))/(dimBlock.x)));
-    convert_fp16_to_f32<<<dimGrid, dimBlock>>> (device_object->d_half_C, device_object->d_C,size);
+
+    #ifdef FLOAT16
+        dim3 dimBlock(BLOCK_SIZE);
+        dim3 dimGrid(ceil(float((size))/(dimBlock.x)));
+        convert_fp16_to_f32<<<dimGrid, dimBlock>>> (device_object->d_half_C, device_object->d_C,size);
+    #endif
+
     cudaMemcpy(h_C, device_object->d_C, size * sizeof(bench_t_gpu), cudaMemcpyDeviceToHost);
     cudaEventRecord(*device_object->stop_memory_copy_host);
     }
@@ -196,6 +209,12 @@ void clean(GraficObject *device_object){
         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
+    #if defined(FLOAT16)
+        cudaFree(device_object->d_half_A);
+        cudaFree(device_object->d_half_B);
+        cudaFree(device_object->d_half_C);
+    #endif
 
 
     // delete events

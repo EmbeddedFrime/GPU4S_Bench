@@ -6,7 +6,10 @@
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-#define BLOCK_SIZE 16
+
+#ifndef BLOCK_SIZE
+    #define BLOCK_SIZE 16  //default value
+#endif
 __global__ void
 matrix_multiplication_kernel(const bench_t_gpu *A,const bench_t_gpu *B,  bench_t_gpu *C, const int n, const int m, const int w)
 {

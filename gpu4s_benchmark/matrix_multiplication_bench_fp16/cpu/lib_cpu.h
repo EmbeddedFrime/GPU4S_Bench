@@ -5,16 +5,13 @@
 #include <cmath>
 #include <string.h>
 
+
+#include "../benchmark_library.h"
+
+
 #ifndef CPU_LIB_H
 #define CPU_LIB_H
 
-#ifdef INT
-typedef int bench_t;
-#elif FLOAT
-typedef float bench_t;
-#else 
-typedef double bench_t;
-#endif
 
 #ifdef BIGENDIAN
 // bigendian version

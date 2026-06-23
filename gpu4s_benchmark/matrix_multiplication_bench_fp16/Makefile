@@ -17,7 +17,7 @@ OPFLAGS = -I/usr/local/cuda/include/   -L/oldroot/root/usr/lib/x86_64-linux-gnu/
 # -DBIGENDIAN
 ENDIANFLAGS = 
 # Data type by default is double and for now can be -DINT -DFLOAT
-DATAPYPE = -DFLOAT
+DATAPYPE ?= -DFLOAT
 # Data type for GPU by default is double and for now can be -DINT -DFLOAT -DFLOAT16
 DATAPYPEGPU = -DFLOAT16
 # FOLDERS
@@ -56,7 +56,7 @@ CUDA-opt: cuda-lib
 # End Shortcuts
 # CPU part
 lib_cpu.o: $(CPUFOLDER)lib_cpu.cpp
-	$(CC) $(ENDIANFLAGS) $(DATAPYPE) -c $(CPUFOLDER)lib_cpu.cpp -o $(CPUFOLDER)lib_cpu.o $(CFLAGS) 
+	$(CC) $(ENDIANFLAGS) $(DATAPYPE) -c $(CPUFOLDER)lib_cpu.cpp -o $(CPUFOLDER)lib_cpu.o $(CFLAGS) $(CUFLAGS)
 # End CPU 
 
 # CUDA part
@@ -64,7 +64,7 @@ lib_cpu.o: $(CPUFOLDER)lib_cpu.cpp
 cuda: main_cuda
 
 lib_cuda.o: $(CUFOLDER)lib_cuda.cu
-	$(NVCC) $(DATAPYPE) $(DATAPYPEGPU) -c $(CUFOLDER)lib_cuda.cu -o $(CUFOLDER)lib_cuda.o $(NVCCFLAGS)
+	$(NVCC) $(DATAPYPE)  -c $(CUFOLDER)lib_cuda.cu -o $(CUFOLDER)lib_cuda.o $(NVCCFLAGS) 
 
 
 main_cuda: main.cpp lib_cuda.o lib_cpu.o
@@ -89,12 +89,12 @@ main_opencl: main.cpp lib_opencl.o lib_cpu.o
 cuda-opt: main_cuda_opt
 
 lib_cuda_opt.o: $(CUFOLDER)lib_cuda_opt.cu
-	$(NVCC) $(DATAPYPE) -c $(CUFOLDER)lib_cuda_opt.cu -o $(CUFOLDER)lib_cuda_opt.o $(NVCCFLAGS)
+	$(NVCC) $(DATAPYPE) $(DATAPYPEGPU) -c $(CUFOLDER)lib_cuda_opt.cu -o $(CUFOLDER)lib_cuda_opt.o $(NVCCFLAGS)
 
 
 main_cuda_opt: main.cpp lib_cuda_opt.o lib_cpu.o
 	mkdir -p $(OUTPUTFOLDER)
-	$(CC) $(DATAPYPE) main.cpp $(CUFOLDER)lib_cuda_opt.o $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_cuda_opt $(CUFLAGS) $(CFLAGS) -lstdc++
+	$(CC) $(DATAPYPE) $(DATAPYPEGPU) main.cpp $(CUFOLDER)lib_cuda_opt.o $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_cuda_opt $(CUFLAGS) $(CFLAGS) -lstdc++
 
 # End CUDA optimized
 
@@ -106,7 +106,7 @@ lib_opencl_opt.o: $(OPFOLDER)lib_opencl_opt.cpp
 
 main_opencl_opt: main.cpp lib_opencl_opt.o lib_cpu.o
 	mkdir -p $(OUTPUTFOLDER) 
-	$(CC) $(DATAPYPE) -DOPENCL main.cpp $(OPFOLDER)lib_opencl_opt.o  $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_opencl_opt $(CFLAGS) $(OPFLAGS) 
+	$(CC) $(DATAPYPE)  -DOPENCL main.cpp $(OPFOLDER)lib_opencl_opt.o  $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_opencl_opt $(CFLAGS) $(OPFLAGS) 
 
 # End OpenCL optimized
 
@@ -115,12 +115,12 @@ main_opencl_opt: main.cpp lib_opencl_opt.o lib_cpu.o
 cuda-lib: main_cuda_lib
 
 lib_cuda_lib.o: $(CUFOLDER)lib_cuda_lib.cu
-	$(NVCC) $(DATAPYPE) -c $(CUFOLDER)lib_cuda_lib.cu -o $(CUFOLDER)lib_cuda_lib.o $(NVCCFLAGS) 
+	$(NVCC) $(DATAPYPE) $(DATAPYPEGPU) -c $(CUFOLDER)lib_cuda_lib.cu -o $(CUFOLDER)lib_cuda_lib.o $(NVCCFLAGS) 
 
 
 main_cuda_lib: main.cpp lib_cuda_lib.o lib_cpu.o
 	mkdir -p $(OUTPUTFOLDER)
-	$(CC) $(DATAPYPE) main.cpp $(CUFOLDER)lib_cuda_lib.o $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_cuda_lib $(CUFLAGS) $(CFLAGS) -lstdc++ -lcublas
+	$(CC) $(DATAPYPE) $(DATAPYPEGPU) main.cpp $(CUFOLDER)lib_cuda_lib.o $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_cuda_lib $(CUFLAGS) $(CFLAGS) -lstdc++ -lcublas
 
 # End CUDA library
 

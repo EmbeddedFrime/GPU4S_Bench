@@ -1,3 +1,5 @@
+#ifndef BENCHMARK_H
+#define BENCHMARK_H
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,39 +10,36 @@
 typedef int bench_t;
 typedef int bench_t_gpu;
 static const std::string type_kernel = "typedef int bench_t;\n";
-#elif FLOAT
-#include <cuda_fp16.h>
-typedef float bench_t;
-typedef half bench_t_gpu;
-static const std::string type_kernel = "typedef float bench_t;\n";
 #elif FLOAT16
+	typedef float bench_t;
+	#ifdef OPENCL
+		// OpenCL lib
+	#else
+		// CUDA lib
+		#include <cuda_fp16.h>
+		typedef half bench_t_gpu;
+	#endif
 
-typedef float bench_t;
+#elif FLOAT
+	typedef float bench_t;
+	typedef float bench_t_gpu;
+	static const std::string type_kernel = "typedef float bench_t;\n";
+
+#else //FALLBACK DOUBLE
+	typedef double bench_t;
+	typedef double bench_t_gpu;
+	static const std::string type_kernel = "typedef double bench_t;\n";
+#endif
+
 #ifdef OPENCL
-// OpenCL lib
+	// OpenCL lib
+	#include <CL/opencl.hpp>
+	//#include <CL/cl.hpp>
 #else
-#include <cuda_fp16.h>
-typedef half bench_t_gpu;
-// CUDA lib
+	// CUDA lib
+	#include <cuda_runtime.h>
 #endif
 
-#else 
-typedef double bench_t;
-typedef double bench_t_gpu;
-static const std::string type_kernel = "typedef double bench_t;\n";
-#endif
-
-#ifdef OPENCL
-// OpenCL lib
-//#include <CL/opencl.h>
-#include <CL/cl.hpp>
-#else
-// CUDA lib
-#include <cuda_runtime.h>
-#endif
-
-#ifndef BENCHMARK_H
-#define BENCHMARK_H
 
 struct GraficObject{
    	#ifdef OPENCL
