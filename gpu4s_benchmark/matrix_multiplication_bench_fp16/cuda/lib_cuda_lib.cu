@@ -126,6 +126,7 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h
     #endif
     cudaEventRecord(*device_object->stop_memory_copy_device);   
 }
+
 void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,unsigned int w){
     // cublas settings
     int lda=m,ldb=m,ldc=m;
@@ -206,7 +207,7 @@ void clean(GraficObject *device_object){
 
     if (err != cudaSuccess)
     {
-        fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));
+        fprintf(stderr, "Failed to free device vector C (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
 

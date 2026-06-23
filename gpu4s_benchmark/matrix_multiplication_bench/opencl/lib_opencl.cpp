@@ -43,18 +43,38 @@ void init(GraficObject *device_object, int platform ,int device, char* device_na
 }
 
 bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix){
-   device_object->d_A = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_matrix);
-   device_object->d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_b_matrix);
-   device_object->d_C = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_c_matrix);
+   cl_int err;
+   device_object->d_A = new cl::Buffer(*device_object->context, CL_MEM_READ_ONLY, sizeof(bench_t)*size_a_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
+   device_object->d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_b_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
+   device_object->d_C = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_c_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
    // inicialice Arrays
    return true;
 }
 
+
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h_B, unsigned int size_a, unsigned int size_b){
-	// copy memory host -> device
-	//TODO Errors check
-    device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
-    device_object->queue->enqueueWriteBuffer(*device_object->d_B,CL_TRUE,0,sizeof(bench_t)*size_b, h_B, NULL, device_object->evt_copyB);
+    // copy memory host -> device
+    
+    cl_int err = device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
+    // Enqueue writing host memory h_B to device buffer d_B
+    err = device_object->queue->enqueueWriteBuffer(*device_object->d_B,CL_TRUE,0,sizeof(bench_t)*size_b, h_B, NULL, device_object->evt_copyB);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy vector B from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
 }
 
 

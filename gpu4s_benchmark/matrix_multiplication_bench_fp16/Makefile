@@ -149,3 +149,6 @@ clean:
 	rm -rf $(OUTPUTFOLDER)$(TARGET)_cuda_lib
 	rm -rf $(OUTPUTFOLDER)$(TARGET)_opencl_opt
 	rm -rf $(OUTPUTFOLDER)$(TARGET)_cuda_opt
+	rm -rf build/
+	rm -rf build-android/
+

@@ -415,3 +415,5 @@ clean:
 	rm -rf $(CUFOLDER)*.o
 	rm -rf $(CPUFOLDER)*.o
 	rm -rf $(OUTPUTFOLDER)$(TARGET)_*
+	rm -rf build/
+	rm -rf build-android/
