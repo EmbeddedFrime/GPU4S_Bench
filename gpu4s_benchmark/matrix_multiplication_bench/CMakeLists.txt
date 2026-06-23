@@ -6,11 +6,20 @@ project(matrix_mult CXX)
 
 # --- Global Variable ---
 set(OPENCL_VERSION  300       CACHE STRING "API OpenCL Version : 200, 210, 220, 300, 310")
-set(BLOCKSIZE       16        CACHE STRING "Block size for tiled kernels")
 set(OPT_FLAG       "-O3"      CACHE STRING "Compiler optimization level : -O2, -O3, -Ofast")
-set(DATATYPE       "FLOAT"    CACHE STRING "Data type: FLOAT, DOUBLE, INT")
 set(CUDA_ARCH      "native"   CACHE STRING "API CUDA version: native, sm_72-86")
 set(BLA_VENDOR     "OpenBLAS" CACHE STRING "BLAS lib : ATLAS, OpenBLAS")
+
+if(NOT BLOCKSIZE)
+    string(ASCII 27 Esc)
+    message(STATUS "${Esc}[1;34mNote: BLOCKSIZE is empty. Fallback to default: 16${Esc}[0m")
+    set(BLOCKSIZE       16        CACHE STRING "Block size for tiled kernels")
+endif()
+
+if(NOT DATATYPE)
+    message(STATUS "${Esc}[1;34mNote: DATATYPE is empty. Fallback to default: FLOAT${Esc}[0m")
+    set(DATATYPE       "FLOAT"    CACHE STRING "Data type: FLOAT, DOUBLE, INT")
+endif()
 
 
 # --- Android Variable ---

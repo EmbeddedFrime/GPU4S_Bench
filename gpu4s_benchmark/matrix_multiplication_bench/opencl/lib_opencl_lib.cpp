@@ -7,7 +7,12 @@
 
     // chrono timestamps for kernel timing (CLBlast event profiling unreliable on Android)
     static std::chrono::high_resolution_clock::time_point kernel_start;
-    static std::chrono::high_resolution_clock::time_point kernel_end;
+    static std::chrono::high_resolution_clock::time_point kernel_end;   
+    // host <-> device 
+    static std::chrono::high_resolution_clock::time_point copy_h_d_start;
+    static std::chrono::high_resolution_clock::time_point copy_h_d_end;
+    static std::chrono::high_resolution_clock::time_point copy_d_h_start;
+    static std::chrono::high_resolution_clock::time_point copy_d_h_end;
 #endif
 
 void init(GraficObject *device_object, char* device_name){
@@ -60,8 +65,18 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h_B, unsigned int size_a, unsigned int size_b){
     // copy memory host -> device
     //TODO Errors check
+
+    #ifdef ANDROID
+        copy_h_d_start = std::chrono::high_resolution_clock::now();
+    #endif
+
     device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
     device_object->queue->enqueueWriteBuffer(*device_object->d_B,CL_TRUE,0,sizeof(bench_t)*size_b, h_B, NULL, device_object->evt_copyB);
+    
+    #ifdef ANDROID
+        device_object->queue->finish();
+        copy_h_d_end = std::chrono::high_resolution_clock::now();
+    #endif
 }
 
 
@@ -90,7 +105,16 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
 }
 
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size){
+    #ifdef ANDROID
+        copy_d_h_start = std::chrono::high_resolution_clock::now();
+    #endif
+
     device_object->queue->enqueueReadBuffer(*device_object->d_C,CL_TRUE,0,sizeof(bench_t)*size,h_C, NULL, device_object->evt_copyC);
+
+    #ifdef ANDROID
+        device_object->queue->finish();
+        copy_d_h_end = std::chrono::high_resolution_clock::now();
+    #endif
 }
 
 float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
@@ -105,8 +129,10 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
     //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
 
     #ifdef ANDROID
-    // --- FIX: Use chrono instead of CLBlast event profiling (unreliable on Android) ---
-        elapsed = std::chrono::duration<float, std::milli>(kernel_end - kernel_start).count() * 1000000.0f;
+        // --- FIX: Use chrono instead of CLBlast event profiling (unreliable on Android) ---
+        elapsed_h_d = std::chrono::duration<float, std::milli>(copy_h_d_end - copy_h_d_start).count() * 1000000.0f;
+        elapsed      = std::chrono::duration<float, std::milli>(kernel_end   - kernel_start  ).count() * 1000000.0f;
+        elapsed_d_h  = std::chrono::duration<float, std::milli>(copy_d_h_end - copy_d_h_start).count() * 1000000.0f;
     #endif
 
     elapsed_d_h = device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
