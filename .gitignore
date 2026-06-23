@@ -38,5 +38,8 @@ build-android/
 
 
 # OpenCL Dependency Downloads
-opencl/opencl_headers/
-opencl/tmp/
+**/opencl/opencl_headers/
+**/opencl/tmp/
+
+**/android/include/*.h
+**/android/include/CL/
