@@ -147,6 +147,9 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
     elapsed = device_object->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
 
+    elapsed_d_h = device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    //printf("Elapsed time Device->Host: %.10f \n", );
+
     #ifdef ANDROID
         // --- FIX: Use chrono instead of CLBlast event profiling (unreliable on Android) ---
         elapsed_h_d = std::chrono::duration<float, std::milli>(copy_h_d_end - copy_h_d_start).count() * 1000000.0f;
@@ -154,8 +157,6 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
         elapsed_d_h  = std::chrono::duration<float, std::milli>(copy_d_h_end - copy_d_h_start).count() * 1000000.0f;
     #endif
 
-    elapsed_d_h = device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    //printf("Elapsed time Device->Host: %.10f \n", );
 
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0, current_time);

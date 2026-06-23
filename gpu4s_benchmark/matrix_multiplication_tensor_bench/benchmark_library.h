@@ -17,8 +17,8 @@ static const std::string type_kernel = "typedef double bench_t;\n";
 
 #ifdef OPENCL
 // OpenCL lib
-//#include <CL/opencl.h>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
+// #include <CL/cl.hpp>
 #else
 // CUDA lib
 #include <cuda_runtime.h>
