@@ -2,7 +2,7 @@
 #include <cmath>
 #include "../benchmark_library.h"
 #include <cstring>
-#include "GEN_kernel_opt.hcl"
+#include "kernel_opt.cl"
 
 
 //#define BLOCK_SIZE 256
@@ -47,6 +47,7 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
    // inicialice Arrays
    return true;
 }
+
 
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a){
     // copy memory host -> device

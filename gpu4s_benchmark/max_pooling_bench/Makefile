@@ -2,14 +2,14 @@
 # Compilers 
 CC = g++
 NVCC = /usr/local/cuda/bin/nvcc
-HIP = /opt/rocm/hip/bin/hipcc
+HIP = hipcc #/opt/rocm/hip/bin/hipcc #ubuntu
 # the build target executable:
 TARGET = max_pooling
 # FLAGS 
 # CC compiler flags:
 CFLAGS  = -g
 # NVCC compiler flags
-NVCCFLAGS = -arch compute_75 -code sm_75
+NVCCFLAGS = -arch compute_89 -code sm_89
 # CUDA FLAGS
 CUFLAGS = -I/usr/local/cuda/include/ -L/usr/local/cuda/lib64 -lcuda -lcudart 
 # OPENCL FLAGS
@@ -56,9 +56,9 @@ all-bin: cuda cuda-opt cuda-lib opencl opencl-opt opencl-lib openmp openmp-opt o
 .PHONY: all-cuda
 all-cuda: cuda cuda-opt cuda-lib
 .PHONY: all-opencl
-all-opencl: opencl opencl-opt opencl-lib
+all-opencl: opencl opencl-opt 
 .PHONY: all-openmp
-all-openmp: openmp openmp-opt openmp-lib
+all-openmp: openmp openmp-opt 
 .PHONY: all-hip
 all-hip: hip hip-opt
 .PHONY: CUDA
@@ -84,9 +84,9 @@ OpenCL-lib: opencl-lib
 .PHONY: OpenMP-lib
 OpenMP-lib: openmp-lib
 # End Shortcuts
-# CPU part
+# CPU function part
 cpu_functions.o: $(CPUFUNCTIONFOLDER)cpu_functions.cpp
-	$(CC) $(ENDIANFLAGS) -D$(DATATYPE) -c $(CPUFUNCTIONFOLDER)cpu_functions.cpp -o $(CPUFUNCTIONFOLDER)cpu_functions.o $(CFLAGS) 
+	$(CC) $(ENDIANFLAGS) -D$(DATATYPE) -fPIC -c $(CPUFUNCTIONFOLDER)cpu_functions.cpp -o $(CPUFUNCTIONFOLDER)cpu_functions.o $(CFLAGS) 
 # End CPU 
 
 # CUDA part
@@ -94,7 +94,7 @@ cpu_functions.o: $(CPUFUNCTIONFOLDER)cpu_functions.cpp
 cuda: main_cuda
 
 lib_cuda.o: $(CUFOLDER)lib_cuda.cu
-	$(NVCC) -DCUDA -D$(DATATYPE) -DBLOCK_SIZE=$(BLOCKSIZE) -c $(CUFOLDER)lib_cuda.cu -o $(CUFOLDER)lib_cuda.o $(NVCCFLAGS)
+	$(NVCC) -DCUDA -D$(DATATYPE)  -DBLOCK_SIZE=$(BLOCKSIZE) -c $(CUFOLDER)lib_cuda.cu -o $(CUFOLDER)lib_cuda.o $(NVCCFLAGS)
 
 
 main_cuda: main.cpp lib_cuda.o cpu_functions.o

@@ -2,7 +2,7 @@
 #include <cmath>
 #include "../benchmark_library.h"
 #include <cstring>
-#include "GEN_kernel.hcl"
+#include "kernel.cl"
 
 
 //#define BLOCK_SIZE 16

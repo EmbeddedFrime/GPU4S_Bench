@@ -24,7 +24,15 @@ max_pooling_kernel(const bench_t *A, bench_t *B, const int size, const unsigned 
             {
                 //unsigned int position_array = ((((i%lateral_stride) * stride )+ ((i/lateral_stride)*size * stride)) + x)  + ( y * size);
                 //printf("max %f,value %f, pos x %d, pos y %d i position %d, final position %d\n", max_value,  A[position_array], x ,y, i, position_array);
-                max_value = max(max_value, A[((((i%lateral_stride) * stride )+ ((i/lateral_stride)*size * stride)) + x)  + ( y * size)]);
+                max_value = 
+                // --- FIX: use the correct max function depending one the type ---
+                #ifdef INT
+                    max_value = max(max_value, A[((((i%lateral_stride) * stride )+ ((i/lateral_stride)*size * stride)) + x)  + ( y * size)]);
+                #elif FLOAT
+                    max_value = fmaxf(max_value, A[((((i%lateral_stride) * stride )+ ((i/lateral_stride)*size * stride)) + x)  + ( y * size)]);
+                #elif DOUBLE
+                     max_value = fmax(max_value, A[((((i%lateral_stride) * stride )+ ((i/lateral_stride)*size * stride)) + x)  + ( y * size)]);
+                #endif     
                 
             }
         }

@@ -14,15 +14,22 @@ max_pooling_kernel(const bench_t *A, bench_t *B, const int size, const unsigned 
     unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int j = blockIdx.y * blockDim.y + threadIdx.y;
    
-    if (i < size && j < size){
+    // FIX: Guard against output boundaries, not input boundaries
+    if (i < lateral_stride && j < lateral_stride){
         bench_t max_value = A[((i * stride)) * size + ((j*stride))];
         for(unsigned int x = 0; x < stride; ++x)
         {
             for(unsigned int y = 0; y < stride; ++y)
             {
                 //printf("max %f, value %f, pos x %d, pos y %d \n", max_value, A[(i + x) * size + (j +y)],i + x , j +y);
-                max_value = max(max_value, A[((i * stride) + x) * size + ((j*stride) +y)]);
-                
+                // --- FIX: use the correct max function depending one the type ---
+                #ifdef INT
+                    max_value = max(max_value, A[((i * stride) + x) * size + ((j*stride) +y)]);
+                #elif FLOAT
+                    max_value = fmaxf(max_value, A[((i * stride) + x) * size + ((j*stride) +y)]);
+                #elif DOUBLE
+                     max_value = fmax(max_value, A[((i * stride) + x) * size + ((j*stride) +y)]);
+                #endif                
             }
         }
         B[i * lateral_stride + j ] = max_value;
