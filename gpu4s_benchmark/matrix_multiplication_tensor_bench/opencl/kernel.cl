@@ -9,3 +9,6 @@ std::string kernel_code =
     "        C[i*n+j] = acumulated;                       "
     "    }                                                 "
     "};";
+
+
+    

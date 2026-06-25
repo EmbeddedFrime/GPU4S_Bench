@@ -6,9 +6,11 @@ project(matrix_mult CXX)
 
 # --- Global Variable ---
 set(OPENCL_VERSION  300       CACHE STRING "API OpenCL Version : 200, 210, 220, 300, 310")
+set(ENDIANFLAGS    ""         CACHE STRING "ENDIANFLAGS : , BIGENDIAN")
 set(OPT_FLAG       "-O3"      CACHE STRING "Compiler optimization level : -O2, -O3, -Ofast")
 set(CUDA_ARCH      "native"   CACHE STRING "API CUDA version: native, sm_72-86")
 set(BLA_VENDOR     "OpenBLAS" CACHE STRING "BLAS lib : ATLAS, OpenBLAS")
+
 
 if(NOT BLOCKSIZE)
     string(ASCII 27 Esc)
@@ -193,6 +195,7 @@ cmake_parse_arguments(ARG "" "${singleArgs}" "${multipleArgs}" ${ARGN})
         ${DATATYPE}
         BLOCK_SIZE=${BLOCKSIZE}
         ${ARG_COMPILE_DEFS}
+        ${ENDIANFLAGS}    
     )
 
     # --- Set specific compiler flags ---

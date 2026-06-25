@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(matrix_mult CXX) 
+project(max_pooling CXX) 
 
 
 # ====== CMake Configuration ======
@@ -353,7 +353,7 @@ endif(NOT ANDROID)
 # ====== Shorcuts ======
 
 # --- all-opencl (Android) ---
-if(ANDROID AND ANDROID_OPENCL_LIB_INC AND ANDROID_CLBLAST_LIB_INC )
+if(ANDROID AND ANDROID_OPENCL_LIB_INC)
     add_custom_target(all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
@@ -361,7 +361,7 @@ if(ANDROID AND ANDROID_OPENCL_LIB_INC AND ANDROID_CLBLAST_LIB_INC )
 endif()
 
 # --- all-opencl---
-if(NOT ANDROID AND OpenCL_FOUND AND CLBlast_FOUND )
+if(NOT ANDROID AND OpenCL_FOUND )
     add_custom_target(all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
@@ -370,7 +370,7 @@ endif()
 
 
 # --- all-openmp (Android) ---
-if(ANDROID AND ANDROID_OPENBLAS_LIB_INC  )
+if(ANDROID)
     add_custom_target(all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
         ${PROJECT_NAME}_openmp_opt 
@@ -379,7 +379,7 @@ endif()
 
 
 # --- all-openmp---
-if(NOT ANDROID AND OpenMP_CXX_FOUND AND BLAS_INCLUDE_DIRS )
+if(NOT ANDROID AND OpenMP_CXX_FOUND)
     add_custom_target(all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
         ${PROJECT_NAME}_openmp_opt 

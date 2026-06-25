@@ -64,6 +64,7 @@ void init(GraficObject *device_object, char* device_name){
 }
 
 void init(GraficObject *device_object, int platform ,int device, char* device_name){
+    // --- Fix: Cast to (void) to suppress warnings on non-critical setup functions ---
     (void)hipSetDevice(device);
     hipDeviceProp_t prop;
     (void)hipGetDeviceProperties(&prop, device);

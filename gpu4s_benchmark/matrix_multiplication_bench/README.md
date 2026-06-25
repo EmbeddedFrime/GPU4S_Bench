@@ -305,3 +305,8 @@ cmake --build build --target cpu
 speak about all the parameter you can change in the benchmark and how to change them, like the size of the matrix, the block size, the data type, the number of threads, etc.
 
 EXPORT ... 
+
+
+for some benchmark you will need to install cudnn the link : https://developer.nvidia.com/cudnn-downloads
+
+![alt text](image.png)

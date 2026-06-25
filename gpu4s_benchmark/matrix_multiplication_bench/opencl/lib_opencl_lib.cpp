@@ -77,6 +77,7 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h
         copy_h_d_start = std::chrono::high_resolution_clock::now();
     #endif
     
+    // Enqueue writing host memory h_A to device buffer d_A
     cl_int err = device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
     if (err != CL_SUCCESS) 
     {

@@ -165,7 +165,7 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format){
 
     #ifdef ANDROID
         // --- FIX: Use chrono instead of CLBlast event profiling (unreliable on Android) ---
-        elapsed_h_d = std::chrono::duration<float, std::milli>(copy_h_d_end - copy_h_d_start).count() * 1000000.0f;
+        elapsed_h_d  = std::chrono::duration<float, std::milli>(copy_h_d_end - copy_h_d_start).count() * 1000000.0f;
         elapsed      = std::chrono::duration<float, std::milli>(kernel_end   - kernel_start  ).count() * 1000000.0f;
         elapsed_d_h  = std::chrono::duration<float, std::milli>(copy_d_h_end - copy_d_h_start).count() * 1000000.0f;
     #endif
