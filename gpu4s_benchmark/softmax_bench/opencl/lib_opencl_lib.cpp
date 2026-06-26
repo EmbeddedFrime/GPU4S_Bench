@@ -5,6 +5,13 @@
 #include "GEN_kernel_opt.hcl"
 #include "GEN_atomic_functions.hcl"
 
+#ifdef ANDROID
+    // kernel time execution
+    Clock kernelCLK;
+    // host <-> device 
+    Clock h2dCLK;
+    Clock d2hCLK;
+#endif
 
 //#define BLOCK_SIZE 1024
 void init(GraficObject *device_object, char* device_name){
@@ -44,17 +51,41 @@ void init(GraficObject *device_object, int platform ,int device, char* device_na
 }
 
 bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
-   device_object->d_A = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_matrix);
-   device_object->d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_b_matrix);
-   device_object->sum_d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t));
+    cl_int err;
+
+   device_object->d_A = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
+   device_object->d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_b_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
+   device_object->sum_d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
    // inicialice Arrays
    return true;
 }
 
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a){
     // copy memory host -> device
-    //TODO Errors check
-    device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
+
+    #ifdef ANDROID
+        h2dCLK.start();
+    #endif
+
+    // Enqueue writing host memory h_A to device buffer d_A
+    cl_int err = device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
+
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
+    #ifdef ANDROID
+        device_object->queue->finish();
+        h2dCLK.end();
+    #endif
 }
 
 
@@ -74,10 +105,12 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
     }
 
     cl::Program::Sources sources;
-    device_object->evt = new cl::Event;
-    // load kernel from file
-    kernel_code = type_kernel + atomic_code + kernel_code;
-    sources.push_back({kernel_code.c_str(),kernel_code.length()});
+    // FIX: Removed duplicate "new cl::Event" memory leak
+
+    // --- FIX: load the full kernel from file + #define BLOCK_SIZE ---
+    std::string preamble = "#define BLOCK_SIZE " + std::to_string(BLOCK_SIZE) + "\n";
+    std::string full_kernel = preamble + type_kernel + atomic_code + kernel_code;
+    sources.push_back(full_kernel);
 
     cl::Program program(*device_object->context,sources);
     if(program.build({device_object->default_device})!=CL_SUCCESS){
@@ -90,20 +123,36 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
     softmax_kernel.setArg(2,*device_object->sum_d_B);
     softmax_kernel.setArg(3,n);
 
-    device_object->queue->enqueueNDRangeKernel(softmax_kernel,cl::NullRange,global,local, NULL, device_object->evt);
-    device_object->queue->finish();
     cl::Kernel softmax_end_kernel=cl::Kernel(program,"kernel_softmax_end");
     softmax_end_kernel.setArg(0,*device_object->d_B);
     softmax_end_kernel.setArg(1,*device_object->sum_d_B);
     softmax_end_kernel.setArg(2,n);
 
+    #ifdef ANDROID
+        device_object->queue->finish();
+        kernelCLK.start();
+    #endif
+
+    device_object->queue->enqueueNDRangeKernel(softmax_kernel,cl::NullRange,global,local, NULL, device_object->evt);
     device_object->queue->enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, device_object->evt_complemet);
     device_object->queue->finish();
 
+    #ifdef ANDROID
+        kernelCLK.end();
+    #endif
 }
 
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size){
+    #ifdef ANDROID
+        d2hCLK.start();
+    #endif
+
     device_object->queue->enqueueReadBuffer(*device_object->d_B,CL_TRUE,0,sizeof(bench_t)*size,h_C, NULL, device_object->evt_copyB);
+
+    #ifdef ANDROID
+        device_object->queue->finish();
+        d2hCLK.end();
+    #endif
 }
 
 float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
@@ -117,6 +166,11 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
     elapsed_d_h = device_object->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Device->Host: %.10f \n", );
 
+    #ifdef ANDROID
+        elapsed_h_d  = h2dCLK.getElapsed();
+        elapsed      = kernelCLK.getElapsed();
+        elapsed_d_h  = d2hCLK.getElapsed();
+    #endif
 
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n",  elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0,current_time);

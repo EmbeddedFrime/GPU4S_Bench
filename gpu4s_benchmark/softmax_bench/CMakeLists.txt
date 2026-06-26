@@ -192,26 +192,38 @@ compile_target(${PROJECT_NAME}_cpu
 if(ANDROID)
 
     if(ANDROID_OPENCL_LIB_INC)
-    # --- OpenCL ---
-    compile_target(${PROJECT_NAME}_opencl
-        SOURCES_FILES      opencl/lib_opencl.cpp
-        COMPILE_DEFS       OPENCL
-                           CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
-                             
-        INCLUDES           ${ANDROID_INC}
-        LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-        SHORTCUTS_NAMES    cl OpenCL
-    )
-    # --- OpenCL-opt ---
-    compile_target(${PROJECT_NAME}_opencl_opt
-        SOURCES_FILES      opencl/lib_opencl_opt.cpp
-        COMPILE_DEFS       OPENCL   
-                           CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+        # --- OpenCL ---
+        compile_target(${PROJECT_NAME}_opencl
+            SOURCES_FILES      opencl/lib_opencl.cpp
+            COMPILE_DEFS       OPENCL
+                            CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+                                
+            INCLUDES           ${ANDROID_INC}
+            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+            SHORTCUTS_NAMES    cl OpenCL
+        )
+        # --- OpenCL-opt ---
+        compile_target(${PROJECT_NAME}_opencl_opt
+            SOURCES_FILES      opencl/lib_opencl_opt.cpp
+            COMPILE_DEFS       OPENCL   
+                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
 
-        INCLUDES           ${ANDROID_INC}
-        LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-        SHORTCUTS_NAMES    opencl-opt OpenCL-opt
-    )
+            INCLUDES           ${ANDROID_INC}
+            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+            SHORTCUTS_NAMES    opencl-opt OpenCL-opt
+        )
+
+        # --- OpenCL-lib ---
+        compile_target(${PROJECT_NAME}_opencl_lib
+            SOURCES_FILES      opencl/lib_opencl_lib.cpp
+            COMPILE_DEFS       OPENCL   
+                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+
+            INCLUDES           ${ANDROID_INC}
+            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+
+            SHORTCUTS_NAMES    opencl-lib OpenCL-lib
+        )
     endif()
 
     # --- OpenMP---
@@ -262,6 +274,16 @@ if(NOT ANDROID)
 
             LIBRARIES          OpenCL::OpenCL
             SHORTCUTS_NAMES    opencl-opt OpenCL-opt
+        )
+
+        # --- OpenCL-lib ---
+        compile_target(${PROJECT_NAME}_opencl_lib
+            SOURCES_FILES      opencl/lib_opencl_lib.cpp
+            COMPILE_DEFS       OPENCL
+                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+
+            LIBRARIES          OpenCL::OpenCL 
+            SHORTCUTS_NAMES    opencl-lib OpenCL-lib
         )
       
     endif()
@@ -354,6 +376,7 @@ if(ANDROID AND ANDROID_OPENCL_LIB_INC )
     add_custom_target(all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
+        ${PROJECT_NAME}_opencl_lib
     )
 endif()
 
@@ -362,6 +385,7 @@ if(NOT ANDROID AND OpenCL_FOUND )
     add_custom_target(all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
+        ${PROJECT_NAME}_opencl_lib
     )
 endif()
 
