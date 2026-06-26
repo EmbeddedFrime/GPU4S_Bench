@@ -31,9 +31,12 @@
 *.out
 *.app
 
+#vscode
+.vscode/
+
 #cmake build
-build/
-build-android/
+**/build/
+**/build-android/
 
 
 

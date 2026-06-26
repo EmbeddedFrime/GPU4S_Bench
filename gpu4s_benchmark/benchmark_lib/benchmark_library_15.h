@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string>
 
+
 #ifdef INT
 typedef int bench_t;
 static const std::string type_kernel = "typedef int bench_t;\n";
@@ -88,17 +89,12 @@ struct GraficObject{
 
 
 #ifdef ANDROID
-	#include <chrono>
-
-
-	//Create an class for a shorter call
-    // chrono timestamps for kernel timing (CLBlast event profiling unreliable on Android)
 	class Clock
 	{
 	private:
-		std::chrono::high_resolution_clock::time_point _timePointA, _timePointB;
+		static std::chrono::high_resolution_clock::time_point _timePointA, _timePointB;
 	public:
-		
+
 		void start(){
 			_timePointA = std::chrono::high_resolution_clock::now();
 		}
@@ -108,10 +104,10 @@ struct GraficObject{
 		}
 
 		float getElapsed(){
-			return std::chrono::duration<float, std::milli>(_timePointB - _timePointA).count() * 1000000.0f;
+			std::chrono::duration<float, std::milli>(_timePointB - _timePointA).count() * 1000000.0f;
 		}
 	};
-#endif
+#endif;
 
 void init(GraficObject *device_object, char* device_name);
 void init(GraficObject *device_object, int platform, int device, char* device_name);
