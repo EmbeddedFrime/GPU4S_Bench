@@ -282,7 +282,7 @@ void execute_kernel(GraficObject *device_object, unsigned int n){
     dim3 dimGrid(ceil(float(n)/dimBlock.x));
     for (unsigned int streams = 0; streams < 2; ++streams)
     {
-        hipStreamCreate(&cuda_streams[streams]);
+        (void)hipStreamCreate(&cuda_streams[streams]);
     }
     hipLaunchKernelGGL((wavelet_transform), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[0], device_object->d_A, device_object->d_B, n, device_object->low_filter, device_object->high_filter);
     hipLaunchKernelGGL((wavelet_transform_high), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[1], device_object->d_A, device_object->d_B, n, device_object->low_filter, device_object->high_filter);

@@ -30,8 +30,8 @@ static const bench_t highpass_filter[HIGHPASSFILTERSIZE] = {-0.064538882629, 0.0
 #include <cuda_runtime.h>
 #elif OPENCL
 // OpenCL lib
-//#include <CL/opencl.h>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
+// #include <CL/cl.hpp>
 #elif OPENMP
 // OpenMP lib
 #include <omp.h>

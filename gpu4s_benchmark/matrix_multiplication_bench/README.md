@@ -310,3 +310,11 @@ EXPORT ...
 for some benchmark you will need to install cudnn the link : https://developer.nvidia.com/cudnn-downloads
 
 ![alt text](image.png)
+
+
+SIZE=2048; for b in ./build/bin/*; do if [ -x "$b" ]; then name="${b##*/}"; echo -e "\n=== Running $name ==="; [[
+ "$name" == *"_lib"* ]] && "$b" -s $SIZE -t -v || "$b" -s $SIZE -t; fi; done
+
+
+
+adb shell 'SIZE=2048; for b in /data/local/tmp/softmax_*; do if [ -x "$b" ]; then name="${b##*/}"; echo -e "\n=== Running $name ==="; [[ "$name" == *"_lib"* ]] && "$b" -s $SIZE -t -v || "$b" -s $SIZE -t; fi; done'

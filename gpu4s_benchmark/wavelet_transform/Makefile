@@ -2,7 +2,7 @@
 # Compilers 
 CC = g++
 NVCC = /usr/local/cuda/bin/nvcc
-HIP = /opt/rocm/hip/bin/hipcc
+HIP  = hipcc #ubuntu : /opt/rocm/hip/bin/hipcc
 # the build target executable:
 TARGET = wavelet_transform
 # FLAGS 
@@ -54,15 +54,15 @@ all:
 # End Main
 # Shortcuts
 .PHONY: all-bin
-all-bin: cuda cuda-opt cuda-lib opencl opencl-opt opencl-lib openmp openmp-opt openmp-lib hip hip-opt
+all-bin: cuda cuda-opt opencl opencl-opt  openmp openmp-opt hip hip-opt
 .PHONY: all-cuda
-all-cuda: cuda cuda-opt cuda-lib
+all-cuda: cuda cuda-opt 
 .PHONY: all-opencl
-all-opencl: opencl opencl-opt opencl-lib
+all-opencl: opencl 
 .PHONY: all-openmp
-all-openmp: openmp openmp-opt openmp-lib
+all-openmp: openmp openmp-opt 
 .PHONY: all-hip
-all-hip: hip hip-opt
+all-hip: hip hip-opt  
 .PHONY: CUDA
 CUDA: cuda
 .PHONY: OpenCL
@@ -81,10 +81,7 @@ OpenMP-opt: openmp-opt
 Hip-opt: hip-opt
 .PHONY: CUDA-lib
 CUDA-lib: cuda-lib
-.PHONY: OpenCL-lib
-OpenCL-lib: opencl-lib
-.PHONY: OpenMP-lib
-OpenMP-lib: openmp-lib
+
 # End Shortcuts
 # CPU part
 cpu_functions.o: $(CPUFUNCTIONFOLDER)cpu_functions.cpp
@@ -168,17 +165,6 @@ main_cuda_opt: main.cpp lib_cuda_opt.o cpu_functions.o
 
 # End CUDA optimized
 
-# OpenCL Part optimized
-opencl-opt:  main_opencl_opt
-
-lib_opencl_opt.o: $(OPFOLDER)lib_opencl_opt.cpp 
-	$(CC) -D$(DATATYPE) -DBLOCK_SIZE=$(BLOCKSIZE) -DOPENCL -c $(OPFOLDER)lib_opencl_opt.cpp -o $(OPFOLDER)lib_opencl_opt.o $(CFLAGS) $(OPFLAGS)
-
-main_opencl_opt: main.cpp lib_opencl_opt.o cpu_functions.o
-	mkdir -p $(OUTPUTFOLDER) 
-	$(CC) -D$(DATATYPE) -DOPENCL main.cpp $(OPFOLDER)lib_opencl_opt.o  $(CPUFUNCTIONFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_opencl_opt_$(shell echo $(DATATYPE) | tr A-Z a-z)_$(BLOCKSIZESQUARED) $(CFLAGS) $(OPFLAGS) 
-
-# End OpenCL optimized
 
 # OpenMP Part optimized
 openmp-opt:  main_openmp_opt
