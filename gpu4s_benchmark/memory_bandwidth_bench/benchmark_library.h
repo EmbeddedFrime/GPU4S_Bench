@@ -90,7 +90,6 @@ struct GraficObject{
 #ifdef ANDROID
 	#include <chrono>
 
-
 	//Create an class for a shorter call
     // chrono timestamps for kernel timing (CLBlast event profiling unreliable on Android)
 	class Clock

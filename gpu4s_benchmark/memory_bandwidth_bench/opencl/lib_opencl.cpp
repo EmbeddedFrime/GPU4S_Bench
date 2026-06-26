@@ -85,7 +85,7 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned i
 
 
 void execute_kernel(GraficObject *device_object,unsigned int size_a){
-        #ifdef ANDROID
+    #ifdef ANDROID
         device_object->queue->finish();
         kernelCLK.start();
     #endif

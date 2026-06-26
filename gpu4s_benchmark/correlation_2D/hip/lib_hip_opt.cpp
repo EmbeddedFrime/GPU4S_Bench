@@ -127,9 +127,9 @@ void init(GraficObject *device_object, char* device_name){
 }
 
 void init(GraficObject *device_object, int platform ,int device, char* device_name){
-	hipSetDevice(device);
+	(void)hipSetDevice(device);
 	hipDeviceProp_t prop;
-	hipGetDeviceProperties(&prop, device);
+	(void)hipGetDeviceProperties(&prop, device);
 	//printf("Using device: %s\n", prop.name);
     strcpy(device_name,prop.name);
     //event create 
@@ -140,12 +140,12 @@ void init(GraficObject *device_object, int platform ,int device, char* device_na
     device_object->start_memory_copy_host = new hipEvent_t;
     device_object->stop_memory_copy_host= new hipEvent_t;
     
-    hipEventCreate(device_object->start);
-    hipEventCreate(device_object->stop);
-    hipEventCreate(device_object->start_memory_copy_device);
-    hipEventCreate(device_object->stop_memory_copy_device);
-    hipEventCreate(device_object->start_memory_copy_host);
-    hipEventCreate(device_object->stop_memory_copy_host);
+    (void)hipEventCreate(device_object->start);
+    (void)hipEventCreate(device_object->stop);
+    (void)hipEventCreate(device_object->start_memory_copy_device);
+    (void)hipEventCreate(device_object->stop_memory_copy_device);
+    (void)hipEventCreate(device_object->start_memory_copy_host);
+    (void)hipEventCreate(device_object->stop_memory_copy_host);
 }
 
 
@@ -210,7 +210,7 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
 }
 
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b){
-    hipEventRecord(*device_object->start_memory_copy_device);
+    (void)hipEventRecord(*device_object->start_memory_copy_device);
 	hipError_t err = hipMemcpy(device_object->d_A, h_A, sizeof(bench_t) * size_a, hipMemcpyHostToDevice);
     if (err != hipSuccess)
     {
@@ -225,21 +225,21 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned i
         return;
     }
     
-    hipEventRecord(*device_object->stop_memory_copy_device);
+    (void)hipEventRecord(*device_object->stop_memory_copy_device);
     
 }
 void execute_kernel(GraficObject *device_object, unsigned int n){
     dim3 dimBlock(BLOCK_SIZE,BLOCK_SIZE);
     dim3 dimGrid(ceil(float(n)/dimBlock.x),ceil(float(n)/dimBlock.y));
-    hipEventRecord(*device_object->start);
+    (void)hipEventRecord(*device_object->start);
     hipLaunchKernelGGL(mean_matrices, dim3(dimGrid), dim3(dimBlock), 0, 0, device_object->d_A, device_object->d_B, device_object->mean_A, device_object->mean_B , n);
     hipLaunchKernelGGL(correlation_2D, dim3(dimGrid), dim3(dimBlock), 0, 0, device_object->d_A, device_object->d_B, device_object->d_R, device_object->mean_A, device_object->mean_B,device_object->acumulate_value_a_b, device_object->acumulate_value_a_a, device_object->acumulate_value_b_b, n);
 
-    hipEventRecord(*device_object->stop);
+    (void)hipEventRecord(*device_object->stop);
 }
 
 void copy_memory_to_host(GraficObject *device_object, result_bench_t* h_R){
-    hipEventRecord(*device_object->start_memory_copy_host);
+    (void)hipEventRecord(*device_object->start_memory_copy_host);
     result_bench_t acumulate_value_a_a;
     result_bench_t acumulate_value_a_b;
     result_bench_t acumulate_value_b_b;
@@ -248,18 +248,18 @@ void copy_memory_to_host(GraficObject *device_object, result_bench_t* h_R){
     hipMemcpy(&acumulate_value_b_b, device_object->acumulate_value_b_b, sizeof(result_bench_t), hipMemcpyDeviceToHost);
     *h_R = (result_bench_t)(acumulate_value_a_b / (result_bench_t)(sqrt(acumulate_value_a_a * acumulate_value_b_b)));
     //hipMemcpy(h_R, device_object->d_R, sizeof(result_bench_t), hipMemcpyDeviceToHost);
-    hipEventRecord(*device_object->stop_memory_copy_host);
+    (void)hipEventRecord(*device_object->stop_memory_copy_host);
 }
 
 float get_elapsed_time(GraficObject *device_object, bool csv_format,bool csv_format_timestamp, long int current_time){
-    hipEventSynchronize(*device_object->stop_memory_copy_host);
+    (void)hipEventSynchronize(*device_object->stop_memory_copy_host);
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
     // memory transfer time host-device
-    hipEventElapsedTime(&milliseconds_h_d, *device_object->start_memory_copy_device, *device_object->stop_memory_copy_device);
+    (void)hipEventElapsedTime(&milliseconds_h_d, *device_object->start_memory_copy_device, *device_object->stop_memory_copy_device);
     // kernel time
-    hipEventElapsedTime(&milliseconds, *device_object->start, *device_object->stop);
+    (void)hipEventElapsedTime(&milliseconds, *device_object->start, *device_object->stop);
     //  memory transfer time device-host
-    hipEventElapsedTime(&milliseconds_d_h, *device_object->start_memory_copy_host, *device_object->stop_memory_copy_host);
+    (void)hipEventElapsedTime(&milliseconds_d_h, *device_object->start_memory_copy_host, *device_object->stop_memory_copy_host);
     
     
     if (csv_format_timestamp){

@@ -138,18 +138,18 @@ main_hip: main.cpp lib_hip.o cpu_functions.o
 	$(HIP) -D$(DATATYPE) -DHIP main.cpp -x none $(HIPFOLDER)lib_hip.o  $(CPUFUNCTIONFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_hip_$(shell echo $(DATATYPE) | tr A-Z a-z)_$(BLOCKSIZESQUARED) $(CFLAGS) $(HIPFLAGS)
 # End Hip 
 
-# CPU part
-.PHONY: cpu
-cpu: main_cpu
-lib_cpu.o: $(CPUFOLDER)lib_cpu.cpp
-	$(CC) -D$(DATATYPE) -DBLOCK_SIZE=$(BLOCKSIZE) -c $(CPUFOLDER)lib_cpu.cpp -o $(CPUFOLDER)lib_cpu.o $(CPUFLAGS)
+# # CPU part
+# .PHONY: cpu
+# cpu: main_cpu
+# lib_cpu.o: $(CPUFOLDER)lib_cpu.cpp
+# 	$(CC) -D$(DATATYPE) -DBLOCK_SIZE=$(BLOCKSIZE) -c $(CPUFOLDER)lib_cpu.cpp -o $(CPUFOLDER)lib_cpu.o $(CPUFLAGS)
 
 
-main_cpu: main.cpp lib_cpu.o cpu_functions.o
-	mkdir -p $(OUTPUTFOLDER)
-	$(CC) -D$(DATATYPE) main.cpp $(CPUFOLDER)lib_cpu.o $(CPUFUNCTIONFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_cpu_$(shell echo $(DATATYPE) | tr A-Z a-z)_$(BLOCKSIZESQUARED) $(CPUFLAGS) $(CFLAGS)
+# main_cpu: main.cpp lib_cpu.o cpu_functions.o
+# 	mkdir -p $(OUTPUTFOLDER)
+# 	$(CC) -D$(DATATYPE) main.cpp $(CPUFOLDER)lib_cpu.o $(CPUFUNCTIONFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_cpu_$(shell echo $(DATATYPE) | tr A-Z a-z)_$(BLOCKSIZESQUARED) $(CPUFLAGS) $(CFLAGS)
 
-# End CPU 
+# # End CPU 
 
 
 # CUDA part optimized
