@@ -9,7 +9,7 @@ TARGET = softmax
 # CC compiler flags:
 CFLAGS  = -g
 # NVCC compiler flags
-NVCCFLAGS = -arch compute_89 -code sm_89
+NVCCFLAGS = -arch=native
 # CUDA FLAGS
 CUFLAGS = -I/usr/local/cuda/include/ -L/usr/local/cuda/lib64 -lcuda -lcudart 
 # OPENCL FLAGS

@@ -8,7 +8,9 @@ TARGET = matix_multiplication
 # CC compiler flags:
 CFLAGS  = -O3
 # NVCC compiler flags
-NVCCFLAGS = -arch compute_75 -code sm_75 -O3
+# Automatically targets the host machine's local GPU (Supported in CUDA 11.5.1+)
+# Note: For cross-compiling or older legacy gpu, set target (e.g., -arch=sm_72)
+NVCCFLAGS = -arch=native -O3   
 # CUDA FLAGS
 CUFLAGS = -I/usr/local/cuda/include/ -L/usr/local/cuda/lib64 -lcuda -lcudart 
 # OPENCL FLAGS

@@ -9,7 +9,9 @@ TARGET = wavelet_transform
 # CC compiler flags:
 CFLAGS  = -g
 # NVCC compiler flags
-NVCCFLAGS = -arch compute_75 -code sm_75
+# Automatically targets the host machine's local GPU (Supported in CUDA 11.5.1+)
+# Note: For cross-compiling or older legacy gpu, set target (e.g., -arch=sm_72)
+NVCCFLAGS = -arch=native -O3   
 # CUDA FLAGS
 CUFLAGS = -I/usr/local/cuda/include/ -L/usr/local/cuda/lib64 -lcuda -lcudart  -g
 # OPENCL FLAGS
@@ -86,7 +88,7 @@ OpenMP-lib: openmp-lib
 # End Shortcuts
 # CPU part
 cpu_functions.o: $(CPUFUNCTIONFOLDER)cpu_functions.cpp
-	$(CC) $(ENDIANFLAGS) -D$(DATATYPE) -c $(CPUFUNCTIONFOLDER)cpu_functions.cpp -o $(CPUFUNCTIONFOLDER)cpu_functions.o $(CFLAGS) 
+	$(CC) $(ENDIANFLAGS) -D$(DATATYPE) -fPIC -c $(CPUFUNCTIONFOLDER)cpu_functions.cpp -o $(CPUFUNCTIONFOLDER)cpu_functions.o $(CFLAGS) 
 # End CPU 
 
 # CUDA part
