@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.24)
-project(cifar_10 CXX) 
+project(cifar_10_mutiple CXX) 
 
 # ====== Include cmake module ======
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")
 include(setup)
 include(compileBlueprint)
+
+# ====== Compilation of the targets ======
 
 # --- CPU target ---
 compile_target(${PROJECT_NAME}_cpu
