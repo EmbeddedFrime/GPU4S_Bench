@@ -318,3 +318,7 @@ SIZE=2048; for b in ./build/bin/*; do if [ -x "$b" ]; then name="${b##*/}"; echo
 
 
 adb shell 'SIZE=2048; for b in /data/local/tmp/softmax_*; do if [ -x "$b" ]; then name="${b##*/}"; echo -e "\n=== Running $name ==="; [[ "$name" == *"_lib"* ]] && "$b" -s $SIZE -t -v || "$b" -s $SIZE -t; fi; done'
+
+// better ! 
+cmake -B build-float-256 -DDATATYPE=FLOAT -DBLOCKSIZE=256
+cmake -B build-double-128 -DDATATYPE=DOUBLE -DBLOCKSIZE=128

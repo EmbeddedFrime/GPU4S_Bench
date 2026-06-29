@@ -6,6 +6,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")
 include(setup)
 include(compileBlueprint)
 
+# --- Project Variable ---
+set(NSTREAMS     "2" CACHE STRING "")
+
+
 # ====== Compilation of the targets ======
 
 # --- CPU target ---
@@ -24,7 +28,7 @@ if(ANDROID)
             BENCH_DIR          ${CMAKE_SOURCE_DIR}
             SOURCES_FILES      opencl/lib_opencl.cpp
             COMPILE_DEFS       OPENCL
-                            CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
                                 
             INCLUDES           ${ANDROID_INC}
             LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
@@ -35,8 +39,9 @@ if(ANDROID)
         compile_target(${PROJECT_NAME}_opencl_opt
             BENCH_DIR          ${CMAKE_SOURCE_DIR}
             SOURCES_FILES      opencl/lib_opencl_opt.cpp
-            COMPILE_DEFS       OPENCL   
-                            CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+            COMPILE_DEFS       OPENCL
+                               NUMBER_OF_STREAMS=${NSTREAMS}   
+                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
 
             INCLUDES           ${ANDROID_INC}
             LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
@@ -94,6 +99,7 @@ if(NOT ANDROID)
             BENCH_DIR          ${CMAKE_SOURCE_DIR}
             SOURCES_FILES      opencl/lib_opencl_opt.cpp
             COMPILE_DEFS       OPENCL
+                               NUMBER_OF_STREAMS=${NSTREAMS}
                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
 
             LIBRARIES          OpenCL::OpenCL
@@ -150,6 +156,8 @@ if(NOT ANDROID)
             BENCH_DIR          ${CMAKE_SOURCE_DIR}
             SOURCES_FILES      cuda/lib_cuda_opt.cu
             COMPILE_DEFS       CUDA
+                               NUMBER_OF_STREAMS=${NSTREAMS}
+
             SET_CUDA           1
             LIBRARIES          CUDA::cudart 
             SHORTCUTS_NAMES    cuda-opt CUDA-opt

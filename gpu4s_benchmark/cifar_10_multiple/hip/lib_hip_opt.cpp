@@ -77,10 +77,10 @@ covolution_kernel(const bench_t *A, bench_t *B, const bench_t *kernel,const int 
         bench_t sum = 0;
         unsigned int xa = kernel_rad + threadIdx.x;
         unsigned int ya = kernel_rad + threadIdx.y;
-        #pragma unroll
+        #pragma unroll 3
         for(int i = -kernel_rad; i <= kernel_rad; ++i) // loop over kernel_rad  -1 to 1 in kernel_size 3 
             {
-                #pragma unroll
+                #pragma unroll 3
                 for(int j = -kernel_rad; j <= kernel_rad; ++j)
                 {
                     //printf("ACHIVED position  %d %d value %f\n", (xa + i) , (ya + j), data[(xa + i)][(ya + j)]);

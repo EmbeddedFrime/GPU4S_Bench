@@ -5,6 +5,14 @@
 #include "GEN_kernel.hcl"
 #include "GEN_atomic_functions.hcl"
 
+#ifdef ANDROID
+    // kernel time execution
+    Clock kernelCLK;
+    // host <-> device 
+    Clock h2dCLK;
+    Clock d2hCLK;
+#endif
+
 
 //#define BLOCK_SIZE 16
 void init(GraficObject *device_object, char* device_name){
@@ -65,46 +73,111 @@ void init(GraficObject *device_object, int platform ,int device, char* device_na
 }
 
 bool device_memory_init(GraficObject *device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2, unsigned int number_of_images){
-
+   cl_int err;
    unsigned int size_pooling_1 = input_data / stride_1;
    unsigned int size_pooling_2 = size_pooling_1 / stride_2;
    unsigned int weights_layer_1 = size_pooling_2 * size_pooling_2 * neurons_dense_1;
    unsigned int weights_layer_2 = neurons_dense_1 * neurons_dense_2; 
 
    // input
-   device_object->input_data = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,number_of_images * input_data * input_data * sizeof(bench_t));
+   device_object->input_data = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,number_of_images * input_data * input_data * sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
    // convolution 1
-   device_object->kernel_1 = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,kernel_1 * kernel_1 * sizeof(bench_t));
-   device_object->conv_1_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,input_data * input_data * sizeof(bench_t));
+   device_object->kernel_1 = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,kernel_1 * kernel_1 * sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
+   device_object->conv_1_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,input_data * input_data * sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
    // pooling 1
-   device_object->pooling_1_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,size_pooling_1 * size_pooling_1 * sizeof(bench_t));
+   device_object->pooling_1_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,size_pooling_1 * size_pooling_1 * sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+  
    // convolution 1
-   device_object->kernel_2 = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,kernel_2 * kernel_2 * sizeof(bench_t));
-   device_object->conv_2_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,size_pooling_1 * size_pooling_1 * sizeof(bench_t));
+   device_object->kernel_2 = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,kernel_2 * kernel_2 * sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
+   device_object->conv_2_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,size_pooling_1 * size_pooling_1 * sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
    // pooling 2 
-   device_object->pooling_2_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,size_pooling_2 * size_pooling_2 * sizeof(bench_t));
+   device_object->pooling_2_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,size_pooling_2 * size_pooling_2 * sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
    // dense 1
    device_object->dense_layer_1_weights = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,weights_layer_1 * sizeof(bench_t));
-   device_object->dense_layer_1_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,neurons_dense_1 * sizeof(bench_t));
+   if (err != CL_SUCCESS) return false;
+
+   device_object->dense_layer_1_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,neurons_dense_1 * sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
    // dense 2
-   device_object->dense_layer_2_weights = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,weights_layer_2 * sizeof(bench_t));
-   device_object->dense_layer_2_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,neurons_dense_2 * sizeof(bench_t));
+   device_object->dense_layer_2_weights = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,weights_layer_2 * sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
+   device_object->dense_layer_2_output = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,neurons_dense_2 * sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
    // out
-   device_object->sum_ouput = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(bench_t));
-   device_object->output_data = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,number_of_images * neurons_dense_2 * sizeof(bench_t));
+   device_object->sum_ouput = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
+   device_object->output_data = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,number_of_images * neurons_dense_2 * sizeof(bench_t), nullptr, &err);
+   if (err != CL_SUCCESS) return false;
    return true;
 }
 
 void copy_memory_to_device(GraficObject *device_object, bench_t* input_data, bench_t* kernel_1_data, bench_t* kernel_2_data, bench_t* weights_1 ,bench_t* weights_2,unsigned int input , unsigned int kernel_size_1, unsigned int kernel_size_2, unsigned int weights_1_size, unsigned int weights_2_size, unsigned int number_of_images){
 	// copy memory host -> device
+
+    #ifdef ANDROID
+        h2dCLK.start();
+    #endif
+
+
     // input data
-    device_object->queue->enqueueWriteBuffer(*device_object->input_data,CL_TRUE,0,sizeof(bench_t)* input * input * number_of_images, input_data, NULL, device_object->evt_copyIN);
+    cl_int err = device_object->queue->enqueueWriteBuffer(*device_object->input_data,CL_TRUE,0,sizeof(bench_t)* input * input * number_of_images, input_data, NULL, device_object->evt_copyIN);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy input_data from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+    
     // kernels
-    device_object->queue->enqueueWriteBuffer(*device_object->kernel_1,CL_TRUE,0,sizeof(bench_t)* kernel_size_1 * kernel_size_1, kernel_1_data, NULL, device_object->evt_copyK1);
-    device_object->queue->enqueueWriteBuffer(*device_object->kernel_2,CL_TRUE,0,sizeof(bench_t)* kernel_size_2 * kernel_size_2, kernel_2_data, NULL, device_object->evt_copyK2);
+    err = device_object->queue->enqueueWriteBuffer(*device_object->kernel_1,CL_TRUE,0,sizeof(bench_t)* kernel_size_1 * kernel_size_1, kernel_1_data, NULL, device_object->evt_copyK1);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy kernel_1 from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
+    err = device_object->queue->enqueueWriteBuffer(*device_object->kernel_2,CL_TRUE,0,sizeof(bench_t)* kernel_size_2 * kernel_size_2, kernel_2_data, NULL, device_object->evt_copyK2);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy kernel_2 from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
     // dense layer
-    device_object->queue->enqueueWriteBuffer(*device_object->dense_layer_1_weights,CL_TRUE,0,sizeof(bench_t)* weights_1_size, weights_1, NULL, device_object->evt_copyW1);
-    device_object->queue->enqueueWriteBuffer(*device_object->dense_layer_2_weights,CL_TRUE,0,sizeof(bench_t)* weights_2_size, weights_2, NULL, device_object->evt_copyW2);
+    err = device_object->queue->enqueueWriteBuffer(*device_object->dense_layer_1_weights,CL_TRUE,0,sizeof(bench_t)* weights_1_size, weights_1, NULL, device_object->evt_copyW1);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy dense_layer_1_weights from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
+    err = device_object->queue->enqueueWriteBuffer(*device_object->dense_layer_2_weights,CL_TRUE,0,sizeof(bench_t)* weights_2_size, weights_2, NULL, device_object->evt_copyW2);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy dense_layer_2 from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
+    #ifdef ANDROID
+        device_object->queue->finish();
+        h2dCLK.end();
+    #endif
 }
 
 
@@ -127,7 +200,11 @@ void execute_kernel(GraficObject *device_object, unsigned int input_data, unsign
     }
 
     // timing  
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    //clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    #ifdef ANDROID
+        device_object->queue->finish(); // Clear queue to ensure accurate start
+        kernelCLK.start();
+    #endif
     cl::Buffer* aux_output_data = device_object->output_data;
     cl::Buffer* aux_input_data = device_object->input_data;
     for (unsigned int position = 0; position < number_of_images; ++position)
@@ -353,14 +430,26 @@ void execute_kernel(GraficObject *device_object, unsigned int input_data, unsign
     }
     // end 
     device_object->queue->finish();
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    // clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    #ifdef ANDROID
+        kernelCLK.end();
+    #endif
     device_object->elapsed_time =  (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
 
 }
 
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size, unsigned int number_of_images){
+    #ifdef ANDROID
+        d2hCLK.start();
+    #endif
+
     device_object->queue->enqueueReadBuffer(*device_object->output_data,CL_TRUE,0,sizeof(bench_t)*size*number_of_images,h_C, NULL, device_object->evt_copyOut);
     //device_object->queue->enqueueReadBuffer(*device_object->conv_2_output,CL_TRUE,0,sizeof(bench_t)*16*16,h_C, NULL, device_object->evt_copyOut);
+    
+    #ifdef ANDROID
+        device_object->queue->finish();
+        d2hCLK.end();
+    #endif
 }
 
 float get_elapsed_time(GraficObject *device_object, bool csv_format,bool csv_format_timestamp, long int current_time)
@@ -396,7 +485,12 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format,bool csv_for
     // copy memory D -> H
     elapsed_d_h = device_object->evt_copyOut->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyOut->getProfilingInfo<CL_PROFILING_COMMAND_START>();
 
-
+    #ifdef ANDROID
+        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
+        elapsed_h_d  = h2dCLK.getElapsed();
+        elapsed      = kernelCLK.getElapsed();
+        elapsed_d_h  = d2hCLK.getElapsed();
+    #endif
 
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0,device_object->elapsed_time,elapsed_d_h / 1000000.0, current_time);
@@ -405,7 +499,7 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format,bool csv_for
          printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,device_object->elapsed_time,elapsed_d_h / 1000000.0);
     }else{
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
-         printf("Elapsed time kernel: %.10f milliseconds\n", device_object->elapsed_time);
+         printf("Elapsed time kernel: %.10f milliseconds\n", elapsed / 1000000.0);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", elapsed_d_h / 1000000.0);
     }
     return elapsed / 1000000.0; // TODO Change

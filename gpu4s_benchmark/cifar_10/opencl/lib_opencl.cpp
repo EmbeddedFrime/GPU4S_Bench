@@ -133,7 +133,6 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* input_data, ben
 
     // input data
     cl_int err = device_object->queue->enqueueWriteBuffer(*device_object->input_data,CL_TRUE,0,sizeof(bench_t)* input * input, input_data, NULL, device_object->evt_copyIN);
-    
     if (err != CL_SUCCESS) 
     {
         fprintf(stderr, "Failed to copy input_data from host to device (OpenCL error code %d)!\n", err);
@@ -194,6 +193,10 @@ void execute_kernel(GraficObject *device_object, unsigned int input_data, unsign
         exit(1);
     }
 
+    #ifdef ANDROID
+        device_object->queue->finish(); // Clear queue to ensure accurate start
+        kernelCLK.start();
+    #endif
     // 1-1 step convolution
     if (input_data <= BLOCK_SIZE)
     {
@@ -214,10 +217,7 @@ void execute_kernel(GraficObject *device_object, unsigned int input_data, unsign
     kernel_conv.setArg(5,input_data);
     kernel_conv.setArg(6,kernel_1);
 
-    #ifdef ANDROID
-        device_object->queue->finish(); // Clear queue to ensure accurate start
-        kernelCLK.start();
-    #endif
+    
 
     device_object->queue->enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, device_object->evt1_1);
 

@@ -8,7 +8,9 @@
  */
 //#define BLOCK_SIZE 32
 #define BLOCK_SIZE_PLANE (BLOCK_SIZE * BLOCK_SIZE)
-//#define NUMBER_OF_STREAMS 8
+#ifndef NUMBER_OF_STREAMS
+    #define NUMBER_OF_STREAMS 8
+#endif
 __global__ void
 covolution_kernel(const bench_t *A, bench_t *B, const bench_t *kernel,const int n, const int m, const int w, const int kernel_size, const int shared_size, const int kernel_rad)
 {

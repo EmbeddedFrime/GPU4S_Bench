@@ -5,6 +5,8 @@
 #include <chrono>
 
 
+
+
 //#define BLOCK_SIZE 256
 void init(GraficObject *device_object, char* device_name){
     init(device_object, 0,0, device_name);

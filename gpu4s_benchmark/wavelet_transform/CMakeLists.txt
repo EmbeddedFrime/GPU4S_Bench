@@ -6,6 +6,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")
 include(setup)
 include(compileBlueprint)
 
+# ====== Compilation of the targets ======
+
 # --- CPU target ---
 compile_target(${PROJECT_NAME}_cpu
     BENCH_DIR          ${CMAKE_SOURCE_DIR}
