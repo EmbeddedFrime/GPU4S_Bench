@@ -8,6 +8,14 @@
 #include "GEN_kernel.hcl"
 #endif
 
+#ifdef ANDROID
+    // kernel time execution
+    Clock kernelCLK;
+    // host <-> device 
+    Clock h2dCLK;
+    Clock d2hCLK;
+#endif
+
 //#define BLOCK_SIZE 16
 void init(GraficObject *device_object, char* device_name){
 	init(device_object, 0,0, device_name);
@@ -46,13 +54,23 @@ void init(GraficObject *device_object, int platform ,int device, char* device_na
 }
 
 bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
-   device_object->d_A = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_matrix);
-   device_object->d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_b_matrix);
+    cl_int err;
+
+   device_object->d_A = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
+   device_object->d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_b_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
    #ifdef INT
     // if int don't add the copy of the filters
    #else
-   device_object->low_filter = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*LOWPASSFILTERSIZE);
-   device_object->high_filter = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*HIGHPASSFILTERSIZE);
+    device_object->low_filter = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*LOWPASSFILTERSIZE, nullptr, &err);
+    if (err != CL_SUCCESS) return false;
+
+    device_object->high_filter = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*HIGHPASSFILTERSIZE, nullptr, &err);
+    if (err != CL_SUCCESS) return false;
+
    #endif
    // inicialice Arrays
    return true;
@@ -61,12 +79,34 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a){
 	// copy memory host -> device
 	//TODO Errors check
-    device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
+    cl_int err = device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
     #ifdef INT
     // if int don't add the copy of the filters
     #else
-    device_object->queue->enqueueWriteBuffer(*device_object->low_filter,CL_TRUE,0,sizeof(bench_t)*LOWPASSFILTERSIZE, lowpass_filter, NULL, device_object->evt_copyB);
-    device_object->queue->enqueueWriteBuffer(*device_object->high_filter,CL_TRUE,0,sizeof(bench_t)*HIGHPASSFILTERSIZE, highpass_filter, NULL, device_object->evt_copyC);
+        err = device_object->queue->enqueueWriteBuffer(*device_object->low_filter,CL_TRUE,0,sizeof(bench_t)*LOWPASSFILTERSIZE, lowpass_filter, NULL, device_object->evt_copyB);
+        if (err != CL_SUCCESS) 
+        {
+            fprintf(stderr, "Failed to copy low_filter from host to device (OpenCL error code %d)!\n", err);
+            return;
+        }
+
+        err = device_object->queue->enqueueWriteBuffer(*device_object->high_filter,CL_TRUE,0,sizeof(bench_t)*HIGHPASSFILTERSIZE, highpass_filter, NULL, device_object->evt_copyC);
+        if (err != CL_SUCCESS) 
+        {
+            fprintf(stderr, "Failed to copy high_filter from host to device (OpenCL error code %d)!\n", err);
+            return;
+        }
+    #endif
+
+    #ifdef ANDROID
+        device_object->queue->finish();
+        h2dCLK.end();
     #endif
 }
 
@@ -99,36 +139,64 @@ void execute_kernel(GraficObject *device_object, unsigned int n){
         exit(1);
     }
     #ifdef INT
-    device_object->evt_int = new cl::Event;
-    cl::Kernel kernel_wave=cl::Kernel(program,"wavelet_transform");
-    
-    kernel_wave.setArg(0,*device_object->d_A);
-    kernel_wave.setArg(1,*device_object->d_B);
-    kernel_wave.setArg(2,n);
-    device_object->queue->enqueueNDRangeKernel(kernel_wave,cl::NullRange,global,local, NULL, device_object->evt);
+        device_object->evt_int = new cl::Event;
+        cl::Kernel kernel_wave=cl::Kernel(program,"wavelet_transform");
+        
+        kernel_wave.setArg(0,*device_object->d_A);
+        kernel_wave.setArg(1,*device_object->d_B);
+        kernel_wave.setArg(2,n);
 
-    cl::Kernel kernel_wave_low=cl::Kernel(program,"wavelet_transform_low");
-    kernel_wave_low.setArg(0,*device_object->d_A);
-    kernel_wave_low.setArg(1,*device_object->d_B);
-    kernel_wave_low.setArg(2,n);
-    device_object->queue->enqueueNDRangeKernel(kernel_wave_low,cl::NullRange,global,local, NULL, device_object->evt_int);
-    device_object->queue->finish();
-    
+        #ifdef ANDROID
+            device_object->queue->finish(); // Clear queue to ensure accurate start
+            kernelCLK.start();
+        #endif
+
+        device_object->queue->enqueueNDRangeKernel(kernel_wave,cl::NullRange,global,local, NULL, device_object->evt);
+
+        cl::Kernel kernel_wave_low=cl::Kernel(program,"wavelet_transform_low");
+        kernel_wave_low.setArg(0,*device_object->d_A);
+        kernel_wave_low.setArg(1,*device_object->d_B);
+        kernel_wave_low.setArg(2,n);
+        device_object->queue->enqueueNDRangeKernel(kernel_wave_low,cl::NullRange,global,local, NULL, device_object->evt_int);
+        device_object->queue->finish();
+
+        #ifdef ANDROID
+            kernelCLK.end();
+        #endif    
     #else
-    cl::Kernel kernel_wave=cl::Kernel(program,"wavelet_transform");
-    kernel_wave.setArg(0,*device_object->d_A);
-    kernel_wave.setArg(1,*device_object->d_B);
-    kernel_wave.setArg(2,n);
-    kernel_wave.setArg(3,*device_object->low_filter);
-    kernel_wave.setArg(4,*device_object->high_filter);
-    device_object->queue->enqueueNDRangeKernel(kernel_wave,cl::NullRange,global,local, NULL, device_object->evt);
-    device_object->queue->finish();
-    #endif
+        cl::Kernel kernel_wave=cl::Kernel(program,"wavelet_transform");
+        kernel_wave.setArg(0,*device_object->d_A);
+        kernel_wave.setArg(1,*device_object->d_B);
+        kernel_wave.setArg(2,n);
+        kernel_wave.setArg(3,*device_object->low_filter);
+        kernel_wave.setArg(4,*device_object->high_filter);
 
+        #ifdef ANDROID
+            device_object->queue->finish(); // Clear queue to ensure accurate start
+            kernelCLK.start();
+        #endif
+
+
+        device_object->queue->enqueueNDRangeKernel(kernel_wave,cl::NullRange,global,local, NULL, device_object->evt);
+        device_object->queue->finish();
+
+        #ifdef ANDROID
+            kernelCLK.end();
+        #endif
+    #endif
 }
 
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size){
+    #ifdef ANDROID
+        d2hCLK.start();
+    #endif
+
     device_object->queue->enqueueReadBuffer(*device_object->d_B,CL_TRUE,0,sizeof(bench_t)*size,h_C, NULL, device_object->evt_copyC);
+    
+    #ifdef ANDROID
+        device_object->queue->finish();
+        d2hCLK.end();
+    #endif
 }
 
 float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
@@ -146,6 +214,12 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
     elapsed_d_h = device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Device->Host: %.10f \n", );
 
+     #ifdef ANDROID
+        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
+        elapsed_h_d  = h2dCLK.getElapsed();
+        elapsed      = kernelCLK.getElapsed();
+        elapsed_d_h  = d2hCLK.getElapsed();
+    #endif
 
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0, current_time);

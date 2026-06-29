@@ -133,6 +133,7 @@ void execute_kernel(GraficObject *device_object, unsigned int size)
 
 	// End compute timer
 	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+	//FIX: add float division 
     device_object->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
 }
 
@@ -154,6 +155,7 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
     } 
 	else
 	{
+		//--- FIX: print te time in milliseconds
 		printf("Elapsed time Host->Device: %.10f milliseconds\n", (bench_t) 0);
 		printf("Elapsed time kernel: %.10f milliseconds\n", device_object->elapsed_time );
 		setvbuf(stdout, NULL, _IONBF, 0); 
