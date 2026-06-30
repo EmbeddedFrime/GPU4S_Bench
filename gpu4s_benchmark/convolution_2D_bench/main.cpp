@@ -181,7 +181,7 @@ int main(int argc, char *argv[]){
 		clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 		if (arguments_parameters->print_timing)
 		{
-			printf("CPU Time %lu milliseconds\n", (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000);
+			printf("CPU Time %f milliseconds\n", (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f);
 		}
 		if (arguments_parameters->print_output)
 		{

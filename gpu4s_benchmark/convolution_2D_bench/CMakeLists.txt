@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(cifar_10_mutiple CXX) 
+project(convulotion_2D CXX) 
 
 # ====== Include cmake module ======
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")

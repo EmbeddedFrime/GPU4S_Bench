@@ -54,13 +54,12 @@ all:
 # End Main
 # Shortcuts
 .PHONY: all-bin
-all-bin: cuda cuda-opt cuda-lib opencl opencl-opt opencl-lib openmp openmp-opt openmp-lib hip hip-opt
+all-bin: cuda cuda-opt cuda-lib opencl opencl-opt  openmp openmp-opt hip hip-opt
 .PHONY: all-cuda
 all-cuda: cuda cuda-opt cuda-lib
 .PHONY: all-opencl
-all-opencl: opencl opencl-opt opencl-lib
-.PHONY: all-openmp
-all-openmp: openmp openmp-opt openmp-lib
+all-opencl: opencl opencl-opt 
+all-openmp: openmp openmp-opt 
 .PHONY: all-hip
 all-hip: hip hip-opt
 .PHONY: Hip
@@ -81,10 +80,8 @@ OpenMP-opt: openmp-opt
 Hip-opt: hip-opt
 .PHONY: CUDA-lib
 CUDA-lib: cuda-lib
-.PHONY: OpenCL-lib
-OpenCL-lib: opencl-lib
-.PHONY: OpenMP-lib
-OpenMP-lib: opencl-lib
+
+
 # End Shortcuts
 # CPU part
 cpu_functions.o: $(CPUFUNCTIONFOLDER)cpu_functions.cpp
@@ -215,17 +212,6 @@ main_cuda_lib: main.cpp lib_cuda_lib.o cpu_functions.o
 
 # End CUDA library
 
-# OpenCL Part library
-opencl-lib:  main_opencl_lib
-
-lib_opencl_lib.o: $(OPFOLDER)lib_opencl_lib.cpp 
-	$(CC) -D$(DATATYPE) -DOPENCL -c $(OPFOLDER)lib_opencl_lib.cpp -o $(OPFOLDER)lib_opencl_lib.o $(CFLAGS) $(OPFLAGS) -I/home/irodrig/clBlast/include/ -L/home/irodrig/clBlast/lib/ -lclblast
-
-main_opencl_lib: main.cpp lib_opencl_lib.o cpu_functions.o
-	mkdir -p $(OUTPUTFOLDER) 
-	$(CC) -D$(DATATYPE) -DOPENCL main.cpp $(OPFOLDER)lib_opencl_lib.o  $(CPUFUNCTIONFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_opencl_lib_$(shell echo $(DATATYPE) | tr A-Z a-z) $(CFLAGS) $(OPFLAGS)  -I/home/irodrig/clBlast/include/ -L/home/irodrig/clBlast/lib/ -lclblast
-
-# End OpenCL library
 
 # Clean
 .PHONY: clean

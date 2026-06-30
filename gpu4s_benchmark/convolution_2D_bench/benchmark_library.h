@@ -21,8 +21,8 @@ static const std::string type_kernel = "#pragma OPENCL EXTENSION cl_khr_fp64 : e
 #include <cuda_runtime.h>
 #elif OPENCL
 // OpenCL lib
-//#include <CL/opencl.h>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
+// #include <CL/cl.hpp>
 #elif OPENMP
 // OpenMP lib
 #include <omp.h>

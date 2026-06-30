@@ -4,6 +4,13 @@
 #include <cstring>
 #include "GEN_kernel.hcl"
 
+#ifdef ANDROID
+    // kernel time execution
+    Clock kernelCLK;
+    // host <-> device 
+    Clock h2dCLK;
+    Clock d2hCLK;
+#endif
 
 //#define BLOCK_SIZE 16
 void init(GraficObject *device_object, char* device_name){
@@ -43,18 +50,45 @@ void init(GraficObject *device_object, int platform ,int device, char* device_na
 }
 
 bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix){
-   device_object->d_A = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_matrix);
-   device_object->d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_b_matrix);
-   device_object->kernel = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_c_matrix);
+    cl_int err;
+   
+    device_object->d_A = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
+   device_object->d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_b_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
+   device_object->kernel = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_c_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
    // inicialice Arrays
    return true;
 }
 
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* kernel, unsigned int size_a, unsigned int size_b){
 	// copy memory host -> device
-	//TODO Errors check
-    device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
-    device_object->queue->enqueueWriteBuffer(*device_object->kernel,CL_TRUE,0,sizeof(bench_t)*size_b, kernel, NULL, device_object->evt_copyB);
+
+    #ifdef ANDROID
+        h2dCLK.start();
+    #endif
+
+    cl_int err = device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
+    err = device_object->queue->enqueueWriteBuffer(*device_object->kernel,CL_TRUE,0,sizeof(bench_t)*size_b, kernel, NULL, device_object->evt_copyB);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy vector B from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
+    #ifdef ANDROID
+        device_object->queue->finish();
+        h2dCLK.end();
+    #endif
 }
 
 
@@ -86,6 +120,12 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device_object->default_device)<<"\n";
         exit(1);
     }
+
+    #ifdef ANDROID
+        device_object->queue->finish(); // Clear queue to ensure accurate start
+        kernelCLK.start();
+    #endif
+
     cl::Kernel kernel_conv=cl::Kernel(program,"kernel_matrix_convolution");
     kernel_conv.setArg(0,*device_object->d_A);
     kernel_conv.setArg(1,*device_object->d_B);
@@ -98,10 +138,23 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
     device_object->queue->enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, device_object->evt);
     device_object->queue->finish();
 
+    #ifdef ANDROID
+        kernelCLK.end();
+    #endif
+
 }
 
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size){
+    #ifdef ANDROID
+        d2hCLK.start();
+    #endif
+
     device_object->queue->enqueueReadBuffer(*device_object->d_B,CL_TRUE,0,sizeof(bench_t)*size,h_C, NULL, device_object->evt_copyC);
+
+    #ifdef ANDROID
+        device_object->queue->finish();
+        d2hCLK.end();
+    #endif
 }
 
 float get_elapsed_time(GraficObject *device_object, bool csv_format,bool csv_format_timestamp, long int current_time){
@@ -110,10 +163,20 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format,bool csv_for
     elapsed_h_d = device_object->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     elapsed_h_d += device_object->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
+
     elapsed = device_object->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
+
     elapsed_d_h = device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Device->Host: %.10f \n", );
+
+
+    #ifdef ANDROID
+        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
+        elapsed_h_d  = h2dCLK.getElapsed();
+        elapsed      = kernelCLK.getElapsed();
+        elapsed_d_h  = d2hCLK.getElapsed();
+    #endif
 
 
     if (csv_format_timestamp){
