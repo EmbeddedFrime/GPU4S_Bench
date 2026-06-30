@@ -74,7 +74,8 @@ void execute_kernel(GraficObject *device_object, unsigned int size){
 	device_object->acumulate_value_a_a = acumulate_value_a_a;
 	device_object->acumulate_value_b_b = acumulate_value_b_b;
 	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    device_object->elapsed_time = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
+	//FIX: add float division
+    device_object->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
 }
 
 

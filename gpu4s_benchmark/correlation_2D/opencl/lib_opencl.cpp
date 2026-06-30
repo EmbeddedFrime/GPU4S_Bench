@@ -5,6 +5,14 @@
 #include "GEN_kernel.hcl"
 #include "GEN_atomic_functions.hcl"
 
+#ifdef ANDROID
+    // kernel time execution
+    Clock kernelCLK;
+    // host <-> device 
+    Clock h2dCLK;
+    Clock d2hCLK;
+#endif
+
 //#define BLOCK_SIZE 16
 void init(GraficObject *device_object, char* device_name){
 	init(device_object, 0,0, device_name);
@@ -46,24 +54,61 @@ void init(GraficObject *device_object, int platform ,int device, char* device_na
 }
 
 bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
-   device_object->d_A = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_matrix);
-   device_object->d_B = new cl::Buffer(*device_object->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_b_matrix);
-   device_object->d_R = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(result_bench_t));
-   device_object->mean_A = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(result_bench_t));
-   device_object->mean_B = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(result_bench_t));
-   device_object->acumulate_value_a_b = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(result_bench_t));
-   device_object->acumulate_value_a_a = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(result_bench_t));
-   device_object->acumulate_value_b_b = new cl::Buffer(*device_object->context,CL_MEM_READ_WRITE ,sizeof(result_bench_t));
-   // inicialice Arrays
-   return true;
+    cl_int err;
+
+    device_object->d_A = new cl::Buffer(*device_object->context, CL_MEM_READ_ONLY, sizeof(bench_t) * size_a_matrix, nullptr, &err);
+    if (err != CL_SUCCESS) return false;
+
+    device_object->d_B = new cl::Buffer(*device_object->context, CL_MEM_READ_ONLY, sizeof(bench_t) * size_b_matrix, nullptr, &err);
+    if (err != CL_SUCCESS) return false;
+
+    device_object->d_R = new cl::Buffer(*device_object->context, CL_MEM_READ_WRITE, sizeof(result_bench_t), nullptr, &err);
+    if (err != CL_SUCCESS) return false;
+
+    device_object->mean_A = new cl::Buffer(*device_object->context, CL_MEM_READ_WRITE, sizeof(result_bench_t), nullptr, &err);
+    if (err != CL_SUCCESS) return false;
+
+    device_object->mean_B = new cl::Buffer(*device_object->context, CL_MEM_READ_WRITE, sizeof(result_bench_t), nullptr, &err);
+    if (err != CL_SUCCESS) return false;
+
+    device_object->acumulate_value_a_b = new cl::Buffer(*device_object->context, CL_MEM_READ_WRITE, sizeof(result_bench_t), nullptr, &err);
+    if (err != CL_SUCCESS) return false;
+
+    device_object->acumulate_value_a_a = new cl::Buffer(*device_object->context, CL_MEM_READ_WRITE, sizeof(result_bench_t), nullptr, &err);
+    if (err != CL_SUCCESS) return false;
+
+    device_object->acumulate_value_b_b = new cl::Buffer(*device_object->context, CL_MEM_READ_WRITE, sizeof(result_bench_t), nullptr, &err);
+    if (err != CL_SUCCESS) return false;
+
+    // inicialice Arrays
+    return true;
 }
 
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b){
 	// copy memory host -> device
-	//TODO Errors check
-    device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
-    device_object->queue->enqueueWriteBuffer(*device_object->d_B,CL_TRUE,0,sizeof(bench_t)*size_b, h_B, NULL, device_object->evt_copyB);
-    
+
+    #ifdef ANDROID
+        h2dCLK.start();
+    #endif
+
+    cl_int err = device_object->queue->enqueueWriteBuffer(*device_object->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, device_object->evt_copyA);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
+    err = device_object->queue->enqueueWriteBuffer(*device_object->d_B,CL_TRUE,0,sizeof(bench_t)*size_b, h_B, NULL, device_object->evt_copyB);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy vector B from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
+    #ifdef ANDROID
+        device_object->queue->finish();
+        h2dCLK.end();
+    #endif
 }
 
 
@@ -94,6 +139,11 @@ void execute_kernel(GraficObject *device_object, unsigned int n){
         exit(1);
     }
     
+    #ifdef ANDROID
+        device_object->queue->finish(); // Clear queue to ensure accurate start
+        kernelCLK.start();
+    #endif
+
     cl::Kernel kernel_mean=cl::Kernel(program,"mean_matrices");
     kernel_mean.setArg(0,*device_object->d_A);
     kernel_mean.setArg(1,*device_object->d_B);
@@ -114,12 +164,18 @@ void execute_kernel(GraficObject *device_object, unsigned int n){
     kernel.setArg(8,n);
     
     device_object->queue->enqueueNDRangeKernel(kernel,cl::NullRange,global,local, NULL, device_object->evt);
-
     device_object->queue->finish();
 
+    #ifdef ANDROID
+        kernelCLK.end();
+    #endif
 }
 
 void copy_memory_to_host(GraficObject *device_object, result_bench_t* h_R){
+    #ifdef ANDROID
+        d2hCLK.start();
+    #endif
+
     result_bench_t acumulate_value_a_a;
     result_bench_t acumulate_value_a_b;
     result_bench_t acumulate_value_b_b;
@@ -128,6 +184,11 @@ void copy_memory_to_host(GraficObject *device_object, result_bench_t* h_R){
     device_object->queue->enqueueReadBuffer(*device_object->acumulate_value_b_b,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_b_b, NULL, device_object->evt_copyBB);
     device_object->evt_copyBB->wait();
     *h_R = (result_bench_t)(acumulate_value_a_b / (result_bench_t)(sqrt(acumulate_value_a_a * acumulate_value_b_b)));
+
+    #ifdef ANDROID
+        device_object->queue->finish();
+        d2hCLK.end();
+    #endif
 }
 
 float get_elapsed_time(GraficObject *device_object, bool csv_format,bool csv_format_timestamp, long int current_time){
@@ -143,6 +204,13 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format,bool csv_for
     elapsed_d_h += device_object->evt_copyAB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyAB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     elapsed_d_h += device_object->evt_copyBB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyBB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     
+
+    #ifdef ANDROID
+        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
+        elapsed_h_d  = h2dCLK.getElapsed();
+        elapsed      = kernelCLK.getElapsed();
+        elapsed_d_h  = d2hCLK.getElapsed();
+    #endif
 
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0, current_time);
