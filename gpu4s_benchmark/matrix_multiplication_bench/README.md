@@ -311,14 +311,10 @@ for some benchmark you will need to install cudnn the link : https://developer.n
 
 ![alt text](image.png)
 
-
-SIZE=2048; for b in ./build/bin/*; do if [ -x "$b" ]; then name="${b##*/}"; echo -e "\n=== Running $name ==="; [[
- "$name" == *"_lib"* ]] && "$b" -s $SIZE -t -v || "$b" -s $SIZE -t; fi; done
+for b in ./build/bin/*; do if [ -x "$b" ]; then name="${b##*/}"; echo -e "\n=== Running $name ==="; "$b" -s 2048  -t -v; fi; done
 
 
+adb shell 'for b in /data/local/tmp/convolution*; do [ -x "$b" ] || continue; name="${b##*/}"; echo "\n=== Running $name ==="; "$b" -s 2048 -t -v; done'
 
-adb shell 'SIZE=2048; for b in /data/local/tmp/softmax_*; do if [ -x "$b" ]; then name="${b##*/}"; echo -e "\n=== Running $name ==="; [[ "$name" == *"_lib"* ]] && "$b" -s $SIZE -t -v || "$b" -s $SIZE -t; fi; done'
-
-// better ! 
 cmake -B build-float-256 -DDATATYPE=FLOAT -DBLOCKSIZE=256
 cmake -B build-double-128 -DDATATYPE=DOUBLE -DBLOCKSIZE=128

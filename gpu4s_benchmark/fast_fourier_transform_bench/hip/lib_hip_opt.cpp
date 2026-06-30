@@ -131,7 +131,7 @@ void execute_kernel(GraficObject *device_object, int64_t size){
     // reorder kernel
     hipLaunchKernelGGL((binary_reverse_kernel), dim3(dimGrid_reverse), dim3(dimBlock_reverse), 0, 0, device_object->d_B, device_object->d_Br, size, (int64_t)log2(size));
     // Synchronize
-    hipDeviceSynchronize();
+    (void)hipDeviceSynchronize();
     // kernel call
     unsigned int theads = size /2 ;
     unsigned int loop = 1;

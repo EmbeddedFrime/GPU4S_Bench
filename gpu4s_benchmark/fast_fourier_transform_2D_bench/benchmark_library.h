@@ -7,7 +7,7 @@
 // OpenCL lib
 #include <CL/opencl.hpp>
 //#include <CL/cl.hpp>
-#else
+#elif CUDA
 // CUDA lib
 #include <cuda_runtime.h>
 #include <cufft.h>

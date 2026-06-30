@@ -96,15 +96,18 @@ void convolution_1_1(cuddObject *cudd_object, GraficObject *device_object ,cudnn
     //use tensorcore
     //cudnnSetConvolutionMathType(convolution_descriptor, CUDNN_TENSOR_OP_MATH)
     // describing convolution
-    cudnnConvolutionFwdAlgo_t convolution_algorithm;
-    checkCUDNN(cudnnGetConvolutionForwardAlgorithm(cudnn,
+    // --- FIX: New code for cuDNN 8+ ---
+    cudnnConvolutionFwdAlgoPerf_t algo_perf;
+    int returned_algo_count;
+    checkCUDNN(cudnnGetConvolutionForwardAlgorithm_v7(cudnn,
                                         cudd_object->input_descriptor_1_1,
                                         cudd_object->kernel_descriptor_1_1,
                                         cudd_object->convolution_descriptor_1_1,
                                         cudd_object->output_descriptor_1_1,
-                                        CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
-                                        /*memoryLimitInBytes=*/0,
-                                        &convolution_algorithm));
+                                        /*requestedAlgoCount=*/1,
+                                        &returned_algo_count,
+                                        &algo_perf));
+    cudnnConvolutionFwdAlgo_t convolution_algorithm = algo_perf.algo;
     // get memory needed for the convolution
     size_t workspace_bytes = 0;
     checkCUDNN(cudnnGetConvolutionForwardWorkspaceSize(cudnn,
@@ -329,15 +332,18 @@ void convolution_2_1(GraficObject *device_object, cudnnHandle_t cudnn, unsigned 
     //use tensorcore
     //cudnnSetConvolutionMathType(convolution_descriptor, CUDNN_TENSOR_OP_MATH)
     // describing convolution
-    cudnnConvolutionFwdAlgo_t convolution_algorithm;
-    checkCUDNN(cudnnGetConvolutionForwardAlgorithm(cudnn,
+    // --- FIX: New code for cuDNN 8+ ---
+    cudnnConvolutionFwdAlgoPerf_t algo_perf;
+    int returned_algo_count;
+    checkCUDNN(cudnnGetConvolutionForwardAlgorithm_v7(cudnn,
                                         input_descriptor,
                                         kernel_descriptor,
                                         convolution_descriptor,
                                         output_descriptor,
-                                        CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
-                                        /*memoryLimitInBytes=*/0,
-                                        &convolution_algorithm));
+                                        /*requestedAlgoCount=*/1,
+                                        &returned_algo_count,
+                                        &algo_perf));
+    cudnnConvolutionFwdAlgo_t convolution_algorithm = algo_perf.algo;
     // get memory needed for the convolution
     size_t workspace_bytes = 0;
     checkCUDNN(cudnnGetConvolutionForwardWorkspaceSize(cudnn,

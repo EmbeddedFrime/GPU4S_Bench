@@ -30,11 +30,11 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* k
 void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,unsigned int w, unsigned int kernel_size)
 {
 	// Start compute timer
-    struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+	const double start_wtime = omp_get_wtime();
 	const unsigned int kernel_rad = kernel_size / 2;
 	const unsigned int output_size = n + kernel_size - 1;
 
+	#pragma omp parallel for
 	for(unsigned int i = 0; i < output_size; ++i)
 	{
 		for (unsigned int j = 0; j < kernel_size; ++j)
@@ -46,9 +46,7 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
 		}
 	}
 	// End compute timer
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    //FIX: add float division
-    device_object->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
+	device_object->elapsed_time = omp_get_wtime() - start_wtime;
 }
 
 
@@ -60,20 +58,20 @@ void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size)
 
 float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_format_timestamp, long int current_time)
 {
-    if (csv_format_timestamp){
+	if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n",(bench_t) 0, device_object->elapsed_time , (bench_t) 0, current_time);
     }
-    else if (csv_format){
-        printf("%.10f;%.10f;%.10f;\n", (bench_t) 0, device_object->elapsed_time, (bench_t) 0);
+    else if (csv_format)
+	{
+        printf("%.10f;%.10f;%.10f;\n", (bench_t) 0, device_object->elapsed_time * 1000.f, (bench_t) 0);
     } 
 	else
 	{
-		//--- FIX: print te time in milliseconds
 		printf("Elapsed time Host->Device: %.10f milliseconds\n", (bench_t) 0);
-		printf("Elapsed time kernel: %.10f milliseconds\n", device_object->elapsed_time);
+		printf("Elapsed time kernel: %.10f milliseconds\n", device_object->elapsed_time * 1000.f);
 		printf("Elapsed time Device->Host: %.10f milliseconds\n", (bench_t) 0);
     }
-    return device_object->elapsed_time;
+	return device_object->elapsed_time * 1000.f;
 }
 
 

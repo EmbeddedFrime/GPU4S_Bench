@@ -1,14 +1,10 @@
 cmake_minimum_required(VERSION 3.24)
-project(convolution_2D CXX) 
+project(FIR_filter CXX) 
 
 # ====== Include cmake module ======
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")
 include(setup)
 include(compileBlueprint)
-
-# --- Project Variable ---
-set(NSTREAMS     "2" CACHE STRING "")
-
 
 # ====== Compilation of the targets ======
 
@@ -28,24 +24,11 @@ if(ANDROID)
             BENCH_DIR          ${CMAKE_SOURCE_DIR}
             SOURCES_FILES      opencl/lib_opencl.cpp
             COMPILE_DEFS       OPENCL
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+                            CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
                                 
             INCLUDES           ${ANDROID_INC}
             LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
             SHORTCUTS_NAMES    cl OpenCL
-        )
-
-        # --- OpenCL-opt ---
-        compile_target(${PROJECT_NAME}_opencl_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl_opt.cpp
-            COMPILE_DEFS       OPENCL
-                               NUMBER_OF_STREAMS=${NSTREAMS}   
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
-
-            INCLUDES           ${ANDROID_INC}
-            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-            SHORTCUTS_NAMES    opencl-opt OpenCL-opt
         )
 
     endif()
@@ -62,20 +45,7 @@ if(ANDROID)
 
         SHORTCUTS_NAMES    openmp OpenMP
     )
-    
 
-    # --- OpenMP-opt ---
-    compile_target(${PROJECT_NAME}_openmp_opt
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      openmp/lib_omp_opt.cpp
-        COMPILE_DEFS       OPENMP 
-        COMPILE_OPTIONS    -fopenmp  
-        LIBRARIES          -static-openmp   #openmp flags
-                           -fopenmp  
-                           -lm              # add math lib
-
-        SHORTCUTS_NAMES    openmp-opt OpenMP-opt
-    )
 
 endif(ANDROID)
 
@@ -92,18 +62,6 @@ if(NOT ANDROID)
 
             LIBRARIES          OpenCL::OpenCL
             SHORTCUTS_NAMES    cl OpenCL
-        )
-
-        # --- OpenCL-opt ---
-        compile_target(${PROJECT_NAME}_opencl_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl_opt.cpp
-            COMPILE_DEFS       OPENCL
-                               NUMBER_OF_STREAMS=${NSTREAMS}
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
-
-            LIBRARIES          OpenCL::OpenCL
-            SHORTCUTS_NAMES    opencl-opt OpenCL-opt
         )
 
       
@@ -123,19 +81,6 @@ if(NOT ANDROID)
             SHORTCUTS_NAMES    openmp OpenMP 
         )
 
-        # --- OpenMP-opt ---
-        compile_target(${PROJECT_NAME}_openmp_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      openmp/lib_omp_opt.cpp
-            COMPILE_DEFS       OPENMP
-
-            LIBRARIES          OpenMP::OpenMP_CXX #  openmp flags
-                               m   # equivalent to -lm 
-
-            SHORTCUTS_NAMES    openmp-opt OpenMP-opt 
-        )
-
-      
     endif()
 
 
@@ -151,34 +96,11 @@ if(NOT ANDROID)
             SHORTCUTS_NAMES    cuda CUDA
         )
 
-        # --- CUDA-opt ---
-        compile_target(${PROJECT_NAME}_cuda_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda_opt.cu
-            COMPILE_DEFS       CUDA
-                               NUMBER_OF_STREAMS=${NSTREAMS}
-
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart 
-            SHORTCUTS_NAMES    cuda-opt CUDA-opt
-        )
-
-        # --- CUDA-lib ---
-        compile_target(${PROJECT_NAME}_cuda_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda_lib.cu
-            COMPILE_DEFS       CUDA
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart CUDA::cublas cudnn
-            SHORTCUTS_NAMES    cuda-lib CUDA-lib
-        )
-
-
     endif()
 
     # --- HIP targets---
     if(hip_FOUND)
-        # --- HIP ---
+        # --- HIP ---²
         compile_target(${PROJECT_NAME}_hip
             BENCH_DIR          ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       hip/lib_hip.cpp 
@@ -188,15 +110,6 @@ if(NOT ANDROID)
             SHORTCUTS_NAMES     hip- HIP
         )
 
-        # --- HIP-opt ---
-        compile_target(${PROJECT_NAME}_hip_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES       hip/lib_hip_opt.cpp 
-            SET_HIP_FILES       hip/lib_hip_opt.cpp 
-            COMPILE_DEFS        HIP
-            LIBRARIES           hip::host
-            SHORTCUTS_NAMES     hip-opt HIP-opt
-        )
     endif()
 endif(NOT ANDROID)
 
@@ -207,7 +120,6 @@ endif(NOT ANDROID)
 if(ANDROID AND ANDROID_OPENCL_LIB_INC )
     add_custom_target(all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
-        ${PROJECT_NAME}_opencl_opt
     )
 endif()
 
@@ -215,7 +127,6 @@ endif()
 if(NOT ANDROID AND OpenCL_FOUND )
     add_custom_target(all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
-        ${PROJECT_NAME}_opencl_opt
     )
 endif()
 
@@ -233,7 +144,6 @@ endif()
 if(NOT ANDROID AND OpenMP_CXX_FOUND )
     add_custom_target(all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
-        ${PROJECT_NAME}_openmp_opt 
     )
 endif()
 
@@ -242,7 +152,6 @@ endif()
 if(NOT ANDROID AND hip_FOUND)
     add_custom_target(all-hip DEPENDS 
         ${PROJECT_NAME}_hip 
-        ${PROJECT_NAME}_hip_opt 
     )
 endif()
 
@@ -251,7 +160,5 @@ endif()
 if(NOT ANDROID AND CUDAToolkit_FOUND)
     add_custom_target(all-cuda DEPENDS 
         ${PROJECT_NAME}_cuda 
-        ${PROJECT_NAME}_cuda_opt 
-        ${PROJECT_NAME}_cuda_lib
     )
 endif()
