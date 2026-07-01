@@ -1,15 +1,16 @@
 cmake_minimum_required(VERSION 3.24)
-project(max_pooling CXX) 
+project(LRN CXX) # Local Response Normalization bench
 
 # ====== Include cmake module ======
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")
 include(setup)
 include(compileBlueprint)
 
-# ====== Compilation ======
+# ====== Compilation of the targets ======
 
 # --- CPU target ---
 compile_target(${PROJECT_NAME}_cpu
+    BENCH_DIR          ${CMAKE_SOURCE_DIR}
     SOURCES_FILES           cpu/lib_cpu.cpp 
     SHORTCUTS_NAMES         cpu CPU
 )
@@ -18,30 +19,30 @@ compile_target(${PROJECT_NAME}_cpu
 if(ANDROID)
 
     if(ANDROID_OPENCL_LIB_INC)
-    # --- OpenCL ---
-    compile_target(${PROJECT_NAME}_opencl
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      opencl/lib_opencl.cpp
-        COMPILE_DEFS       OPENCL
-                           CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
-                             
-        INCLUDES           ${ANDROID_INC}
-        LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-        SHORTCUTS_NAMES    cl OpenCL
-    )
-    # --- OpenCL-opt ---
-    compile_target(${PROJECT_NAME}_opencl_opt
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      opencl/lib_opencl_opt.cpp
-        COMPILE_DEFS       OPENCL   
-                           CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+        # --- OpenCL ---
+        compile_target(${PROJECT_NAME}_opencl
+            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES      opencl/lib_opencl.cpp
+            COMPILE_DEFS       OPENCL
+                            CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+                                
+            INCLUDES           ${ANDROID_INC}
+            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+            SHORTCUTS_NAMES    cl OpenCL
+        )
+        # --- OpenCL-opt ---
+        compile_target(${PROJECT_NAME}_opencl_opt
+            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES      opencl/lib_opencl_opt.cpp
+            COMPILE_DEFS       OPENCL   
+                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
 
-        INCLUDES           ${ANDROID_INC}
-        LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-        SHORTCUTS_NAMES    opencl-opt OpenCL-opt
-    )
+            INCLUDES           ${ANDROID_INC}
+            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+            SHORTCUTS_NAMES    opencl-opt OpenCL-opt
+        )
+
     endif()
-
 
     # --- OpenMP---
     compile_target(${PROJECT_NAME}_openmp
@@ -58,6 +59,7 @@ if(ANDROID)
 
     # --- OpenMP-opt ---
     compile_target(${PROJECT_NAME}_openmp_opt
+        BENCH_DIR          ${CMAKE_SOURCE_DIR}
         SOURCES_FILES      openmp/lib_omp_opt.cpp
         COMPILE_DEFS       OPENMP 
         COMPILE_OPTIONS    -fopenmp  
@@ -67,7 +69,6 @@ if(ANDROID)
 
         SHORTCUTS_NAMES    openmp-opt OpenMP-opt
     )
-
 
 endif(ANDROID)
 
@@ -96,7 +97,7 @@ if(NOT ANDROID)
             LIBRARIES          OpenCL::OpenCL
             SHORTCUTS_NAMES    opencl-opt OpenCL-opt
         )
-
+      
     endif()
 
     # --- OpenMP Targets ---
@@ -114,7 +115,7 @@ if(NOT ANDROID)
         )
 
         # --- OpenMP-opt ---
-        compile_target(${PROJECT_NAME}_openmp_opt   
+        compile_target(${PROJECT_NAME}_openmp_opt
             BENCH_DIR          ${CMAKE_SOURCE_DIR}
             SOURCES_FILES      openmp/lib_omp_opt.cpp
             COMPILE_DEFS       OPENMP
@@ -124,7 +125,7 @@ if(NOT ANDROID)
 
             SHORTCUTS_NAMES    openmp-opt OpenMP-opt 
         )
-      
+
     endif()
 
 
@@ -163,7 +164,7 @@ if(NOT ANDROID)
 
     # --- HIP targets---
     if(hip_FOUND)
-        # --- HIP ---
+        # --- HIP ---²
         compile_target(${PROJECT_NAME}_hip
             BENCH_DIR          ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       hip/lib_hip.cpp 
@@ -189,7 +190,7 @@ endif(NOT ANDROID)
 # ====== Shorcuts ======
 
 # --- all-opencl (Android) ---
-if(ANDROID AND ANDROID_OPENCL_LIB_INC)
+if(ANDROID AND ANDROID_OPENCL_LIB_INC )
     add_custom_target(all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
@@ -206,7 +207,7 @@ endif()
 
 
 # --- all-openmp (Android) ---
-if(ANDROID)
+if(ANDROID AND ANDROID_OPENBLAS_LIB_INC  )
     add_custom_target(all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
         ${PROJECT_NAME}_openmp_opt 
@@ -215,7 +216,7 @@ endif()
 
 
 # --- all-openmp---
-if(NOT ANDROID AND OpenMP_CXX_FOUND)
+if(NOT ANDROID AND OpenMP_CXX_FOUND )
     add_custom_target(all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
         ${PROJECT_NAME}_openmp_opt 
@@ -240,4 +241,3 @@ if(NOT ANDROID AND CUDAToolkit_FOUND)
         ${PROJECT_NAME}_cuda_lib
     )
 endif()
-

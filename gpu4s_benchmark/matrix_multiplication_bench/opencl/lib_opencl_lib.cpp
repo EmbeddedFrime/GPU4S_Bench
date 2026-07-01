@@ -3,16 +3,11 @@
 #include "../benchmark_library.h"
 #include <clblast.h>
 #ifdef ANDROID
-    #include <chrono>
-
-    // chrono timestamps for kernel timing (CLBlast event profiling unreliable on Android)
-    static std::chrono::high_resolution_clock::time_point kernel_start;
-    static std::chrono::high_resolution_clock::time_point kernel_end;   
+    // kernel time execution
+    Clock kernelCLK;
     // host <-> device 
-    static std::chrono::high_resolution_clock::time_point copy_h_d_start;
-    static std::chrono::high_resolution_clock::time_point copy_h_d_end;
-    static std::chrono::high_resolution_clock::time_point copy_d_h_start;
-    static std::chrono::high_resolution_clock::time_point copy_d_h_end;
+    Clock h2dCLK;
+    Clock d2hCLK;
 #endif
 
 void init(GraficObject *device_object, char* device_name){
@@ -74,7 +69,7 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h
     // copy memory host -> device
 
     #ifdef ANDROID
-        copy_h_d_start = std::chrono::high_resolution_clock::now();
+        h2dCLK.start();
     #endif
     
     // Enqueue writing host memory h_A to device buffer d_A
@@ -95,7 +90,7 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h
     
     #ifdef ANDROID
         device_object->queue->finish();
-        copy_h_d_end = std::chrono::high_resolution_clock::now();
+        h2dCLK.end();
     #endif
 }
 
@@ -112,28 +107,28 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
         #ifdef ANDROID
             // Ensure queue is idle before measuring
             device_object->queue->finish();
-            kernel_start = std::chrono::high_resolution_clock::now();
+            kernelCLK.start();
         #endif
         auto status = clblast::Gemm(clblast::Layout::kRowMajor,clblast::Transpose::kNo, clblast::Transpose::kNo, n, n, n, alpha, (*device_object->d_A)() , 0, a_ld, (*device_object->d_B)(), 0, b_ld, beta, (*device_object->d_C)(), 0, c_ld,&(*device_object->queue)(), &(*device_object->evt)());
 
         // Wait for completion before stopping the clock
         device_object->queue->finish();
         #ifdef ANDROID
-            kernel_end = std::chrono::high_resolution_clock::now();
+            kernelCLK.end();
         #endif
     #endif
 }
 
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size){
     #ifdef ANDROID
-        copy_d_h_start = std::chrono::high_resolution_clock::now();
+        d2hCLK.start();
     #endif
 
     device_object->queue->enqueueReadBuffer(*device_object->d_C,CL_TRUE,0,sizeof(bench_t)*size,h_C, NULL, device_object->evt_copyC);
 
     #ifdef ANDROID
         device_object->queue->finish();
-        copy_d_h_end = std::chrono::high_resolution_clock::now();
+        d2hCLK.end();
     #endif
 }
 
@@ -152,10 +147,10 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
     //printf("Elapsed time Device->Host: %.10f \n", );
 
     #ifdef ANDROID
-        // --- FIX: Use chrono instead of CLBlast event profiling (unreliable on Android) ---
-        elapsed_h_d = std::chrono::duration<float, std::milli>(copy_h_d_end - copy_h_d_start).count() * 1000000.0f;
-        elapsed      = std::chrono::duration<float, std::milli>(kernel_end   - kernel_start  ).count() * 1000000.0f;
-        elapsed_d_h  = std::chrono::duration<float, std::milli>(copy_d_h_end - copy_d_h_start).count() * 1000000.0f;
+        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
+        elapsed_h_d  = h2dCLK.getElapsed();
+        elapsed      = kernelCLK.getElapsed();
+        elapsed_d_h  = d2hCLK.getElapsed();
     #endif
 
 

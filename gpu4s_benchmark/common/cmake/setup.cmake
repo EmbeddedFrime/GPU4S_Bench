@@ -7,9 +7,8 @@ set(OPT_FLAG       "-O3"      CACHE STRING "Compiler optimization level : -O2, -
 set(CUDA_ARCH      "native"   CACHE STRING "API CUDA version: native, sm_72-86")
 set(BLA_VENDOR     "OpenBLAS" CACHE STRING "BLAS lib : ATLAS, OpenBLAS")
 
-
+string(ASCII 27 Esc)
 if(NOT BLOCKSIZE)
-    string(ASCII 27 Esc)
     message(STATUS "${Esc}[1;34mNote: BLOCKSIZE is empty. Fallback to default: 16${Esc}[0m")
     set(BLOCKSIZE       16        CACHE STRING "Block size for tiled kernels")
 endif()

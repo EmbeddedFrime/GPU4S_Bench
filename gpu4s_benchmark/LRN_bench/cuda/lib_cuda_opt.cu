@@ -9,7 +9,7 @@
  */
 //#define BLOCK_SIZE 1024
 __global__ void
-relu_kernel(const bench_t *A, bench_t *B, const int size)
+lrn_kernel(const bench_t *A, bench_t *B, const int size)
 {
     unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i  < (size * size)){
@@ -88,7 +88,7 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
     dim3 dimBlock(BLOCK_SIZE);
     dim3 dimGrid(ceil(float((n*n))/(dimBlock.x)));
     cudaEventRecord(*device_object->start);
-    relu_kernel<<<dimGrid, dimBlock>>>(device_object->d_A, device_object->d_B, n);
+    lrn_kernel<<<dimGrid, dimBlock>>>(device_object->d_A, device_object->d_B, n);
     cudaEventRecord(*device_object->stop);
 }
 

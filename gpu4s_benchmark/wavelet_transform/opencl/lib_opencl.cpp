@@ -142,18 +142,20 @@ void execute_kernel(GraficObject *device_object, unsigned int n){
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device_object->default_device)<<"\n";
         exit(1);
     }
+
+    #ifdef ANDROID
+            device_object->queue->finish(); // Clear queue to ensure accurate start
+            kernelCLK.start();
+    #endif
+
     #ifdef INT
+
         device_object->evt_int = new cl::Event;
         cl::Kernel kernel_wave=cl::Kernel(program,"wavelet_transform");
         
         kernel_wave.setArg(0,*device_object->d_A);
         kernel_wave.setArg(1,*device_object->d_B);
         kernel_wave.setArg(2,n);
-
-        #ifdef ANDROID
-            device_object->queue->finish(); // Clear queue to ensure accurate start
-            kernelCLK.start();
-        #endif
 
         device_object->queue->enqueueNDRangeKernel(kernel_wave,cl::NullRange,global,local, NULL, device_object->evt);
 
@@ -164,10 +166,8 @@ void execute_kernel(GraficObject *device_object, unsigned int n){
         device_object->queue->enqueueNDRangeKernel(kernel_wave_low,cl::NullRange,global,local, NULL, device_object->evt_int);
         device_object->queue->finish();
 
-        #ifdef ANDROID
-            kernelCLK.end();
-        #endif    
     #else
+
         cl::Kernel kernel_wave=cl::Kernel(program,"wavelet_transform");
         kernel_wave.setArg(0,*device_object->d_A);
         kernel_wave.setArg(1,*device_object->d_B);
@@ -175,18 +175,14 @@ void execute_kernel(GraficObject *device_object, unsigned int n){
         kernel_wave.setArg(3,*device_object->low_filter);
         kernel_wave.setArg(4,*device_object->high_filter);
 
-        #ifdef ANDROID
-            device_object->queue->finish(); // Clear queue to ensure accurate start
-            kernelCLK.start();
-        #endif
-
-
         device_object->queue->enqueueNDRangeKernel(kernel_wave,cl::NullRange,global,local, NULL, device_object->evt);
         device_object->queue->finish();
 
-        #ifdef ANDROID
+        
+    #endif
+
+    #ifdef ANDROID
             kernelCLK.end();
-        #endif
     #endif
 }
 
@@ -218,7 +214,7 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
     elapsed_d_h = device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Device->Host: %.10f \n", );
 
-     #ifdef ANDROID
+    #ifdef ANDROID
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
         elapsed_h_d  = h2dCLK.getElapsed();
         elapsed      = kernelCLK.getElapsed();

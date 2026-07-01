@@ -311,7 +311,7 @@ for some benchmark you will need to install cudnn the link : https://developer.n
 
 ![alt text](image.png)
 
-for b in ./build/bin/*; do if [ -x "$b" ]; then name="${b##*/}"; echo -e "\n=== Running $name ==="; "$b" -s 2048  -t -v; fi; done
+for b in ./build/bin/*; do if [ -x "$b" ]; then name="${b##*/}"; echo -e "\n=== Running $name ==="; "$b" -s 2048  -t ; fi; done
 
 
 adb shell 'for b in /data/local/tmp/convolution*; do [ -x "$b" ] || continue; name="${b##*/}"; echo "\n=== Running $name ==="; "$b" -s 2048 -t -v; done'

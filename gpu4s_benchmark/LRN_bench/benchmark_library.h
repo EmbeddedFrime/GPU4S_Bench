@@ -26,7 +26,8 @@ const double BETA = 0.75;
 #include <cuda_runtime.h>
 #elif OPENCL
 // OpenCL lib
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
+// #include <CL/cl.hpp>
 #elif OPENMP
 // OpenMP lib
 #include <omp.h>
