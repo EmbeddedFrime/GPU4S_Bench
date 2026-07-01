@@ -1,6 +1,6 @@
 #include <time.h>
 #include "benchmark_library.h"
-#include "cpu/lib_cpu.h"
+#include "cpu_functions/cpu_functions.h"
 #include <sys/time.h>
 
 #define NUMBER_BASE 1

@@ -1,4 +1,4 @@
-#include "lib_cpu.h"
+#include "cpu_functions.h"
 
 void matrix_multiplication(const bench_t* A, const bench_t* B, bench_t* C,const unsigned int n, const unsigned int m, const unsigned int w ){
 	for (unsigned int i = 0; i < n; ++i)
