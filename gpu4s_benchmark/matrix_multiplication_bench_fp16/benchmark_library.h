@@ -14,6 +14,9 @@ static const std::string type_kernel = "typedef int bench_t;\n";
 	typedef float bench_t;
 	#ifdef OPENCL
 		// OpenCL lib
+		static const std::string type_kernel = 
+			"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
+			"typedef half bench_t_gpu;\n";
 	#else
 		// CUDA lib
 		#include <cuda_fp16.h>

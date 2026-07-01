@@ -10,6 +10,24 @@
 #ifndef BLOCK_SIZE
     #define BLOCK_SIZE 16  //default value
 #endif
+
+#ifdef FLOAT16
+__global__ void convert_fp32_to_f16 (bench_t *in, bench_t_gpu *out, int size) {
+    int idx = blockDim.x * blockIdx.x + threadIdx.x;
+    if (idx < size) {
+       out[idx] = in[idx];
+    }
+ }
+
+
+ __global__ void convert_fp16_to_f32 (bench_t_gpu *in, bench_t *out, int size) {
+    int idx = blockDim.x * blockIdx.x + threadIdx.x;
+    if (idx < size) {
+       out[idx] = in[idx];
+    }
+ }
+ #endif
+
 __global__ void
 matrix_multiplication_kernel(const bench_t_gpu *A,const bench_t_gpu *B,  bench_t_gpu *C, const int n, const int m, const int w)
 {
@@ -55,29 +73,30 @@ void init(GraficObject *device_object, int platform ,int device, char* device_na
 bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix){
    
    // Allocate the device input vector A
-	cudaError_t err = cudaSuccess;
-    err = cudaMalloc((void **)&device_object->d_A, size_a_matrix * sizeof(bench_t_gpu));
-
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    cudaError_t err = cudaMalloc((void **)&device_object->d_A, size_a_matrix * sizeof(bench_t_gpu));
+    if (err != cudaSuccess)  return false;
 
     // Allocate the device input vector B
     err = cudaMalloc((void **)&device_object->d_B, size_b_matrix * sizeof(bench_t_gpu));
-
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    if (err != cudaSuccess)  return false;
 
     // Allocate the device output vector C
     err = cudaMalloc((void **)&device_object->d_C, size_c_matrix * sizeof(bench_t_gpu));
+    if (err != cudaSuccess)  return false;
 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+
+    #ifdef FLOAT16
+        err = cudaMalloc((void **)&device_object->d_half_A, size_a_matrix * sizeof(bench_t_gpu));
+        if (err != cudaSuccess) return false;
+
+        err = cudaMalloc((void **)&device_object->d_half_B, size_b_matrix * sizeof(bench_t_gpu));
+        if (err != cudaSuccess) return false;
+        
+        err = cudaMalloc((void **)&device_object->d_half_C, size_c_matrix * sizeof(bench_t_gpu));
+        if (err != cudaSuccess) return false;
+    #endif
+
+
     return true;
 }
 
@@ -89,12 +108,23 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h
         fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
     err = cudaMemcpy(device_object->d_B, h_B, sizeof(bench_t_gpu) * size_b, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to copy vector B from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
+    #ifdef FLOAT16
+        dim3 dimBlock(BLOCK_SIZE);
+        dim3 dimGridA(ceil(float((size_a))/(dimBlock.x)));
+        convert_fp32_to_f16<<<dimGridA, dimBlock>>> (device_object->d_A, device_object->d_half_A, size_a);
+        
+        dim3 dimGridB(ceil(float((size_b))/(dimBlock.x)));
+        convert_fp32_to_f16<<<dimGridB, dimBlock>>> (device_object->d_B, device_object->d_half_B, size_b);
+    #endif
+
     cudaEventRecord(*device_object->stop_memory_copy_device);
     
 }
@@ -102,12 +132,24 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
     dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
     dim3 dimGrid(ceil(float(n)/dimBlock.x), ceil(float(m)/dimBlock.y));
     cudaEventRecord(*device_object->start);
-    matrix_multiplication_kernel<<<dimGrid, dimBlock>>>(device_object->d_A, device_object->d_B, device_object->d_C, n, m, w);
-    cudaEventRecord(*device_object->stop);
+
+    #ifdef FLOAT16
+        matrix_multiplication_kernel<<<dimGrid, dimBlock>>>(device_object->d_half_A, device_object->d_half_B, device_object->d_half_C, n, m, w);
+    #else
+        matrix_multiplication_kernel<<<dimGrid, dimBlock>>>(device_object->d_A, device_object->d_B, device_object->d_C, n, m, w);
+    #endif
+        cudaEventRecord(*device_object->stop);
 }
 
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size){
     cudaEventRecord(*device_object->start_memory_copy_host);
+
+    #ifdef FLOAT16
+        dim3 dimBlock(BLOCK_SIZE);
+        dim3 dimGrid(ceil(float((size))/(dimBlock.x)));
+        convert_fp16_to_f32<<<dimGrid, dimBlock>>> (device_object->d_half_C, device_object->d_C, size);
+    #endif
+
     cudaMemcpy(h_C, device_object->d_C, size * sizeof(bench_t_gpu), cudaMemcpyDeviceToHost);
     cudaEventRecord(*device_object->stop_memory_copy_host);
 }
@@ -156,6 +198,13 @@ void clean(GraficObject *device_object){
         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
+
+    #ifdef FLOAT16
+        cudaFree(device_object->d_half_A);
+        cudaFree(device_object->d_half_B);
+        cudaFree(device_object->d_half_C);
+    #endif
 
 
     // delete events

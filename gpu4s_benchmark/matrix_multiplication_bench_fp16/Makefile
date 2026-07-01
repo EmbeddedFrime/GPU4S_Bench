@@ -27,8 +27,8 @@ DATAPYPEGPU = -DFLOAT16
 CUFOLDER = ./cuda/
 # OPENCL FOLDER
 OPFOLDER = ./opencl/
-# CPU FOLDER
-CPUFOLDER = ./cpu/
+# CPU FUNCTIONS FOLDER
+CPUFOLDER = ./cpu_functions/
 # OUTPUT FOLDER
 OUTPUTFOLDER = ./bin/
 
@@ -57,8 +57,8 @@ OpenCL-opt: opencl-lib
 CUDA-opt: cuda-lib
 # End Shortcuts
 # CPU part
-lib_cpu.o: $(CPUFOLDER)lib_cpu.cpp
-	$(CC) $(ENDIANFLAGS) $(DATAPYPE) -c $(CPUFOLDER)lib_cpu.cpp -o $(CPUFOLDER)lib_cpu.o $(CFLAGS) $(CUFLAGS)
+cpu_functions.o: $(CPUFOLDER)cpu_functions.cpp
+	$(CC) $(ENDIANFLAGS) $(DATAPYPE) -c $(CPUFOLDER)cpu_functions.cpp -o $(CPUFOLDER)cpu_functions.o $(CFLAGS) $(CUFLAGS)
 # End CPU 
 
 # CUDA part
@@ -69,9 +69,9 @@ lib_cuda.o: $(CUFOLDER)lib_cuda.cu
 	$(NVCC) $(DATAPYPE)  -c $(CUFOLDER)lib_cuda.cu -o $(CUFOLDER)lib_cuda.o $(NVCCFLAGS) 
 
 
-main_cuda: main.cpp lib_cuda.o lib_cpu.o
+main_cuda: main.cpp lib_cuda.o cpu_functions.o
 	mkdir -p $(OUTPUTFOLDER)
-	$(CC) $(DATAPYPE) $(DATAPYPEGPU) main.cpp $(CUFOLDER)lib_cuda.o $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_cuda $(CUFLAGS) $(CFLAGS) -lstdc++
+	$(CC) $(DATAPYPE) $(DATAPYPEGPU) main.cpp $(CUFOLDER)lib_cuda.o $(CPUFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_cuda $(CUFLAGS) $(CFLAGS) -lstdc++
 # End CUDA
 
 # OpenCL Part
@@ -80,9 +80,9 @@ opencl:  main_opencl
 lib_opencl.o: $(OPFOLDER)lib_opencl.cpp 
 	$(CC) $(DATAPYPE) -DOPENCL -c $(OPFOLDER)lib_opencl.cpp -o $(OPFOLDER)lib_opencl.o $(CFLAGS) $(OPFLAGS)
 
-main_opencl: main.cpp lib_opencl.o lib_cpu.o
+main_opencl: main.cpp lib_opencl.o cpu_functions.o
 	mkdir -p $(OUTPUTFOLDER) 
-	$(CC) $(DATAPYPE) -DOPENCL main.cpp $(OPFOLDER)lib_opencl.o  $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_opencl $(CFLAGS) $(OPFLAGS) 
+	$(CC) $(DATAPYPE) -DOPENCL main.cpp $(OPFOLDER)lib_opencl.o  $(CPUFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_opencl $(CFLAGS) $(OPFLAGS) 
 
 # End OpenCL
 
@@ -94,9 +94,9 @@ lib_cuda_opt.o: $(CUFOLDER)lib_cuda_opt.cu
 	$(NVCC) $(DATAPYPE) $(DATAPYPEGPU) -c $(CUFOLDER)lib_cuda_opt.cu -o $(CUFOLDER)lib_cuda_opt.o $(NVCCFLAGS)
 
 
-main_cuda_opt: main.cpp lib_cuda_opt.o lib_cpu.o
+main_cuda_opt: main.cpp lib_cuda_opt.o cpu_functions.o
 	mkdir -p $(OUTPUTFOLDER)
-	$(CC) $(DATAPYPE) $(DATAPYPEGPU) main.cpp $(CUFOLDER)lib_cuda_opt.o $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_cuda_opt $(CUFLAGS) $(CFLAGS) -lstdc++
+	$(CC) $(DATAPYPE) $(DATAPYPEGPU) main.cpp $(CUFOLDER)lib_cuda_opt.o $(CPUFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_cuda_opt $(CUFLAGS) $(CFLAGS) -lstdc++
 
 # End CUDA optimized
 
@@ -106,9 +106,9 @@ opencl-opt:  main_opencl_opt
 lib_opencl_opt.o: $(OPFOLDER)lib_opencl_opt.cpp 
 	$(CC) $(DATAPYPE) -DOPENCL -c $(OPFOLDER)lib_opencl_opt.cpp -o $(OPFOLDER)lib_opencl_opt.o $(CFLAGS) $(OPFLAGS)
 
-main_opencl_opt: main.cpp lib_opencl_opt.o lib_cpu.o
+main_opencl_opt: main.cpp lib_opencl_opt.o cpu_functions.o
 	mkdir -p $(OUTPUTFOLDER) 
-	$(CC) $(DATAPYPE)  -DOPENCL main.cpp $(OPFOLDER)lib_opencl_opt.o  $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_opencl_opt $(CFLAGS) $(OPFLAGS) 
+	$(CC) $(DATAPYPE)  -DOPENCL main.cpp $(OPFOLDER)lib_opencl_opt.o  $(CPUFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_opencl_opt $(CFLAGS) $(OPFLAGS) 
 
 # End OpenCL optimized
 
@@ -120,9 +120,9 @@ lib_cuda_lib.o: $(CUFOLDER)lib_cuda_lib.cu
 	$(NVCC) $(DATAPYPE) $(DATAPYPEGPU) -c $(CUFOLDER)lib_cuda_lib.cu -o $(CUFOLDER)lib_cuda_lib.o $(NVCCFLAGS) 
 
 
-main_cuda_lib: main.cpp lib_cuda_lib.o lib_cpu.o
+main_cuda_lib: main.cpp lib_cuda_lib.o cpu_functions.o
 	mkdir -p $(OUTPUTFOLDER)
-	$(CC) $(DATAPYPE) $(DATAPYPEGPU) main.cpp $(CUFOLDER)lib_cuda_lib.o $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_cuda_lib $(CUFLAGS) $(CFLAGS) -lstdc++ -lcublas
+	$(CC) $(DATAPYPE) $(DATAPYPEGPU) main.cpp $(CUFOLDER)lib_cuda_lib.o $(CPUFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_cuda_lib $(CUFLAGS) $(CFLAGS) -lstdc++ -lcublas
 
 # End CUDA library
 
@@ -132,9 +132,9 @@ opencl-lib:  main_opencl_lib
 lib_opencl_lib.o: $(OPFOLDER)lib_opencl_lib.cpp 
 	$(CC) $(DATAPYPE) -DOPENCL -c $(OPFOLDER)lib_opencl_lib.cpp -o $(OPFOLDER)lib_opencl_lib.o $(CFLAGS) $(OPFLAGS) -I/home/irodrig/clBlast/include/ -L/home/irodrig/clBlast/lib/ -lclblast
 
-main_opencl_lib: main.cpp lib_opencl_lib.o lib_cpu.o
+main_opencl_lib: main.cpp lib_opencl_lib.o cpu_functions.o
 	mkdir -p $(OUTPUTFOLDER) 
-	$(CC) $(DATAPYPE) -DOPENCL main.cpp $(OPFOLDER)lib_opencl_lib.o  $(CPUFOLDER)lib_cpu.o -o $(OUTPUTFOLDER)$(TARGET)_opencl_lib $(CFLAGS) $(OPFLAGS)  -I/home/irodrig/clBlast/include/ -L/home/irodrig/clBlast/lib/ -lclblast
+	$(CC) $(DATAPYPE) -DOPENCL main.cpp $(OPFOLDER)lib_opencl_lib.o  $(CPUFOLDER)cpu_functions.o -o $(OUTPUTFOLDER)$(TARGET)_opencl_lib $(CFLAGS) $(OPFLAGS)  -I/home/irodrig/clBlast/include/ -L/home/irodrig/clBlast/lib/ -lclblast
 
 # End OpenCL library
 
@@ -153,4 +153,3 @@ clean:
 	rm -rf $(OUTPUTFOLDER)$(TARGET)_cuda_opt
 	rm -rf build/
 	rm -rf build-android/
-

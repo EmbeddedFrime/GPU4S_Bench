@@ -1,7 +1,9 @@
 #include <cublas_v2.h>
 #include "../benchmark_library.h"
 
-#define BLOCK_SIZE 16
+#ifndef BLOCK_SIZE
+    #define BLOCK_SIZE 16
+#endif
 
 #ifdef FLOAT16
 __global__ void convert_fp32_to_f16 (bench_t *in, bench_t_gpu *out, int size) {
@@ -100,6 +102,8 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
         }
         return true;
     #endif
+
+    return true;
 }
 
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h_B, unsigned int size_a, unsigned int size_b){
@@ -110,7 +114,7 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h
         fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaMemcpy(device_object->d_B, h_B, sizeof(bench_t) * size_b, cudaMemcpyHostToDevice);
+    err = cudaMemcpy(device_object->d_B, h_B, sizeof(bench_t_gpu) * size_b, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to copy vector B from host to device (error code %s)!\n", cudaGetErrorString(err));
@@ -130,10 +134,10 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h
 void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,unsigned int w){
     // cublas settings
     int lda=m,ldb=m,ldc=m;
-    const __half alf = 1;
-    const __half bet = 0;
-    const __half *alpha = &alf;
-    const __half *beta = &bet;
+    const bench_t_gpu alf = 1;
+    const bench_t_gpu bet = 0;
+    const bench_t_gpu *alpha = &alf;
+    const bench_t_gpu *beta = &bet;
     cublasHandle_t handle;
     cublasCreate(&handle);
     cudaEventRecord(*device_object->start);
@@ -141,10 +145,13 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
     #ifdef INT
     printf("CUBLAS NOT SUPPORT INT OPERATIOS\n");
     #elif FLOAT16
+        printf("FLOAT16\n");
         cublasHgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, w, alpha, device_object->d_half_B, lda, device_object->d_half_A, ldb, beta, device_object->d_half_C, ldc);
-    #elif FLOAT                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+    #elif FLOAT 
+        printf("FLOAT\n");                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
         cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, w, alpha, device_object->d_B, lda, device_object->d_A, ldb, beta, device_object->d_C, ldc);
     #else // DOUBLE
+        printf("DOUBLE\n");
         cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, w, alpha, device_object->d_B, lda, device_object->d_A, ldb, beta, device_object->d_C, ldc);
     #endif
     
