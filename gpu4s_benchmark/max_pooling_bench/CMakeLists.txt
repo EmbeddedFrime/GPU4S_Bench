@@ -10,6 +10,7 @@ include(compileBlueprint)
 
 # --- CPU target ---
 compile_target(${PROJECT_NAME}_cpu
+    BENCH_DIR               ${CMAKE_SOURCE_DIR}
     SOURCES_FILES           cpu/lib_cpu.cpp 
     SHORTCUTS_NAMES         cpu CPU
 )
@@ -58,6 +59,7 @@ if(ANDROID)
 
     # --- OpenMP-opt ---
     compile_target(${PROJECT_NAME}_openmp_opt
+        BENCH_DIR          ${CMAKE_SOURCE_DIR}
         SOURCES_FILES      openmp/lib_omp_opt.cpp
         COMPILE_DEFS       OPENMP 
         COMPILE_OPTIONS    -fopenmp  
