@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "shared_variables.h"
+#include "benchmark_common.h"
 
 #ifdef OPENCL
 // OpenCL lib
@@ -56,30 +57,6 @@ struct GraficObject{
 	float elapsed_time;
 };
 
-#ifdef ANDROID
-	#include <chrono>
-
-	//Create an class for a shorter call
-    // chrono timestamps for kernel timing (CLBlast event profiling unreliable on Android)
-	class Clock
-	{
-	private:
-		std::chrono::high_resolution_clock::time_point _timePointA, _timePointB;
-	public:
-		
-		void start(){
-			_timePointA = std::chrono::high_resolution_clock::now();
-		}
-
-		void end(){
-			_timePointB = std::chrono::high_resolution_clock::now();
-		}
-
-		float getElapsed(){
-			return std::chrono::duration<float, std::milli>(_timePointB - _timePointA).count() * 1000000.0f;
-		}
-	};
-#endif
 
 void init(GraficObject *device_object, char* device_name);
 void init(GraficObject *device_object, int platform, int device, char* device_name);

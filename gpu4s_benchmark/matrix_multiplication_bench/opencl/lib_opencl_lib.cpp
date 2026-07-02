@@ -109,6 +109,7 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
             device_object->queue->finish();
             kernelCLK.start();
         #endif
+        
         auto status = clblast::Gemm(clblast::Layout::kRowMajor,clblast::Transpose::kNo, clblast::Transpose::kNo, n, n, n, alpha, (*device_object->d_A)() , 0, a_ld, (*device_object->d_B)(), 0, b_ld, beta, (*device_object->d_C)(), 0, c_ld,&(*device_object->queue)(), &(*device_object->evt)());
 
         // Wait for completion before stopping the clock

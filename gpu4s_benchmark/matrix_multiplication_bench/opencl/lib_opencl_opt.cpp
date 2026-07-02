@@ -110,6 +110,11 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device_object->default_device)<<"\n";
         exit(1);
     }
+    #ifdef ANDROID
+        device_object->queue->finish();
+        kernelCLK.start();
+    #endif
+
     cl::Kernel kernel_add=cl::Kernel(program,"kernel_matrix_multiplication");
     kernel_add.setArg(0,*device_object->d_A);
     kernel_add.setArg(1,*device_object->d_B);
