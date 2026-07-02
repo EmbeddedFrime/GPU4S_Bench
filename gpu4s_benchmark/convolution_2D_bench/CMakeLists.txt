@@ -1,14 +1,25 @@
+# =======================================================================
+# File:         CMakeLists.txt (./convolution_2D_bench)
+# Description:  Build targets for 2D Convolution benchmark
+# Target:       CPU, OpenMP, OpenCL, CUDA, HIP
+# License:      ESA-PL Strong Copyleft – v2.5
+# =======================================================================
+
 cmake_minimum_required(VERSION 3.24)
 project(convolution_2D CXX) 
 
 # ====== Include cmake module ======
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")
+list(APPEND CMAKE_MODULE_PATH 
+    "${CMAKE_SOURCE_DIR}/../common/cmake/"
+    "${CMAKE_SOURCE_DIR}/../common/cmake/module"
+)
+# Global:
 include(setup)
 include(compileBlueprint)
-
-# --- Project Variable ---
-set(NSTREAMS     "2" CACHE STRING "")
-
+# Module:
+include(findOpenMP)
+include(findHIP)
+include(findOpenBLAS)
 
 # ====== Compilation of the targets ======
 

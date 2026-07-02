@@ -1,6 +1,30 @@
-# ====== Blueprint function ======
-#     Compile all the targets
-# ===============================
+# =======================================================================
+# File:         compileBlueprint.cmake
+# Description:  Defines compile_target() function used by all
+#               benchmark CMakeLists.txt to build targets
+# License:      ESA-PL Strong Copyleft – v2.5
+# =======================================================================
+
+# =======================================================================
+# compile_target() — Main build function for benchmark targets
+#
+# Usage:
+#  compile_target(<TARGET_NAME>
+#      BENCH_DIR        <path>          # Root directory of the benchmark
+#      SOURCES_FILES    <files...>      # Backend source files (opencl, cuda, hip, omp...)
+#      SET_HIP_FILES    <files...>      # Files to explicitly set as HIP language
+#      COMPILE_DEFS     <defs...>       # Compiler definitions (e.g. OPENCL, CUDA, FLOAT)
+#      COMPILE_OPTIONS  <flags...>      # Extra compiler flags (e.g. -fopenmp)
+#      SET_CUDA         <0|1>           # Enable CUDA architecture property
+#      INCLUDES         <dirs...>       # Additional include directories
+#      LIBRARIES        <libs...>       # Libraries to link against
+#      SHORTCUTS_NAMES  <names...>      # Custom shortcut target aliases
+#  )
+#
+# Notes:
+#   - Always compiles main.cpp and cpu_functions/cpu_functions.cpp
+#   - DATATYPE, BLOCKSIZE, ENDIANFLAGS and CUDA_ARCH are global variables set in setup.cmake
+# =======================================================================
 function(compile_target TARGET_NAME)
 
 # Parse arguments
@@ -28,7 +52,7 @@ cmake_parse_arguments(ARG "" "${singleArgs}" "${multipleArgs}" ${ARGN})
         endforeach()
     endif()
 
-    # --- Add compile define option ---
+    # --- Add compile define ---
     target_compile_definitions(${TARGET_NAME} PRIVATE
         ${DATATYPE}
         BLOCK_SIZE=${BLOCKSIZE}

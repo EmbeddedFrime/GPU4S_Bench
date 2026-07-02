@@ -1,10 +1,24 @@
+# =======================================================================
+# File:         CMakeLists.txt (./max_pooling_bench)
+# Description:  Build targets for Max Pooling benchmark
+# Target:       CPU, OpenMP, OpenCL, CUDA, HIP
+# License:      ESA-PL Strong Copyleft – v2.5
+# =======================================================================
+
 cmake_minimum_required(VERSION 3.24)
 project(max_pooling CXX) 
 
 # ====== Include cmake module ======
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")
+list(APPEND CMAKE_MODULE_PATH 
+    "${CMAKE_SOURCE_DIR}/../common/cmake/"
+    "${CMAKE_SOURCE_DIR}/../common/cmake/module"
+)
+# Global:
 include(setup)
 include(compileBlueprint)
+# Module:
+include(findOpenMP)
+include(findHIP)
 
 # ====== Compilation ======
 

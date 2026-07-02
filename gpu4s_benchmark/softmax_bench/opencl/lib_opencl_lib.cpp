@@ -117,23 +117,26 @@ void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m,
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device_object->default_device)<<"\n";
         exit(1);
     }
+
+     #ifdef ANDROID
+        device_object->queue->finish();
+        kernelCLK.start();
+    #endif
+
     cl::Kernel softmax_kernel=cl::Kernel(program,"kernel_softmax");
     softmax_kernel.setArg(0,*device_object->d_A);
     softmax_kernel.setArg(1,*device_object->d_B);
     softmax_kernel.setArg(2,*device_object->sum_d_B);
     softmax_kernel.setArg(3,n);
 
+    device_object->queue->enqueueNDRangeKernel(softmax_kernel,cl::NullRange,global,local, NULL, device_object->evt);
+
+
     cl::Kernel softmax_end_kernel=cl::Kernel(program,"kernel_softmax_end");
     softmax_end_kernel.setArg(0,*device_object->d_B);
     softmax_end_kernel.setArg(1,*device_object->sum_d_B);
     softmax_end_kernel.setArg(2,n);
 
-    #ifdef ANDROID
-        device_object->queue->finish();
-        kernelCLK.start();
-    #endif
-
-    device_object->queue->enqueueNDRangeKernel(softmax_kernel,cl::NullRange,global,local, NULL, device_object->evt);
     device_object->queue->enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, device_object->evt_complemet);
     device_object->queue->finish();
 
@@ -160,9 +163,11 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
     float elapsed_h_d = 0, elapsed = 0, elapsed_d_h = 0;
     elapsed_h_d = device_object->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
+    
     elapsed = device_object->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     elapsed += device_object->evt_complemet->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_complemet->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
+
     elapsed_d_h = device_object->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - device_object->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Device->Host: %.10f \n", );
 

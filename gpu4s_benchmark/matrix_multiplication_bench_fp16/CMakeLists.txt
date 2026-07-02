@@ -1,17 +1,23 @@
+# =======================================================================
+# File:         CMakeLists.txt (./matrix_multiplication_bench_fp16)
+# Description:  Build targets for Matrix Multiplication FP16 benchmark
+# Target:       OpenCL, CUDA
+# License:      ESA-PL Strong Copyleft – v2.5
+# =======================================================================
+
 cmake_minimum_required(VERSION 3.24)
 project(matrix_mult_fp16 CXX) 
 
 # ====== Include cmake module ======
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")
+list(APPEND CMAKE_MODULE_PATH 
+    "${CMAKE_SOURCE_DIR}/../common/cmake/"
+    "${CMAKE_SOURCE_DIR}/../common/cmake/module"
+)
+# Global:
 include(setup)
 include(compileBlueprint)
-
-# --- Local Variable ---
-string(ASCII 27 Esc)
-if(NOT DATATYPEGPU)
-    message(STATUS "${Esc}[1;34mNote: DATATYPEGPU is empty. Fallback to default: FLOAT16${Esc}[0m")
-    set(DATATYPEGPU       "FLOAT16"    CACHE STRING "Data type: FLOAT, FLOAT16, INT, DOUBLE")
-endif()
+# Module:
+include(findCLBlast)
 
 # ====== Compilation ======
 

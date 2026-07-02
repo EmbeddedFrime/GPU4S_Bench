@@ -1,10 +1,25 @@
+# =======================================================================
+# File:         CMakeLists.txt (./fast_fourier_transform_window_bench)
+# Description:  Build targets for Fast Fourier Transform Window benchmark
+# Target:       CPU, OpenMP, OpenCL, CUDA, HIP
+# License:      ESA-PL Strong Copyleft – v2.5
+# =======================================================================
+
 cmake_minimum_required(VERSION 3.24)
 project(FFT_window CXX) 
 
 # ====== Include cmake module ======
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")
+list(APPEND CMAKE_MODULE_PATH 
+    "${CMAKE_SOURCE_DIR}/../common/cmake/"
+    "${CMAKE_SOURCE_DIR}/../common/cmake/module"
+)
+# Global:
 include(setup)
 include(compileBlueprint)
+# Module:
+include(findOpenMP)
+include(findHIP)
+include(findOpenBLAS)
 
 # ====== Compilation of the targets ======
 

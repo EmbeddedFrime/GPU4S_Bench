@@ -1,10 +1,23 @@
+# =======================================================================
+# File:         CMakeLists.txt (./matrix_multiplication_tensor_bench)
+# Description:  Build targets for Matrix Multiplication Tensor benchmark
+# Target:       OpenCL, CUDA
+# License:      ESA-PL Strong Copyleft – v2.5
+# =======================================================================
+
 cmake_minimum_required(VERSION 3.24)
 project(matrix_mult_tensor CXX) 
 
 # ====== Include cmake module ======
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")
+list(APPEND CMAKE_MODULE_PATH 
+    "${CMAKE_SOURCE_DIR}/../common/cmake/"
+    "${CMAKE_SOURCE_DIR}/../common/cmake/module"
+)
+# Global:
 include(setup)
 include(compileBlueprint)
+# Module:
+include(findCLBlast)
 
 # ====== Compilation ======
 

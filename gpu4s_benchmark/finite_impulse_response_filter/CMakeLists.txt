@@ -1,10 +1,25 @@
+# =======================================================================
+# File:         CMakeLists.txt (./finite_impulse_response_filter)
+# Description:  Build targets for Finite Impulse Response Filter benchmark
+# Target:       CPU, OpenMP, OpenCL, CUDA, HIP
+# License:      ESA-PL Strong Copyleft – v2.5
+# =======================================================================
+
 cmake_minimum_required(VERSION 3.24)
 project(FIR_filter CXX) 
 
 # ====== Include cmake module ======
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../common/cmake/")
+list(APPEND CMAKE_MODULE_PATH 
+    "${CMAKE_SOURCE_DIR}/../common/cmake/"
+    "${CMAKE_SOURCE_DIR}/../common/cmake/module"
+)
+# Global:
 include(setup)
 include(compileBlueprint)
+# Module:
+include(findOpenMP)
+include(findHIP)
+include(findOpenBLAS)
 
 # ====== Compilation of the targets ======
 
