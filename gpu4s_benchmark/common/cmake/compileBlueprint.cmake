@@ -71,9 +71,10 @@ cmake_parse_arguments(ARG "" "${singleArgs}" "${multipleArgs}" ${ARGN})
     endif()
     
     # --- Includes header directories ---
-    if(ARG_INCLUDES)
-        target_include_directories(${TARGET_NAME} PRIVATE ${ARG_INCLUDES})
-    endif()
+    target_include_directories(${TARGET_NAME} PRIVATE 
+        ${ARG_INCLUDES}
+        "${CMAKE_CURRENT_LIST_DIR}/../"
+    )
     
     # --- Link required libraries ---
     if(ARG_LIBRARIES)
