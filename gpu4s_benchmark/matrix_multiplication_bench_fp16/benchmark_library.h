@@ -1,9 +1,15 @@
+/** * ====================================================================
+ * @file        benchmark_library.h (./matrix_multiplication_bench_fp16)
+ * @brief       Specific memory structures and function overloads 
+ *              for the Matrix Multiplication FP16 benchmark.
+ * @paragraph   License
+ * ESA-PL Strong Copyleft – v2.5
+ * ======================================================================= */
 #ifndef BENCHMARK_H
 #define BENCHMARK_H
 
 // Include all the benchmark common variable, struct, prototype, lib
 #include "benchmark_common.h"
-
 
 // ======= Benchmark local variable =======
 // --- Core Data Types ---
@@ -36,9 +42,6 @@
     #endif
 #endif
 
-
-
-
 struct GraficObject{
 	#ifdef CUDA
 		// CUDA PART
@@ -63,11 +66,10 @@ struct GraficObject{
 
 };
 
-
+// --- Specefic overload of benchmarking function ---
 bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix);
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h_B, unsigned int size_a, unsigned int size_b);
 void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m, unsigned int w);
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size);
-
 
 #endif

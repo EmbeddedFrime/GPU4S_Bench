@@ -35,10 +35,13 @@
 // ======= Commmon variable =======
 // --- Core Data Types ---
 #ifdef INT
+	#define __ptype "%d"
     typedef int bench_t;
 #elif FLOAT
+	#define __ptype "%f"
     typedef float bench_t;
 #elif DOUBLE
+	#define __ptype "%f"
     typedef double bench_t;
 #endif
 

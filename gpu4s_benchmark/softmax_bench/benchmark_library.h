@@ -1,8 +1,10 @@
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string>
-
+/** * ====================================================================
+ * @file        benchmark_library.h (./softmax_bench)
+ * @brief       Specific memory structures and function overloads 
+ *              for the Softmax benchmark.
+ * @paragraph   License
+ * ESA-PL Strong Copyleft – v2.5
+ * ======================================================================= */
 
 #ifdef INT
 typedef int bench_t;
@@ -49,6 +51,8 @@ static const std::string type_kernel = "#pragma OPENCL EXTENSION cl_khr_fp64 : e
 #ifndef BENCHMARK_H
 #define BENCHMARK_H
 
+// Include all the benchmark common variable, struct, prototype, lib
+#include "benchmark_common.h"
 struct GraficObject{
 	#ifdef CUDA
 	// CUDA PART
@@ -96,40 +100,8 @@ struct GraficObject{
 	#endif
 	float elapsed_time;
 };
-
-#ifdef ANDROID
-	#include <chrono>
-
-	//Create an class for a shorter call
-    // chrono timestamps for kernel timing (CLBlast event profiling unreliable on Android)
-	class Clock
-	{
-	private:
-		std::chrono::high_resolution_clock::time_point _timePointA, _timePointB;
-	public:
-		
-		void start(){
-			_timePointA = std::chrono::high_resolution_clock::now();
-		}
-
-		void end(){
-			_timePointB = std::chrono::high_resolution_clock::now();
-		}
-
-		float getElapsed(){
-			return std::chrono::duration<float, std::milli>(_timePointB - _timePointA).count() * 1000000.0f;
-		}
-	};
-#endif
-
-void init(GraficObject *device_object, char* device_name);
-void init(GraficObject *device_object, int platform, int device, char* device_name);
 bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix);
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a);
 void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m, unsigned int w);
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size);
-float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_format_timestamp, long int timestamp);
-void clean(GraficObject *device_object);
-
-
 #endif

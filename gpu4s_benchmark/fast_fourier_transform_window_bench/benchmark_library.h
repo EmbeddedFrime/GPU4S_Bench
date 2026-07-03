@@ -1,7 +1,10 @@
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-
+/** * ====================================================================
+ * @file        benchmark_library.h (./fast_fourier_transform_window_bench)
+ * @brief       Specific memory structures and function overloads 
+ *              for the Fast Fourier Transform Window benchmark.
+ * @paragraph   License
+ * ESA-PL Strong Copyleft – v2.5
+ * ======================================================================= */
 
 #ifdef FLOAT
 typedef float bench_t;
@@ -37,6 +40,8 @@ typedef cufftDoubleComplex bench_cuda_complex;
 #ifndef BENCHMARK_H
 #define BENCHMARK_H
 
+// Include all the benchmark common variable, struct, prototype, lib
+#include "benchmark_common.h"
 struct GraficObject{
 	#ifdef CUDA
 	// CUDA PART
@@ -84,15 +89,8 @@ struct GraficObject{
 	#endif
 	float elapsed_time;
 };
-
-void init(GraficObject *device_object, char* device_name);
-void init(GraficObject *device_object, int platform, int device, char* device_name);
 bool device_memory_init(GraficObject *device_object, int64_t size_a_array, int64_t size_b_array);
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A,int64_t size);
 void execute_kernel(GraficObject *device_object,int64_t window, int64_t n);
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_B, int64_t size);
-float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_format_timestamp, long int timestamp);
-void clean(GraficObject *device_object);
-
-
 #endif

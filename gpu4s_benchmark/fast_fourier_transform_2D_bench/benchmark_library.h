@@ -1,6 +1,10 @@
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
+/** * ====================================================================
+ * @file        benchmark_library.h (./fast_fourier_transform_2D_bench)
+ * @brief       Specific memory structures and function overloads 
+ *              for the Fast Fourier Transform 2D benchmark.
+ * @paragraph   License
+ * ESA-PL Strong Copyleft – v2.5
+ * ======================================================================= */
 #include "shared_variables.h"
 #include "benchmark_common.h"
 
@@ -56,16 +60,8 @@ struct GraficObject{
 	#endif
 	float elapsed_time;
 };
-
-
-void init(GraficObject *device_object, char* device_name);
-void init(GraficObject *device_object, int platform, int device, char* device_name);
 bool device_memory_init(GraficObject *device_object, int64_t size_b_matrix);
 void copy_memory_to_device(GraficObject *device_object, COMPLEX **h_B,int64_t size);
 void execute_kernel(GraficObject *device_object, int64_t n);
 void copy_memory_to_host(GraficObject *device_object, COMPLEX **h_B, int64_t size);
-float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_format_timestamp, long int timestamp);
-void clean(GraficObject *device_object);
-
-
 #endif
