@@ -7,11 +7,15 @@
  * ======================================================================= */
 #pragma once
 
-// --- Global lib ---
+// --- Standard lib ---
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+// --- project lib ---
+#ifdef ANDROID
+	#include "Clock.h"
+#endif
 
 // --- Specefic framework lib ---
 #ifdef CUDA
@@ -57,7 +61,6 @@
 #endif
 
 
-
 // --- Commmon struct ---
 struct GraficObject{
 	#ifdef CUDA 
@@ -89,31 +92,8 @@ struct GraficObject{
 	float elapsed_time;
 };
 
-#ifdef ANDROID
-	#include <chrono>
 
-	//Create an class for a shorter call
-    // chrono timestamps for kernel timing (CLBlast event profiling unreliable on Android)
-	class Clock
-	{
-	private:
-		std::chrono::high_resolution_clock::time_point _timePointA, _timePointB;
-	public:
-		
-		void start(){
-			_timePointA = std::chrono::high_resolution_clock::now();
-		}
-
-		void end(){
-			_timePointB = std::chrono::high_resolution_clock::now();
-		}
-
-		float getElapsed(){
-			return std::chrono::duration<float, std::milli>(_timePointB - _timePointA).count() * 1000000.0f;
-		}
-	};
-#endif
-
+// ====== Fonction Prototype ======
 // --- Standard initialization use by every benchmarks ---
 void init(GraficObject *device_object, char* device_name);
 void init(GraficObject *device_object, int platform, int device, char* device_name);
@@ -124,6 +104,7 @@ void init(GraficObject *device_object, int platform, int device, char* device_na
 bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix);
 // Overload for Convolution2D, FIR, matrix_mult:(naïve/FP16/tensor) 
 bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix);
+
 
 // --- Copy RAM memory to GPU memory ---
 // Overload for LRN, max_pooling, memory_bandwidth, relu, softmax, wavelet_transform 
@@ -147,6 +128,7 @@ void execute_kernel(GraficObject *device_object,unsigned int size_a);
 
 // Overload for LRN, matrix_mult:(naïve/FP16/tensor), relu, softmax 6
 void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m, unsigned int w);
+
 
 // --- Copy back to CPU RAM memory ---
 // Overload for Cifar_10, Convolution2D, FIR, LRN, matrix_mult:(naïve/FP16/tensor), max_pooling, memory_bandwidth, relu, softmax, wavelet_transform 

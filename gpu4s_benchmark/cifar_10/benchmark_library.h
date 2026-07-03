@@ -10,7 +10,7 @@
 #include "benchmark_common.h"
 
 // ======= Benchmark local variable =======
-// --- Calcul ---
+// --- Compute ---
 const bench_t K = 2;
 const bench_t ALPHA = 10e-4;
 const bench_t BETA = 0.75;

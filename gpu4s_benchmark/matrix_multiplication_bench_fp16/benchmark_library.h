@@ -5,9 +5,7 @@
  * @paragraph   License
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
-#ifndef BENCHMARK_H
-#define BENCHMARK_H
-
+#pragma once
 // Include all the benchmark common variable, struct, prototype, lib
 #include "benchmark_common.h"
 
@@ -45,6 +43,14 @@
 struct GraficObject{
 	#ifdef CUDA
 		// CUDA PART
+		bench_t* d_A;
+		bench_t* d_B;
+		bench_t_gpu* d_half_A;
+		bench_t_gpu* d_half_B;
+		bench_t_gpu* d_half_C;
+		bench_t* d_C;
+	#elif OPENCL
+		// OpenCL PART
 		cl::Event *evt_copyA;
 		cl::Event *evt_copyB;
 		cl::Event *evt_copyC;
@@ -52,14 +58,6 @@ struct GraficObject{
 		cl::Buffer *d_A;
 		cl::Buffer *d_B;
 		cl::Buffer *d_C;
-	#elif OPENCL
-		// OpenCL PART
-		bench_t* d_A;
-		bench_t* d_B;
-		bench_t_gpu* d_half_A;
-		bench_t_gpu* d_half_B;
-		bench_t_gpu* d_half_C;
-		bench_t* d_C;
 	#else
 		//CPU PART
 	#endif
@@ -72,4 +70,3 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h
 void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m, unsigned int w);
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size);
 
-#endif

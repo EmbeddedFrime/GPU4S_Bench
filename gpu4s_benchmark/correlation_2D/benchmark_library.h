@@ -5,9 +5,7 @@
  * @paragraph   License
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
-#ifndef BENCHMARK_H
-#define BENCHMARK_H
-
+#pragma once
 // Include all the benchmark common variable, struct, prototype, lib
 #include "benchmark_common.h"
 
@@ -90,5 +88,3 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b);
 void execute_kernel(GraficObject *device_object, unsigned int n);
 void copy_memory_to_host(GraficObject *device_object, result_bench_t* h_R);
-
-#endif
