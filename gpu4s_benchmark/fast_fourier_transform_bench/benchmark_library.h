@@ -21,7 +21,7 @@
 	#endif
 #endif
 
-struct GraficObject{
+struct GraficObject : public GraficCommon {
 	#ifdef CUDA 
 		#ifdef LIB
 			bench_cuda_complex* d_B;

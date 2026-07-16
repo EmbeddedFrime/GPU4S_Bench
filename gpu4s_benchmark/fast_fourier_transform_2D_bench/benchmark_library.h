@@ -27,7 +27,7 @@ struct COMPLEX{
 	bench_t y;
 };
 
-struct GraficObject{
+struct GraficObject : public GraficCommon {
 	#ifdef CUDA 
 		// CUDA PART
 		#ifdef LIB

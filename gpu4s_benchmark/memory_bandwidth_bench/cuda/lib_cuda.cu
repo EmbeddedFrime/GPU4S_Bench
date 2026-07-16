@@ -68,9 +68,9 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned i
     
 }
 
-void execute_kernel(GraficObject *device_object,unsigned int size_a){
+void execute_kernel(GraficObject *device_object, unsigned int n){
     cudaEventRecord(*device_object->start);
-    cudaError_t err = cudaMemcpy(device_object->d_B, device_object->d_A, sizeof(bench_t) * size_a, cudaMemcpyDeviceToDevice);
+    cudaError_t err = cudaMemcpy(device_object->d_B, device_object->d_A, sizeof(bench_t) * n, cudaMemcpyDeviceToDevice);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));

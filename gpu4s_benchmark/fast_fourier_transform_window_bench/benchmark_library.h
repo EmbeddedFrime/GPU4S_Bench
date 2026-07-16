@@ -21,7 +21,7 @@
 	#endif
 #endif
 
-struct GraficObject{
+struct GraficObject : public GraficCommon {
 	#ifdef CUDA
 		// CUDA PART
 		#ifdef LIB

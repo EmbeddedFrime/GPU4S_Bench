@@ -22,7 +22,7 @@
 	static const char type_kernel[] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\ntypedef double bench_t;\ntypedef double result_bench_t;\n";
 #endif
 
-struct GraficObject{
+struct GraficObject : public GraficCommon {
 	#ifdef CUDA
 		// CUDA PART
 		bench_t* d_A;
@@ -84,7 +84,5 @@ struct GraficObject{
 };
 
 // --- Specefic overload of benchmarking function ---
-bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix);
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b);
-void execute_kernel(GraficObject *device_object, unsigned int n);
 void copy_memory_to_host(GraficObject *device_object, result_bench_t* h_R);

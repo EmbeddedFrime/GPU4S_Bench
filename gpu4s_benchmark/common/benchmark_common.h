@@ -62,7 +62,7 @@
 
 
 // --- Commmon struct ---
-struct GraficObject{
+struct GraficCommon{
 	#ifdef CUDA 
         // --- CUDA Variable ---
         cudaEvent_t *start_memory_copy_device;
@@ -109,30 +109,21 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
 // --- Copy RAM memory to GPU memory ---
 // Overload for LRN, max_pooling, memory_bandwidth, relu, softmax, wavelet_transform 
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a);
-// Correlation 2D 
-void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b);
-
-//caution to be merge
-// Overload for matrix_mult:(naïve/FP16/tensor) 
+// Overload for Convolution2D, FIR, matrix_mult:(naïve/FP16/tensor) 
 void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h_B, unsigned int size_a, unsigned int size_b);
-// Overload for Convolution2D, FIR 
-void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, bench_t* h_B, unsigned int size_a, unsigned int kernel_size);
 
 
 // --- Launch the benchmarks ---
-//caution to be merge
-// Overload for Correlation2D, wavelet_transform 2
+// Overload for Correlation2D, wavelet_transform, Memory bandwidth 
 void execute_kernel(GraficObject *device_object, unsigned int n);
-// Memory bandwidth 1
-void execute_kernel(GraficObject *device_object,unsigned int size_a);
-
-// Overload for LRN, matrix_mult:(naïve/FP16/tensor), relu, softmax 6
-void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m, unsigned int w);
+// Overload for LRN, matrix_mult:(naïve/FP16/tensor), relu, softmax 
+void execute_kernel(GraficObjedct *device_object, unsigned int n, unsigned int m, unsigned int w);
 
 
 // --- Copy back to CPU RAM memory ---
 // Overload for Cifar_10, Convolution2D, FIR, LRN, matrix_mult:(naïve/FP16/tensor), max_pooling, memory_bandwidth, relu, softmax, wavelet_transform 
 void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size);
+
 
 // --- return the duration of the benchmark ---
 // Overload for matrix_mult:(FP16/tensor), memory_bandwidth 

@@ -16,7 +16,7 @@ const bench_t ALPHA = 10e-4;
 const bench_t BETA = 0.75;
 
 
-struct GraficObject{
+struct GraficObject : public GraficCommon {
 	#ifdef CUDA
 		// CUDA PART
 		bench_t* input_data;

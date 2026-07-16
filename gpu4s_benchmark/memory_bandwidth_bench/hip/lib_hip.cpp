@@ -68,9 +68,9 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned i
     (void)hipEventRecord(*device_object->stop_memory_copy_device);
     
 }
-void execute_kernel(GraficObject *device_object,unsigned int size_a){
+void execute_kernel(GraficObject *device_object, unsigned int n){
     (void)hipEventRecord(*device_object->start);
-    hipError_t err = hipMemcpy(device_object->d_B, device_object->d_A, sizeof(bench_t) * size_a, hipMemcpyDeviceToDevice);
+    hipError_t err = hipMemcpy(device_object->d_B, device_object->d_A, sizeof(bench_t) * n, hipMemcpyDeviceToDevice);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", hipGetErrorString(err));

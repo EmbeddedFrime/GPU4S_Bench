@@ -84,13 +84,13 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned i
 }
 
 
-void execute_kernel(GraficObject *device_object,unsigned int size_a){
+void execute_kernel(GraficObject *device_object, unsigned int n){
     #ifdef ANDROID
         device_object->queue->finish();
         kernelCLK.start();
     #endif
     
-    device_object->queue->enqueueCopyBuffer(*device_object->d_A,*device_object->d_B, 0,0,sizeof(bench_t)*size_a,NULL, device_object->evt_copyB);
+    device_object->queue->enqueueCopyBuffer(*device_object->d_A,*device_object->d_B, 0,0,sizeof(bench_t)*n,NULL, device_object->evt_copyB);
     device_object->queue->finish();
 
     #ifdef ANDROID

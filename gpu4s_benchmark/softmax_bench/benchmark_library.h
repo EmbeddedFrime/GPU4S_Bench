@@ -13,7 +13,7 @@
 // --- Nothing for now --
 
 
-struct GraficObject{
+struct GraficObject : public GraficCommon {
 	#ifdef CUDA
 		// CUDA PART
 		bench_t* d_A;
@@ -46,7 +46,3 @@ struct GraficObject{
 };
 
 // --- Specefic overload of benchmarking function ---
-bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix);
-void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a);
-void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m, unsigned int w);
-void copy_memory_to_host(GraficObject *device_object, bench_t* h_C, int size);
