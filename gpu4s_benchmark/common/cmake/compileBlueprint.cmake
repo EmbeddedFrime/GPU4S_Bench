@@ -73,7 +73,7 @@ cmake_parse_arguments(ARG "" "${singleArgs}" "${multipleArgs}" ${ARGN})
     # --- Includes header directories ---
     target_include_directories(${TARGET_NAME} PRIVATE 
         ${ARG_INCLUDES}
-        "${CMAKE_CURRENT_LIST_DIR}/../"
+        "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/.."
     )
     
     # --- Link required libraries ---

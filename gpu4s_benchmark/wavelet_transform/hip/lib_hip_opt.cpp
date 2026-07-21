@@ -157,38 +157,41 @@ wavelet_transform(const bench_t *A, bench_t *B, const int n, const bench_t *lowp
 }
 #endif
 
-void init(GraficObject *device_object, char* device_name){
+void init(GraficCommon* device_object, char* device_name){
 	init(device_object, 0,0, device_name);
 }
 
-void init(GraficObject *device_object, int platform ,int device, char* device_name){
+void init(GraficCommon* device_object, int platform ,int device, char* device_name){
+	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 	(void)hipSetDevice(device);
 	hipDeviceProp_t prop;
 	(void)hipGetDeviceProperties(&prop, device);
 	//printf("Using device: %s\n", prop.name);
     strcpy(device_name,prop.name);
     //event create 
-    device_object->start = new hipEvent_t;
-    device_object->stop = new hipEvent_t;
-    device_object->start_memory_copy_device = new hipEvent_t;
-    device_object->stop_memory_copy_device = new hipEvent_t;
-    device_object->start_memory_copy_host = new hipEvent_t;
-    device_object->stop_memory_copy_host= new hipEvent_t;
+    deviceObj->start = new hipEvent_t;
+    deviceObj->stop = new hipEvent_t;
+    deviceObj->start_memory_copy_device = new hipEvent_t;
+    deviceObj->stop_memory_copy_device = new hipEvent_t;
+    deviceObj->start_memory_copy_host = new hipEvent_t;
+    deviceObj->stop_memory_copy_host= new hipEvent_t;
     
-    (void)hipEventCreate(device_object->start);
-    (void)hipEventCreate(device_object->stop);
-    (void)hipEventCreate(device_object->start_memory_copy_device);
-    (void)hipEventCreate(device_object->stop_memory_copy_device);
-    (void)hipEventCreate(device_object->start_memory_copy_host);
-    (void)hipEventCreate(device_object->stop_memory_copy_host);
+    (void)hipEventCreate(deviceObj->start);
+    (void)hipEventCreate(deviceObj->stop);
+    (void)hipEventCreate(deviceObj->start_memory_copy_device);
+    (void)hipEventCreate(deviceObj->stop_memory_copy_device);
+    (void)hipEventCreate(deviceObj->start_memory_copy_host);
+    (void)hipEventCreate(deviceObj->stop_memory_copy_host);
 }
 
 
-bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
+bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
+   
+GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
    
    // Allocate the device input vector A
 	hipError_t err = hipSuccess;
-    err = hipMalloc((void **)&device_object->d_A, size_a_matrix * sizeof(bench_t));
+    err = hipMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
 
     if (err != hipSuccess)
     {
@@ -196,7 +199,7 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
     }
 
     // Allocate the device input vector B
-    err = hipMalloc((void **)&device_object->d_B, size_b_matrix * sizeof(bench_t));
+    err = hipMalloc((void **)&deviceObj->d_B, size_b_matrix * sizeof(bench_t));
 
     if (err != hipSuccess)
     {
@@ -206,7 +209,7 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
     // if int don't add the allocation
     #else
     // Allocate the device low_filter
-    err = hipMalloc((void **)&device_object->low_filter, LOWPASSFILTERSIZE * sizeof(bench_t));
+    err = hipMalloc((void **)&deviceObj->low_filter, LOWPASSFILTERSIZE * sizeof(bench_t));
 
     if (err != hipSuccess)
     {
@@ -214,7 +217,7 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
     }
 
     // Allocate the device high_filter
-    err = hipMalloc((void **)&device_object->high_filter, HIGHPASSFILTERSIZE * sizeof(bench_t));
+    err = hipMalloc((void **)&deviceObj->high_filter, HIGHPASSFILTERSIZE * sizeof(bench_t));
 
     if (err != hipSuccess)
     {
@@ -225,9 +228,10 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
     return true;
 }
 
-void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a){
-    (void)hipEventRecord(*device_object->start_memory_copy_device);
-	hipError_t err = hipMemcpy(device_object->d_A, h_A, sizeof(bench_t) * size_a, hipMemcpyHostToDevice);
+void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned int size_a){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    (void)hipEventRecord(*deviceObj->start_memory_copy_device);
+	hipError_t err = hipMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, hipMemcpyHostToDevice);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", hipGetErrorString(err));
@@ -237,14 +241,14 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned i
     #ifdef INT
     // if int don't add the copy of the filters
     #else
-    err = hipMemcpy(device_object->low_filter, lowpass_filter, sizeof(bench_t) * LOWPASSFILTERSIZE, hipMemcpyHostToDevice);
+    err = hipMemcpy(deviceObj->low_filter, lowpass_filter, sizeof(bench_t) * LOWPASSFILTERSIZE, hipMemcpyHostToDevice);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to copy vector lowpass filter from host to device (error code %s)!\n", hipGetErrorString(err));
         return;
     }
 
-    err = hipMemcpy(device_object->high_filter, highpass_filter, sizeof(bench_t) * HIGHPASSFILTERSIZE, hipMemcpyHostToDevice);
+    err = hipMemcpy(deviceObj->high_filter, highpass_filter, sizeof(bench_t) * HIGHPASSFILTERSIZE, hipMemcpyHostToDevice);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to copy vector highpass filter from host to device (error code %s)!\n", hipGetErrorString(err));
@@ -252,12 +256,14 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned i
     }
     #endif
 
-    (void)hipEventRecord(*device_object->stop_memory_copy_device);
+    (void)hipEventRecord(*deviceObj->stop_memory_copy_device);
     
 }
-void execute_kernel(GraficObject *device_object, unsigned int n){
+void execute_kernel(GraficCommon* device_object, unsigned int n){
     
-    (void)hipEventRecord(*device_object->start);
+GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    
+    (void)hipEventRecord(*deviceObj->start);
     #ifdef INT
 
     dim3 dimBlock(BLOCK_SIZE*BLOCK_SIZE);
@@ -271,8 +277,8 @@ void execute_kernel(GraficObject *device_object, unsigned int n){
     
     for (unsigned int iter = 0; iter < NUMBERSUBDIVISIONS; ++iter)
     {   
-        hipLaunchKernelGGL((wavelet_transform), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[iter], device_object->d_A, device_object->d_B, n, iter,dimGrid.x);
-        hipLaunchKernelGGL((wavelet_transform_low), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[iter], device_object->d_A, device_object->d_B, n, iter,dimGrid.x);
+        hipLaunchKernelGGL((wavelet_transform), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[iter], deviceObj->d_A, deviceObj->d_B, n, iter,dimGrid.x);
+        hipLaunchKernelGGL((wavelet_transform_low), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[iter], deviceObj->d_A, deviceObj->d_B, n, iter,dimGrid.x);
     }
     
 
@@ -284,27 +290,29 @@ void execute_kernel(GraficObject *device_object, unsigned int n){
     {
         (void)hipStreamCreate(&cuda_streams[streams]);
     }
-    hipLaunchKernelGGL((wavelet_transform), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[0], device_object->d_A, device_object->d_B, n, device_object->low_filter, device_object->high_filter);
-    hipLaunchKernelGGL((wavelet_transform_high), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[1], device_object->d_A, device_object->d_B, n, device_object->low_filter, device_object->high_filter);
+    hipLaunchKernelGGL((wavelet_transform), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[0], deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
+    hipLaunchKernelGGL((wavelet_transform_high), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[1], deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
     #endif
-    (void)hipEventRecord(*device_object->stop);
+    (void)hipEventRecord(*deviceObj->stop);
 }
 
-void copy_memory_to_host(GraficObject *device_object, bench_t* h_B, int size){
-    (void)hipEventRecord(*device_object->start_memory_copy_host);
-    hipMemcpy(h_B, device_object->d_B, size * sizeof(bench_t), hipMemcpyDeviceToHost);
-    (void)hipEventRecord(*device_object->stop_memory_copy_host);
+void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int size){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    (void)hipEventRecord(*deviceObj->start_memory_copy_host);
+    hipMemcpy(h_B, deviceObj->d_B, size * sizeof(bench_t), hipMemcpyDeviceToHost);
+    (void)hipEventRecord(*deviceObj->stop_memory_copy_host);
 }
 
-float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
-    (void)hipEventSynchronize(*device_object->stop_memory_copy_host);
+float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    (void)hipEventSynchronize(*deviceObj->stop_memory_copy_host);
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
     // memory transfer time host-device
-    (void)hipEventElapsedTime(&milliseconds_h_d, *device_object->start_memory_copy_device, *device_object->stop_memory_copy_device);
+    (void)hipEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
     // kernel time
-    (void)hipEventElapsedTime(&milliseconds, *device_object->start, *device_object->stop);
+    (void)hipEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
     //  memory transfer time device-host
-    (void)hipEventElapsedTime(&milliseconds_d_h, *device_object->start_memory_copy_host, *device_object->stop_memory_copy_host);
+    (void)hipEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
     
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", milliseconds_h_d,milliseconds,milliseconds_d_h,current_time);
@@ -319,9 +327,10 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
     return milliseconds;
 }
 
-void clean(GraficObject *device_object){
+void clean(GraficCommon* device_object){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     hipError_t err = hipSuccess;
-    err = hipFree(device_object->d_A);
+    err = hipFree(deviceObj->d_A);
 
     if (err != hipSuccess)
     {
@@ -329,22 +338,22 @@ void clean(GraficObject *device_object){
         return;
     }
 
-    err = hipFree(device_object->d_B);
+    err = hipFree(deviceObj->d_B);
 
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector B (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    err = hipFree(device_object->low_filter);
-    err = hipFree(device_object->high_filter);
+    err = hipFree(deviceObj->low_filter);
+    err = hipFree(deviceObj->high_filter);
 
 
     // delete events
-    delete device_object->start;
-    delete device_object->stop;
-    delete device_object->start_memory_copy_device;
-    delete device_object->stop_memory_copy_device;
-    delete device_object->start_memory_copy_host;
-    delete device_object->stop_memory_copy_host;
+    delete deviceObj->start;
+    delete deviceObj->stop;
+    delete deviceObj->start_memory_copy_device;
+    delete deviceObj->stop_memory_copy_device;
+    delete deviceObj->start_memory_copy_host;
+    delete deviceObj->stop_memory_copy_host;
 }

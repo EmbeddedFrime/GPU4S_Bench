@@ -1,13 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <fstream>
-#include <iostream>
 #include <cmath>
 #include <chrono>
 #include <sys/time.h>
 #include <ctime>
-#include <string.h>
-#include "../shared_variables.h"
 
 #ifndef CPU_LIB_H
 #define CPU_LIB_H

@@ -21,6 +21,7 @@
 	typedef double bench_t_gpu;
 #endif
 
+
 // --- OpenCL Runtime Kernel Code  ---
 #ifdef OPENCL
 	#ifdef FLOAT16
@@ -28,6 +29,9 @@
 		static const std::string type_kernel = 
 			"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
 			"typedef half bench_t_gpu;\n";
+	#else 
+		// Fallback for the other data type
+		static const std::string type_kernel = type_kernel_common;
     #endif
 #endif
 

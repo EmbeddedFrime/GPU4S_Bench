@@ -122,37 +122,39 @@ correlation_2D(const bench_t *A,const bench_t *B, result_bench_t *R, result_benc
 
 
 
-void init(GraficObject *device_object, char* device_name){
+void init(GraficCommon* device_object, char* device_name){
 	init(device_object, 0,0, device_name);
 }
 
-void init(GraficObject *device_object, int platform ,int device, char* device_name){
+void init(GraficCommon* device_object, int platform ,int device, char* device_name){
+	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 	(void)hipSetDevice(device);
 	hipDeviceProp_t prop;
 	(void)hipGetDeviceProperties(&prop, device);
 	//printf("Using device: %s\n", prop.name);
     strcpy(device_name,prop.name);
     //event create 
-    device_object->start = new hipEvent_t;
-    device_object->stop = new hipEvent_t;
-    device_object->start_memory_copy_device = new hipEvent_t;
-    device_object->stop_memory_copy_device = new hipEvent_t;
-    device_object->start_memory_copy_host = new hipEvent_t;
-    device_object->stop_memory_copy_host= new hipEvent_t;
+    deviceObj->start = new hipEvent_t;
+    deviceObj->stop = new hipEvent_t;
+    deviceObj->start_memory_copy_device = new hipEvent_t;
+    deviceObj->stop_memory_copy_device = new hipEvent_t;
+    deviceObj->start_memory_copy_host = new hipEvent_t;
+    deviceObj->stop_memory_copy_host= new hipEvent_t;
     
-    (void)hipEventCreate(device_object->start);
-    (void)hipEventCreate(device_object->stop);
-    (void)hipEventCreate(device_object->start_memory_copy_device);
-    (void)hipEventCreate(device_object->stop_memory_copy_device);
-    (void)hipEventCreate(device_object->start_memory_copy_host);
-    (void)hipEventCreate(device_object->stop_memory_copy_host);
+    (void)hipEventCreate(deviceObj->start);
+    (void)hipEventCreate(deviceObj->stop);
+    (void)hipEventCreate(deviceObj->start_memory_copy_device);
+    (void)hipEventCreate(deviceObj->stop_memory_copy_device);
+    (void)hipEventCreate(deviceObj->start_memory_copy_host);
+    (void)hipEventCreate(deviceObj->stop_memory_copy_host);
 }
 
 
-bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
+bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
+   GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
    // Allocate the device input vector A
 	hipError_t err = hipSuccess;
-    err = hipMalloc((void **)&device_object->d_A, size_a_matrix * sizeof(bench_t));
+    err = hipMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
 
     if (err != hipSuccess)
     {
@@ -160,7 +162,7 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
     }
 
     // Allocate the device input vector B
-    err = hipMalloc((void **)&device_object->d_B, size_b_matrix * sizeof(bench_t));
+    err = hipMalloc((void **)&deviceObj->d_B, size_b_matrix * sizeof(bench_t));
 
     if (err != hipSuccess)
     {
@@ -168,7 +170,7 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
     }
 
     // Allocate the device output R value
-    err = hipMalloc((void **)&device_object->d_R, sizeof(result_bench_t));
+    err = hipMalloc((void **)&deviceObj->d_R, sizeof(result_bench_t));
 
     if (err != hipSuccess)
     {
@@ -177,30 +179,30 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
 
     // Allocate the auxiliar values for matrix A and B
 
-    err =  hipMalloc((void **)&device_object->mean_A, sizeof(result_bench_t)); 
+    err =  hipMalloc((void **)&deviceObj->mean_A, sizeof(result_bench_t)); 
     if (err != hipSuccess)
     {
         return false;
     }
 
-    err =  hipMalloc((void **)&device_object->mean_B, sizeof(result_bench_t)); 
+    err =  hipMalloc((void **)&deviceObj->mean_B, sizeof(result_bench_t)); 
     if (err != hipSuccess)
     {
         return false;
     }
 
-    err =  hipMalloc((void **)&device_object->acumulate_value_a_b, sizeof(result_bench_t)); 
+    err =  hipMalloc((void **)&deviceObj->acumulate_value_a_b, sizeof(result_bench_t)); 
     if (err != hipSuccess)
     {
         return false;
     }
 
-    err =  hipMalloc((void **)&device_object->acumulate_value_a_a, sizeof(result_bench_t)); 
+    err =  hipMalloc((void **)&deviceObj->acumulate_value_a_a, sizeof(result_bench_t)); 
     if (err != hipSuccess)
     {
         return false;
     }
-    err =  hipMalloc((void **)&device_object->acumulate_value_b_b, sizeof(result_bench_t)); 
+    err =  hipMalloc((void **)&deviceObj->acumulate_value_b_b, sizeof(result_bench_t)); 
     if (err != hipSuccess)
     {
         return false;
@@ -209,57 +211,61 @@ bool device_memory_init(GraficObject *device_object, unsigned int size_a_matrix,
     return true;
 }
 
-void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b){
-    (void)hipEventRecord(*device_object->start_memory_copy_device);
-	hipError_t err = hipMemcpy(device_object->d_A, h_A, sizeof(bench_t) * size_a, hipMemcpyHostToDevice);
+void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    (void)hipEventRecord(*deviceObj->start_memory_copy_device);
+	hipError_t err = hipMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, hipMemcpyHostToDevice);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", hipGetErrorString(err));
         return;
     }
 
-    err = hipMemcpy(device_object->d_B, h_B, sizeof(bench_t) * size_b, hipMemcpyHostToDevice);
+    err = hipMemcpy(deviceObj->d_B, h_B, sizeof(bench_t) * size_b, hipMemcpyHostToDevice);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", hipGetErrorString(err));
         return;
     }
     
-    (void)hipEventRecord(*device_object->stop_memory_copy_device);
+    (void)hipEventRecord(*deviceObj->stop_memory_copy_device);
     
 }
-void execute_kernel(GraficObject *device_object, unsigned int n){
+void execute_kernel(GraficCommon* device_object, unsigned int n){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     dim3 dimBlock(BLOCK_SIZE,BLOCK_SIZE);
     dim3 dimGrid(ceil(float(n)/dimBlock.x),ceil(float(n)/dimBlock.y));
-    (void)hipEventRecord(*device_object->start);
-    hipLaunchKernelGGL(mean_matrices, dim3(dimGrid), dim3(dimBlock), 0, 0, device_object->d_A, device_object->d_B, device_object->mean_A, device_object->mean_B , n);
-    hipLaunchKernelGGL(correlation_2D, dim3(dimGrid), dim3(dimBlock), 0, 0, device_object->d_A, device_object->d_B, device_object->d_R, device_object->mean_A, device_object->mean_B,device_object->acumulate_value_a_b, device_object->acumulate_value_a_a, device_object->acumulate_value_b_b, n);
+    (void)hipEventRecord(*deviceObj->start);
+    hipLaunchKernelGGL(mean_matrices, dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->d_A, deviceObj->d_B, deviceObj->mean_A, deviceObj->mean_B , n);
+    hipLaunchKernelGGL(correlation_2D, dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->d_A, deviceObj->d_B, deviceObj->d_R, deviceObj->mean_A, deviceObj->mean_B,deviceObj->acumulate_value_a_b, deviceObj->acumulate_value_a_a, deviceObj->acumulate_value_b_b, n);
 
-    (void)hipEventRecord(*device_object->stop);
+    (void)hipEventRecord(*deviceObj->stop);
 }
 
-void copy_memory_to_host(GraficObject *device_object, result_bench_t* h_R){
-    (void)hipEventRecord(*device_object->start_memory_copy_host);
+void copy_memory_to_host(GraficCommon* device_object, result_bench_t* h_R){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    (void)hipEventRecord(*deviceObj->start_memory_copy_host);
     result_bench_t acumulate_value_a_a;
     result_bench_t acumulate_value_a_b;
     result_bench_t acumulate_value_b_b;
-    hipMemcpy(&acumulate_value_a_a, device_object->acumulate_value_a_a, sizeof(result_bench_t), hipMemcpyDeviceToHost);
-    hipMemcpy(&acumulate_value_a_b, device_object->acumulate_value_a_b, sizeof(result_bench_t), hipMemcpyDeviceToHost);
-    hipMemcpy(&acumulate_value_b_b, device_object->acumulate_value_b_b, sizeof(result_bench_t), hipMemcpyDeviceToHost);
+    hipMemcpy(&acumulate_value_a_a, deviceObj->acumulate_value_a_a, sizeof(result_bench_t), hipMemcpyDeviceToHost);
+    hipMemcpy(&acumulate_value_a_b, deviceObj->acumulate_value_a_b, sizeof(result_bench_t), hipMemcpyDeviceToHost);
+    hipMemcpy(&acumulate_value_b_b, deviceObj->acumulate_value_b_b, sizeof(result_bench_t), hipMemcpyDeviceToHost);
     *h_R = (result_bench_t)(acumulate_value_a_b / (result_bench_t)(sqrt(acumulate_value_a_a * acumulate_value_b_b)));
-    //hipMemcpy(h_R, device_object->d_R, sizeof(result_bench_t), hipMemcpyDeviceToHost);
-    (void)hipEventRecord(*device_object->stop_memory_copy_host);
+    //hipMemcpy(h_R, deviceObj->d_R, sizeof(result_bench_t), hipMemcpyDeviceToHost);
+    (void)hipEventRecord(*deviceObj->stop_memory_copy_host);
 }
 
-float get_elapsed_time(GraficObject *device_object, bool csv_format,bool csv_format_timestamp, long int current_time){
-    (void)hipEventSynchronize(*device_object->stop_memory_copy_host);
+float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_format_timestamp, long int current_time){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    (void)hipEventSynchronize(*deviceObj->stop_memory_copy_host);
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
     // memory transfer time host-device
-    (void)hipEventElapsedTime(&milliseconds_h_d, *device_object->start_memory_copy_device, *device_object->stop_memory_copy_device);
+    (void)hipEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
     // kernel time
-    (void)hipEventElapsedTime(&milliseconds, *device_object->start, *device_object->stop);
+    (void)hipEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
     //  memory transfer time device-host
-    (void)hipEventElapsedTime(&milliseconds_d_h, *device_object->start_memory_copy_host, *device_object->stop_memory_copy_host);
+    (void)hipEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
     
     
     if (csv_format_timestamp){
@@ -275,9 +281,10 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format,bool csv_for
     return milliseconds;
 }
 
-void clean(GraficObject *device_object){
+void clean(GraficCommon* device_object){
+ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
  hipError_t err = hipSuccess;
-    err = hipFree(device_object->d_A);
+    err = hipFree(deviceObj->d_A);
 
     if (err != hipSuccess)
     {
@@ -285,7 +292,7 @@ void clean(GraficObject *device_object){
         return;
     }
 
-    err = hipFree(device_object->d_B);
+    err = hipFree(deviceObj->d_B);
 
     if (err != hipSuccess)
     {
@@ -293,7 +300,7 @@ void clean(GraficObject *device_object){
         return;
     }
 
-    err = hipFree(device_object->d_R);
+    err = hipFree(deviceObj->d_R);
 
     if (err != hipSuccess)
     {
@@ -302,32 +309,32 @@ void clean(GraficObject *device_object){
     }
 
     // delete auxiliars
-    err = hipFree(device_object->mean_A);
+    err = hipFree(deviceObj->mean_A);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device  mean_A (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    err = hipFree( device_object->mean_B);
+    err = hipFree( deviceObj->mean_B);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device mean_B (error code %s)!\n", hipGetErrorString(err));
         return;
     }
 
-    err = hipFree(device_object->acumulate_value_a_b);
+    err = hipFree(deviceObj->acumulate_value_a_b);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device acumulate_value_a_b (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    err = hipFree(device_object->acumulate_value_a_a);
+    err = hipFree(deviceObj->acumulate_value_a_a);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device acumulate_value_a_a (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    err = hipFree(device_object->acumulate_value_b_b);
+    err = hipFree(deviceObj->acumulate_value_b_b);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device acumulate_value_b_b (error code %s)!\n", hipGetErrorString(err));
@@ -335,10 +342,10 @@ void clean(GraficObject *device_object){
     }
 
     // delete events
-    delete device_object->start;
-    delete device_object->stop;
-    delete device_object->start_memory_copy_device;
-    delete device_object->stop_memory_copy_device;
-    delete device_object->start_memory_copy_host;
-    delete device_object->stop_memory_copy_host;
+    delete deviceObj->start;
+    delete deviceObj->stop;
+    delete deviceObj->start_memory_copy_device;
+    delete deviceObj->stop_memory_copy_device;
+    delete deviceObj->start_memory_copy_host;
+    delete deviceObj->stop_memory_copy_host;
 }

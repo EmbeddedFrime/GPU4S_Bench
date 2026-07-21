@@ -40,4 +40,4 @@ struct GraficObject : public GraficCommon {
 };
 
 // --- Specefic overload of benchmarking function ---
-void execute_kernel(GraficObject *device_object, unsigned int n, unsigned int m, unsigned int w, unsigned int stride, unsigned int size_lateral);
+void execute_kernel(GraficCommon*device_object, unsigned int n, unsigned int m, unsigned int w, unsigned int stride, unsigned int size_lateral);

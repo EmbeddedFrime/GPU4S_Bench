@@ -129,7 +129,7 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	// base object init
-	GraficObject *correlation_bench = (GraficObject *)malloc(sizeof(GraficObject));
+	GraficCommon*correlation_bench = (GraficCommon*)malloc(sizeof(GraficObject));
 	// init devices
 	char device[100] = "";
 	init(correlation_bench, 0,arguments_parameters->gpu, device);

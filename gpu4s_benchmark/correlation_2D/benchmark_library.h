@@ -13,13 +13,21 @@
 // --- Core Data Types ---
 #ifdef INT
 	typedef float result_bench_t;
-	static const char type_kernel[] = "typedef int bench_t;\ntypedef float result_bench_t;\n";
 #elif FLOAT
 	typedef float result_bench_t;
-	static const char type_kernel[] = "typedef float bench_t;\ntypedef float result_bench_t;\n";
 #elif DOUBLE
 	typedef double result_bench_t;
-	static const char type_kernel[] = "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\ntypedef double bench_t;\ntypedef double result_bench_t;\n";
+#endif
+
+// --- OpenCL Runtime Kernel Code  ---
+#ifdef OPENCL
+    #ifdef INT
+        static const std::string type_kernel = type_kernel_common + "typedef float result_bench_t;\n";
+    #elif FLOAT
+        static const std::string type_kernel = type_kernel_common + "typedef float result_bench_t;\n";
+    #elif DOUBLE
+        static const std::string type_kernel = type_kernel_common + "typedef double result_bench_t;\n";
+    #endif
 #endif
 
 struct GraficObject : public GraficCommon {
@@ -84,5 +92,5 @@ struct GraficObject : public GraficCommon {
 };
 
 // --- Specefic overload of benchmarking function ---
-void copy_memory_to_device(GraficObject *device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b);
-void copy_memory_to_host(GraficObject *device_object, result_bench_t* h_R);
+void copy_memory_to_device(GraficCommon*device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b);
+void copy_memory_to_host(GraficCommon*device_object, result_bench_t* h_R);

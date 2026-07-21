@@ -105,7 +105,7 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	// base object init
-	GraficObject *softmax_bench = (GraficObject *)malloc(sizeof(GraficObject));
+	GraficCommon*softmax_bench = (GraficCommon*)malloc(sizeof(GraficObject));
 	// init devices
 	char device[100] = "";
 	init(softmax_bench, 0,arguments_parameters->gpu, device);

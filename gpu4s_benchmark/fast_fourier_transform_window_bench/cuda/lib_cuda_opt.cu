@@ -60,44 +60,46 @@ fft_kernel( bench_t *B, const int loop,const bench_t wpr, const bench_t wpi, con
     
 }
 
-void init(GraficObject *device_object, char* device_name){
+void init(GraficCommon* device_object, char* device_name){
     init(device_object, 0,0, device_name);
 }
 
-void init(GraficObject *device_object, int platform ,int device, char* device_name){
+void init(GraficCommon* device_object, int platform ,int device, char* device_name){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudaSetDevice(device);
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, device);
     //printf("Using device: %s\n", prop.name);
     strcpy(device_name,prop.name);
     //event create 
-    device_object->start = new cudaEvent_t;
-    device_object->stop = new cudaEvent_t;
-    device_object->start_memory_copy_device = new cudaEvent_t;
-    device_object->stop_memory_copy_device = new cudaEvent_t;
-    device_object->start_memory_copy_host = new cudaEvent_t;
-    device_object->stop_memory_copy_host= new cudaEvent_t;
+    deviceObj->start = new cudaEvent_t;
+    deviceObj->stop = new cudaEvent_t;
+    deviceObj->start_memory_copy_device = new cudaEvent_t;
+    deviceObj->stop_memory_copy_device = new cudaEvent_t;
+    deviceObj->start_memory_copy_host = new cudaEvent_t;
+    deviceObj->stop_memory_copy_host= new cudaEvent_t;
     
-    cudaEventCreate(device_object->start);
-    cudaEventCreate(device_object->stop);
-    cudaEventCreate(device_object->start_memory_copy_device);
-    cudaEventCreate(device_object->stop_memory_copy_device);
-    cudaEventCreate(device_object->start_memory_copy_host);
-    cudaEventCreate(device_object->stop_memory_copy_host);
+    cudaEventCreate(deviceObj->start);
+    cudaEventCreate(deviceObj->stop);
+    cudaEventCreate(deviceObj->start_memory_copy_device);
+    cudaEventCreate(deviceObj->stop_memory_copy_device);
+    cudaEventCreate(deviceObj->start_memory_copy_host);
+    cudaEventCreate(deviceObj->stop_memory_copy_host);
 }
 
 
-bool device_memory_init(GraficObject *device_object,  int64_t size_a_array, int64_t size_b_array){
+bool device_memory_init(GraficCommon* device_object,  int64_t size_a_array, int64_t size_b_array){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudaError_t err = cudaSuccess;
     // Allocate the device input vector A
-    err = cudaMalloc((void **)&device_object->d_A, size_a_array * sizeof(bench_t));
+    err = cudaMalloc((void **)&deviceObj->d_A, size_a_array * sizeof(bench_t));
 
     if (err != cudaSuccess)
     {
         return false;
     }
     // Allocate the device reverse vector B
-    err = cudaMalloc((void **)&device_object->d_B, size_b_array * sizeof(bench_t));
+    err = cudaMalloc((void **)&deviceObj->d_B, size_b_array * sizeof(bench_t));
 
     if (err != cudaSuccess)
     {
@@ -106,20 +108,22 @@ bool device_memory_init(GraficObject *device_object,  int64_t size_a_array, int6
     return true;
 }
 
-void copy_memory_to_device(GraficObject *device_object, bench_t* h_A,int64_t size){
+void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A,int64_t size){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudaError_t err = cudaSuccess;
-    cudaEventRecord(*device_object->start_memory_copy_device);
-    err = cudaMemcpy(device_object->d_A, h_A, sizeof(bench_t) * size, cudaMemcpyHostToDevice);
+    cudaEventRecord(*deviceObj->start_memory_copy_device);
+    err = cudaMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to copy vector B from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    cudaEventRecord(*device_object->stop_memory_copy_device);
+    cudaEventRecord(*deviceObj->stop_memory_copy_device);
     
 }
 
-void aux_execute_kernel(GraficObject *device_object, int64_t size, int64_t position){
+void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t position){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     size = size / 2;
     dim3 dimBlock_reverse(BLOCK_SIZE);
     dim3 dimGrid_reverse(ceil(float(size)/dimBlock_reverse.x));
@@ -129,7 +133,7 @@ void aux_execute_kernel(GraficObject *device_object, int64_t size, int64_t posit
     bench_t wtemp, wpr, wpi, theta;
 
     // reorder kernel
-    binary_reverse_kernel<<<dimGrid_reverse, dimBlock_reverse>>>(device_object->d_A, device_object->d_B, size, (int64_t)log2(size), position);
+    binary_reverse_kernel<<<dimGrid_reverse, dimBlock_reverse>>>(deviceObj->d_A, deviceObj->d_B, size, (int64_t)log2(size), position);
     // Synchronize
     cudaDeviceSynchronize();
     // kernel call
@@ -157,7 +161,7 @@ void aux_execute_kernel(GraficObject *device_object, int64_t size, int64_t posit
         //wr = 1.0;
         //wi = 0.0;
 
-        fft_kernel<<<dimGrid, dimBlock>>>(device_object->d_B, loop, wpr, wpi, theads, size, position);
+        fft_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_B, loop, wpr, wpi, theads, size, position);
         
         loop = loop * 2;
 
@@ -165,30 +169,33 @@ void aux_execute_kernel(GraficObject *device_object, int64_t size, int64_t posit
     }
    
 }
-void execute_kernel(GraficObject *device_object, int64_t window, int64_t size){
-    cudaEventRecord(*device_object->start);
+void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    cudaEventRecord(*deviceObj->start);
     for (unsigned int i = 0; i < (size * 2 - window + 1); i+=2){
         aux_execute_kernel(device_object, window, i);
     }
     
-    cudaEventRecord(*device_object->stop);
+    cudaEventRecord(*deviceObj->stop);
 }
 
-void copy_memory_to_host(GraficObject *device_object, bench_t* h_B, int64_t size){
-    cudaEventRecord(*device_object->start_memory_copy_host);
-    cudaMemcpy(h_B, device_object->d_B, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
-    cudaEventRecord(*device_object->stop_memory_copy_host);
+void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    cudaEventRecord(*deviceObj->start_memory_copy_host);
+    cudaMemcpy(h_B, deviceObj->d_B, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
+    cudaEventRecord(*deviceObj->stop_memory_copy_host);
 }
 
-float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
-    cudaEventSynchronize(*device_object->stop_memory_copy_host);
+float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    cudaEventSynchronize(*deviceObj->stop_memory_copy_host);
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
     // memory transfer time host-device
-    cudaEventElapsedTime(&milliseconds_h_d, *device_object->start_memory_copy_device, *device_object->stop_memory_copy_device);
+    cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
     // kernel time
-    cudaEventElapsedTime(&milliseconds, *device_object->start, *device_object->stop);
+    cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
     //  memory transfer time device-host
-    cudaEventElapsedTime(&milliseconds_d_h, *device_object->start_memory_copy_host, *device_object->stop_memory_copy_host);
+    cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
     
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", milliseconds_h_d,milliseconds,milliseconds_d_h, current_time);
@@ -203,17 +210,18 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
     return milliseconds;
 }
 
-void clean(GraficObject *device_object){
+void clean(GraficCommon* device_object){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudaError_t err = cudaSuccess;
 
-    err = cudaFree(device_object->d_A);
+    err = cudaFree(deviceObj->d_A);
 
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector B (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-     err = cudaFree(device_object->d_B);
+     err = cudaFree(deviceObj->d_B);
 
     if (err != cudaSuccess)
     {
@@ -223,10 +231,10 @@ void clean(GraficObject *device_object){
 
 
     // delete events
-    delete device_object->start;
-    delete device_object->stop;
-    delete device_object->start_memory_copy_device;
-    delete device_object->stop_memory_copy_device;
-    delete device_object->start_memory_copy_host;
-    delete device_object->stop_memory_copy_host;
+    delete deviceObj->start;
+    delete deviceObj->stop;
+    delete deviceObj->start_memory_copy_device;
+    delete deviceObj->stop_memory_copy_device;
+    delete deviceObj->start_memory_copy_host;
+    delete deviceObj->stop_memory_copy_host;
 }

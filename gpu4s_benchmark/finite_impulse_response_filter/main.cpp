@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	// base object init
-	GraficObject *fir_bench = (GraficObject *)malloc(sizeof(GraficObject));
+	GraficCommon*fir_bench = (GraficCommon*)malloc(sizeof(GraficObject));
 	// init devices
 	char device[100] = "";
 	init(fir_bench, 0,arguments_parameters->gpu, device);
