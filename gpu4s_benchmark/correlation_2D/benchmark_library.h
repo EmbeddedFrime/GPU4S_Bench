@@ -92,5 +92,5 @@ struct GraficObject : public GraficCommon {
 };
 
 // --- Specefic overload of benchmarking function ---
-void copy_memory_to_device(GraficCommon*device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b);
-void copy_memory_to_host(GraficCommon*device_object, result_bench_t* h_R);
+void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b);
+void copy_memory_to_host(GraficCommon* device_object, result_bench_t* h_R);

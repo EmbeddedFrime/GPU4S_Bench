@@ -52,7 +52,7 @@ struct GraficObject : public GraficCommon {
 };
 
 // --- Specefic overload of benchmarking function ---
-bool device_memory_init(GraficCommon*device_object, int64_t size_b_matrix);
-void copy_memory_to_device(GraficCommon*device_object, bench_t* h_B,int64_t size);
-void execute_kernel(GraficCommon*device_object, int64_t n);
-void copy_memory_to_host(GraficCommon*device_object, bench_t* h_B, int64_t size);
+bool device_memory_init(GraficCommon* device_object, int64_t size_b_matrix);
+void copy_memory_to_device(GraficCommon* device_object, bench_t* h_B,int64_t size);
+void execute_kernel(GraficCommon* device_object, int64_t n);
+void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size);
