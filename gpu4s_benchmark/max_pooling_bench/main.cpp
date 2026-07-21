@@ -107,7 +107,7 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	// base object init
-	GraficObject *max_bench = (GraficObject *)malloc(sizeof(GraficObject));
+	GraficCommon*max_bench = (GraficCommon*)malloc(sizeof(GraficObject));
 	// init devices
 	char device[100] = "";
 	init(max_bench, 0,arguments_parameters->gpu, device);

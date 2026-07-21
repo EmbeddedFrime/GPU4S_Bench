@@ -111,7 +111,7 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	// base object init
-	GraficObject *matrix_benck = (GraficObject *)malloc(sizeof(GraficObject));
+	GraficCommon*matrix_benck = (GraficCommon*)malloc(sizeof(GraficObject));
 	// init devices
 	char device[100] = "";
 	init(matrix_benck, 0,gpu, device);

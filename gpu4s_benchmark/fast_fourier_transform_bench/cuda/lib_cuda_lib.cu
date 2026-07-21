@@ -7,37 +7,39 @@
  * number of elements numElements.
  */
 
-void init(GraficObject *device_object, char* device_name){
+void init(GraficCommon* device_object, char* device_name){
     init(device_object, 0,0, device_name);
 }
 
-void init(GraficObject *device_object, int platform ,int device, char* device_name){
+void init(GraficCommon* device_object, int platform ,int device, char* device_name){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudaSetDevice(device);
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, device);
     //printf("Using device: %s\n", prop.name);
     strcpy(device_name,prop.name);
     //event create 
-    device_object->start = new cudaEvent_t;
-    device_object->stop = new cudaEvent_t;
-    device_object->start_memory_copy_device = new cudaEvent_t;
-    device_object->stop_memory_copy_device = new cudaEvent_t;
-    device_object->start_memory_copy_host = new cudaEvent_t;
-    device_object->stop_memory_copy_host= new cudaEvent_t;
+    deviceObj->start = new cudaEvent_t;
+    deviceObj->stop = new cudaEvent_t;
+    deviceObj->start_memory_copy_device = new cudaEvent_t;
+    deviceObj->stop_memory_copy_device = new cudaEvent_t;
+    deviceObj->start_memory_copy_host = new cudaEvent_t;
+    deviceObj->stop_memory_copy_host= new cudaEvent_t;
     
-    cudaEventCreate(device_object->start);
-    cudaEventCreate(device_object->stop);
-    cudaEventCreate(device_object->start_memory_copy_device);
-    cudaEventCreate(device_object->stop_memory_copy_device);
-    cudaEventCreate(device_object->start_memory_copy_host);
-    cudaEventCreate(device_object->stop_memory_copy_host);
+    cudaEventCreate(deviceObj->start);
+    cudaEventCreate(deviceObj->stop);
+    cudaEventCreate(deviceObj->start_memory_copy_device);
+    cudaEventCreate(deviceObj->stop_memory_copy_device);
+    cudaEventCreate(deviceObj->start_memory_copy_host);
+    cudaEventCreate(deviceObj->stop_memory_copy_host);
 }
 
 
-bool device_memory_init(GraficObject *device_object, int64_t size_b_matrix){
+bool device_memory_init(GraficCommon* device_object, int64_t size_b_matrix){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudaError_t err = cudaSuccess;
     // Allocate the device input vector B
-    err = cudaMalloc((void **)&device_object->d_B, (size_b_matrix /2) * sizeof(bench_cuda_complex));
+    err = cudaMalloc((void **)&deviceObj->d_B, (size_b_matrix /2) * sizeof(bench_cuda_complex));
 
     if (err != cudaSuccess)
     {
@@ -46,7 +48,8 @@ bool device_memory_init(GraficObject *device_object, int64_t size_b_matrix){
     return true;
 }
 
-void copy_memory_to_device(GraficObject *device_object, bench_t* h_B,int64_t size){
+void copy_memory_to_device(GraficCommon* device_object, bench_t* h_B,int64_t size){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudaError_t err = cudaSuccess;
     bench_cuda_complex *h_signal = (bench_cuda_complex *)malloc(sizeof(bench_cuda_complex) * (size/2));
     for (unsigned int i = 0; i < (size/2); ++i){
@@ -54,40 +57,43 @@ void copy_memory_to_device(GraficObject *device_object, bench_t* h_B,int64_t siz
         h_signal[i].y = h_B[i * 2 + 1];
     }
 
-    cudaEventRecord(*device_object->start_memory_copy_device);
-    err = cudaMemcpy(device_object->d_B, h_signal, sizeof(bench_cuda_complex) * (size / 2), cudaMemcpyHostToDevice);
+    cudaEventRecord(*deviceObj->start_memory_copy_device);
+    err = cudaMemcpy(deviceObj->d_B, h_signal, sizeof(bench_cuda_complex) * (size / 2), cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to copy vector B from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    cudaEventRecord(*device_object->stop_memory_copy_device);
+    cudaEventRecord(*deviceObj->stop_memory_copy_device);
     
 }
-void execute_kernel(GraficObject *device_object, int64_t size){
+void execute_kernel(GraficCommon* device_object, int64_t size){
+
+GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 
     cufftHandle plan;
 
-    cudaEventRecord(*device_object->start);
+    cudaEventRecord(*deviceObj->start);
     
     #ifdef FLOAT
     cufftPlan1d(&plan, size, CUFFT_C2C, 1);
-    cufftExecC2C(plan, (cufftComplex *)device_object->d_B, (cufftComplex *)device_object->d_B, CUFFT_FORWARD);
+    cufftExecC2C(plan, (cufftComplex *)deviceObj->d_B, (cufftComplex *)deviceObj->d_B, CUFFT_FORWARD);
     #else 
     cufftPlan1d(&plan, size, CUFFT_Z2Z, 1);
-    cufftExecZ2Z(plan, (cufftDoubleComplex *)device_object->d_B, (cufftDoubleComplex *)device_object->d_B, CUFFT_FORWARD);
+    cufftExecZ2Z(plan, (cufftDoubleComplex *)deviceObj->d_B, (cufftDoubleComplex *)deviceObj->d_B, CUFFT_FORWARD);
     #endif
     
-    cudaEventRecord(*device_object->stop);
+    cudaEventRecord(*deviceObj->stop);
     cufftDestroy(plan);
     
 }
 
-void copy_memory_to_host(GraficObject *device_object, bench_t* h_B, int64_t size){
+void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     bench_cuda_complex *h_signal = (bench_cuda_complex *)malloc(sizeof(bench_cuda_complex) * (size/2));
-    cudaEventRecord(*device_object->start_memory_copy_host);
-    cudaMemcpy(h_signal, device_object->d_B, (size/2) * sizeof(bench_cuda_complex), cudaMemcpyDeviceToHost);
-    cudaEventRecord(*device_object->stop_memory_copy_host);
+    cudaEventRecord(*deviceObj->start_memory_copy_host);
+    cudaMemcpy(h_signal, deviceObj->d_B, (size/2) * sizeof(bench_cuda_complex), cudaMemcpyDeviceToHost);
+    cudaEventRecord(*deviceObj->stop_memory_copy_host);
 
     for (unsigned int i = 0; i < (size/2); ++i){
         h_B[i * 2] = h_signal[i].x;
@@ -95,15 +101,16 @@ void copy_memory_to_host(GraficObject *device_object, bench_t* h_B, int64_t size
     }
 }
 
-float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
-    cudaEventSynchronize(*device_object->stop_memory_copy_host);
+float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    cudaEventSynchronize(*deviceObj->stop_memory_copy_host);
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
     // memory transfer time host-device
-    cudaEventElapsedTime(&milliseconds_h_d, *device_object->start_memory_copy_device, *device_object->stop_memory_copy_device);
+    cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
     // kernel time
-    cudaEventElapsedTime(&milliseconds, *device_object->start, *device_object->stop);
+    cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
     //  memory transfer time device-host
-    cudaEventElapsedTime(&milliseconds_d_h, *device_object->start_memory_copy_host, *device_object->stop_memory_copy_host);
+    cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
     
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", milliseconds_h_d,milliseconds,milliseconds_d_h, current_time);
@@ -118,10 +125,11 @@ float get_elapsed_time(GraficObject *device_object, bool csv_format, bool csv_fo
     return milliseconds;
 }
 
-void clean(GraficObject *device_object){
+void clean(GraficCommon* device_object){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudaError_t err = cudaSuccess;
 
-    err = cudaFree(device_object->d_B);
+    err = cudaFree(deviceObj->d_B);
 
     if (err != cudaSuccess)
     {
@@ -131,10 +139,10 @@ void clean(GraficObject *device_object){
 
 
     // delete events
-    delete device_object->start;
-    delete device_object->stop;
-    delete device_object->start_memory_copy_device;
-    delete device_object->stop_memory_copy_device;
-    delete device_object->start_memory_copy_host;
-    delete device_object->stop_memory_copy_host;
+    delete deviceObj->start;
+    delete deviceObj->stop;
+    delete deviceObj->start_memory_copy_device;
+    delete deviceObj->stop_memory_copy_device;
+    delete deviceObj->start_memory_copy_host;
+    delete deviceObj->stop_memory_copy_host;
 }

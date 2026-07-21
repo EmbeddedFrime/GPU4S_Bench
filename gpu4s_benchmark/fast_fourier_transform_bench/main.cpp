@@ -87,7 +87,7 @@ int main(int argc, char *argv[]){
 		d_B[i] = A[i];
 	}
 	// base object init
-	GraficObject *fft_bench = (GraficObject *)malloc(sizeof(GraficObject));
+	GraficCommon*fft_bench = (GraficCommon*)malloc(sizeof(GraficObject));
 	// init devices
 	char device[100] = "";
 	init(fft_bench, 0,arguments_parameters->gpu, device);

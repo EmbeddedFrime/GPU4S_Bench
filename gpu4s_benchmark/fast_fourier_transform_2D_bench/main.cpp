@@ -85,7 +85,7 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// copy A to B
 	// base object init
-	GraficObject *fft_bench = (GraficObject *)malloc(sizeof(GraficObject));
+	GraficCommon* fft_bench = (GraficCommon*)malloc(sizeof(GraficObject));
 	// init devices
 	char device[100] = "";
 	init(fft_bench, 0,arguments_parameters->gpu, device);
@@ -97,7 +97,8 @@ int main(int argc, char *argv[]){
 	// copy memory to device
 	copy_memory_to_device(fft_bench, A, size_A);
 	// execute kernel
-	execute_kernel(fft_bench, arguments_parameters->size);
+	//Fix: add a static cast so the compiler select the right overload function
+	execute_kernel(fft_bench, static_cast<int64_t>(arguments_parameters->size));
 	// copy memory to host
 	copy_memory_to_host(fft_bench, d_B, arguments_parameters->size);
 

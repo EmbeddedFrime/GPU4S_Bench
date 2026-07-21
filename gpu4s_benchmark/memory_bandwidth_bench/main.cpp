@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	// base object init
-	GraficObject *mem_bench = (GraficObject *)malloc(sizeof(GraficObject));
+	GraficCommon*mem_bench = (GraficCommon*)malloc(sizeof(GraficObject));
 	// init devices
 	char device[100] = "";
 	init(mem_bench, 0,gpu, device);

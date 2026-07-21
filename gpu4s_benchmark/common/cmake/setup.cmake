@@ -9,7 +9,8 @@
 # ====== CMake Configuration ======
 
 # --- Global Variable ---
-set(OPENCL_VERSION  300       CACHE STRING "API OpenCL Version : 200, 210, 220, 300, 310")
+set(NSTREAMS       8          CACHE STRING "number of thread : 2,4,16")
+set(OPENCL_VERSION 300        CACHE STRING "API OpenCL Version : 200, 210, 220, 300, 310")
 set(ENDIANFLAGS    ""         CACHE STRING "ENDIANFLAGS : , BIGENDIAN")
 set(OPT_FLAG       "-O3"      CACHE STRING "Compiler optimization level : -O2, -O3, -Ofast")
 set(CUDA_ARCH      "native"   CACHE STRING "API CUDA version: native, sm_72-86")

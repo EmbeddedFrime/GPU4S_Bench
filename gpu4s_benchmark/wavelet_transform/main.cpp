@@ -103,7 +103,7 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	// base object init
-	GraficObject *wavelet_bench = (GraficObject *)malloc(sizeof(GraficObject));
+	GraficCommon*wavelet_bench = (GraficCommon*)malloc(sizeof(GraficObject));
 	// init devices
 	char device[100] = "";
 	init(wavelet_bench, 0,arguments_parameters->gpu, device);
