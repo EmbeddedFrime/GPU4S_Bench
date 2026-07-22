@@ -7,6 +7,7 @@
 # =======================================================================
 
 # ====== CMake Configuration ======
+include(FetchContent)
 
 # --- Global Variable ---
 set(NSTREAMS       8          CACHE STRING "number of thread : 2,4,16")
@@ -15,6 +16,8 @@ set(ENDIANFLAGS    ""         CACHE STRING "ENDIANFLAGS : , BIGENDIAN")
 set(OPT_FLAG       "-O3"      CACHE STRING "Compiler optimization level : -O2, -O3, -Ofast")
 set(CUDA_ARCH      "native"   CACHE STRING "API CUDA version: native, sm_72-86")
 set(BLA_VENDOR     "OpenBLAS" CACHE STRING "BLAS lib : ATLAS, OpenBLAS")
+set(EXTERN_DIR          ${CMAKE_SOURCE_DIR}/../common/extern/)
+
 
 string(ASCII 27 Esc)
 if(NOT BLOCKSIZE)

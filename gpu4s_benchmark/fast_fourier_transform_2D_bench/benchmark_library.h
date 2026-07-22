@@ -39,9 +39,6 @@ struct GraficObject : public GraficCommon {
 		#endif
    	#elif OPENCL
 		// OpenCL PART
-		cl::Context *context;
-		cl::CommandQueue *queue;
-		cl::Device default_device;
 		cl::Event *evt_copyB;
 		cl::Event *evt_copyBr;
 		cl::Event *evt;

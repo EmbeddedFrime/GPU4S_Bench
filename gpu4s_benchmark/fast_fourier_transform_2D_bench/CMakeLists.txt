@@ -16,24 +16,30 @@ list(APPEND CMAKE_MODULE_PATH
 # Global:
 include(setup)
 include(compileBlueprint)
+# Module:
+include(findVkFFT)
+
 
 # ====== Compilation of the targets ======
 
 # --- Android Targets---
 if(ANDROID)
 
-    if(ANDROID_OPENCL_LIB_INC)
+    if(ANDROID_OPENCL_LIB_INC AND VKFFT_FOUND)
         # --- OpenCL-lib ---
         compile_target(${PROJECT_NAME}_opencl_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl_lib.cpp
-            COMPILE_DEFS       OPENCL   
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl_lib.cpp
+            COMPILE_DEFS        OPENCL   
+                                OPENCL VKFFT_BACKEND=3
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
 
-            INCLUDES           ${ANDROID_INC}
-            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-                               
+            COMPILE_OPTIONS     -Wno-deprecated-declarations   #hide warning from vkfft 
+            INCLUDES            ${ANDROID_INC} 
+                                ${VKFFT_INCLUDE_DIR}
 
+            LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so  
+                                ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3.a                        
             SHORTCUTS_NAMES    opencl-lib OpenCL-lib
         )
     endif()
@@ -44,17 +50,19 @@ endif(ANDROID)
 # --- Computeur targets ---
 if(NOT ANDROID)
     # --- OpenCL Targets ---
-    if(OpenCL_FOUND)
+    if(OpenCL_FOUND AND VKFFT_FOUND)
         # --- OpenCL-lib ---
         compile_target(${PROJECT_NAME}_opencl_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl_lib.cpp
-            COMPILE_DEFS       OPENCL
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl_lib.cpp
+            COMPILE_DEFS        OPENCL
+                                OPENCL VKFFT_BACKEND=3
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
 
-            LIBRARIES          OpenCL::OpenCL 
-            INCLUDES           ${ANDROID_INC}
-            SHORTCUTS_NAMES    opencl-lib OpenCL-lib
+            COMPILE_OPTIONS     -Wno-deprecated-declarations   #hide warning from vkfft 
+            INCLUDES            ${VKFFT_INCLUDE_DIR}
+            LIBRARIES           OpenCL::OpenCL fftw3 
+            SHORTCUTS_NAMES     opencl-lib OpenCL-lib
         )
     endif()
 
@@ -62,12 +70,12 @@ if(NOT ANDROID)
     if(CUDAToolkit_FOUND)
         # --- CUDA-lib ---
         compile_target(${PROJECT_NAME}_cuda_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda_lib.cu
-            COMPILE_DEFS       CUDA
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart CUDA::cufft fftw3
-            SHORTCUTS_NAMES    cuda-lib CUDA-lib
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       cuda/lib_cuda_lib.cu
+            COMPILE_DEFS        CUDA
+            SET_CUDA            1
+            LIBRARIES           CUDA::cudart CUDA::cufft fftw3
+            SHORTCUTS_NAMES     cuda-lib CUDA-lib
         )
     endif()
 

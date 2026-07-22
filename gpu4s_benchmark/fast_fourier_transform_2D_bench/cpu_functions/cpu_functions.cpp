@@ -1,6 +1,7 @@
 #include "cpu_functions.h"
 #include <complex.h> 
 #include <fftw3.h>
+#include <cstring>
 
 bool FFT2D(COMPLEX **c,int nx,int ny,COMPLEX **out)
 {

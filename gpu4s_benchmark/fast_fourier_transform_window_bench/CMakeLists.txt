@@ -20,6 +20,7 @@ include(compileBlueprint)
 include(findOpenMP)
 include(findHIP)
 include(findOpenBLAS)
+include(findVkFFT)
 
 # ====== Compilation of the targets ======
 
@@ -36,39 +37,45 @@ if(ANDROID)
     if(ANDROID_OPENCL_LIB_INC)
         # --- OpenCL ---
         compile_target(${PROJECT_NAME}_opencl
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl.cpp
-            COMPILE_DEFS       OPENCL
-                            CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl.cpp
+            COMPILE_DEFS        OPENCL
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
                                 
-            INCLUDES           ${ANDROID_INC}
-            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-            SHORTCUTS_NAMES    cl OpenCL
+            INCLUDES            ${ANDROID_INC}
+            LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+            SHORTCUTS_NAMES     cl OpenCL
         )
         # --- OpenCL-opt ---
         compile_target(${PROJECT_NAME}_opencl_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl_opt.cpp
-            COMPILE_DEFS       OPENCL   
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl_opt.cpp
+            COMPILE_DEFS        OPENCL   
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
 
-            INCLUDES           ${ANDROID_INC}
-            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-            SHORTCUTS_NAMES    opencl-opt OpenCL-opt
+            INCLUDES            ${ANDROID_INC}
+            LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+            SHORTCUTS_NAMES     opencl-opt OpenCL-opt
         )
 
-        # # --- OpenCL-lib ---
-        # compile_target(${PROJECT_NAME}_opencl_lib
-        #     BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        #     SOURCES_FILES      opencl/lib_opencl_lib.cpp
-        #     COMPILE_DEFS       OPENCL   
-        #                        CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+        if(VKFFT_FOUND)
+            # --- OpenCL-lib ---
+            compile_target(${PROJECT_NAME}_opencl_lib
+                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES       opencl/lib_opencl_lib.cpp
+                COMPILE_DEFS        OPENCL   
+                                    OPENCL VKFFT_BACKEND=3
+                                    CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
 
-        #     INCLUDES           ${ANDROID_INC}
-        #     LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+                COMPILE_OPTIONS     -Wno-deprecated-declarations   #hide warning from vkfft 
+                INCLUDES            ${ANDROID_INC} 
+                                    ${VKFFT_INCLUDE_DIR}
 
-        #     SHORTCUTS_NAMES    opencl-lib OpenCL-lib
-        # )
+                LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so  
+                                    ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3.a                        
+                SHORTCUTS_NAMES    opencl-lib OpenCL-lib
+            )
+        endif()
     endif()
 
     # --- OpenMP---
@@ -140,16 +147,21 @@ if(NOT ANDROID)
             SHORTCUTS_NAMES    opencl-opt OpenCL-opt
         )
 
-        # # --- OpenCL-lib ---
-        # compile_target(${PROJECT_NAME}_opencl_lib
-        #     BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        #     SOURCES_FILES      opencl/lib_opencl_lib.cpp
-        #     COMPILE_DEFS       OPENCL
-        #                        CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+        if(VKFFT_FOUND)        
+            # --- OpenCL-lib ---
+            compile_target(${PROJECT_NAME}_opencl_lib
+                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES       opencl/lib_opencl_lib.cpp
+                COMPILE_DEFS        OPENCL
+                                    OPENCL VKFFT_BACKEND=3
+                                    CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
 
-        #     LIBRARIES          OpenCL::OpenCL 
-        #     SHORTCUTS_NAMES    opencl-lib OpenCL-lib
-        # )
+                COMPILE_OPTIONS     -Wno-deprecated-declarations   #hide warning from vkfft 
+                INCLUDES            ${VKFFT_INCLUDE_DIR}
+                LIBRARIES           OpenCL::OpenCL fftw3 
+                SHORTCUTS_NAMES     opencl-lib OpenCL-lib
+            )
+        endif()
       
     endif()
 
