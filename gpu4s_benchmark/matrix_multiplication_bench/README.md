@@ -318,3 +318,47 @@ adb shell 'for b in /data/local/tmp/convolution*; do [ -x "$b" ] || continue; na
 
 cmake -B build-float-256 -DDATATYPE=FLOAT -DBLOCKSIZE=256
 cmake -B build-double-128 -DDATATYPE=DOUBLE -DBLOCKSIZE=128
+
+
+
+## 1. OpenCL & OpenCL-Related Libraries
+
+* **`OpenCL::OpenCL` (desktop) / `libOpenCL.so` (Android)**
+  * The core OpenCL runtime library used for the OpenCL versions of the benchmarks.
+* **`clblast`**
+  * An optimized OpenCL BLAS (Basic Linear Algebra Subprograms) library, used for accelerated matrix operations.
+* **`vkFFT` (included as headers via `findVkFFT`)**
+  * A high-performance GPU FFT library supporting Vulkan, CUDA, OpenCL, and HIP backends.
+
+---
+
+## 2. CUDA & NVIDIA Libraries
+
+* **`CUDA::cudart`**
+  * CUDA Runtime library.
+* **`CUDA::cuda_driver`**
+  * CUDA Driver API library.
+* **`CUDA::cublas`**
+  * NVIDIA's GPU-accelerated Linear Algebra library.
+* **`CUDA::cufft`**
+  * NVIDIA's GPU-accelerated Fast Fourier Transform library.
+* **`cudnn`**
+  * NVIDIA's CUDA Deep Neural Network library, used for deep learning operations like pooling and activation layers.
+
+---
+
+## 3. HIP / AMD ROCm Libraries
+
+* **`hip::host`**
+  * AMD's HIP library target used to run CUDA-like code on AMD hardware.
+
+---
+
+## 4. CPU, Math & Threading Libraries
+
+* **`OpenMP::OpenMP_CXX` (desktop) / `-static-openmp` (Android link flag)**
+  * Used for CPU multi-threading parallelism.
+* **`BLAS::BLAS`**
+  * Standard Basic Linear Algebra Subprograms for CPU mathematical operations (resolves to CPU BLAS libraries like OpenBLAS).
+* **`fftw3` (desktop) / `libfftw3.a` (Android)**
+  * Fast Fourier Transform library on the CPU, used as a reference benchmark.

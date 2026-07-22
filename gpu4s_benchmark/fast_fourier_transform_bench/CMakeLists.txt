@@ -21,6 +21,7 @@ include(findOpenMP)
 include(findHIP)
 include(findOpenBLAS)
 include(findVkFFT)
+include(findFFTW)
 
 # ====== Compilation of the targets ======
 
@@ -107,21 +108,23 @@ if(ANDROID)
         SHORTCUTS_NAMES    openmp-opt OpenMP-opt
     )
 
-    # --- OpenMP-lib ---
-    # compile_target(${PROJECT_NAME}_openmp_lib
-    #     BENCH_DIR          ${CMAKE_SOURCE_DIR}
-    #     SOURCES_FILES      openmp/lib_omp_opt.cpp
-    #     COMPILE_DEFS       OPENMP 
-    #     COMPILE_OPTIONS    -fopenmp  
-    #     LIBRARIES          -static-openmp   #openmp flags
-    #                        -fopenmp  
-    #                        -lm              # add math lib
-    #                         ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3_omp.a  
-    #                         ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3.a   
+    if(ANDROID_FFTW_LIB_INC)    
+        # --- OpenMP-lib ---
+        compile_target(${PROJECT_NAME}_openmp_lib
+            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES      openmp/lib_omp_opt.cpp
+            COMPILE_DEFS       OPENMP 
+            COMPILE_OPTIONS    -fopenmp  
+            LIBRARIES          -static-openmp   #openmp flags
+                            -fopenmp  
+                            -lm              # add math lib
+                                ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3_omp.a  
+                                ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3.a   
 
 
-    #     SHORTCUTS_NAMES    openmp-lib OpenMP-lib
-    # )
+            SHORTCUTS_NAMES    openmp-lib OpenMP-lib
+        )
+    endif()
 
 endif(ANDROID)
 
@@ -195,19 +198,21 @@ if(NOT ANDROID)
             SHORTCUTS_NAMES    openmp-opt OpenMP-opt 
         )
 
-        # --- OpenMP-lib ---
-        compile_target(${PROJECT_NAME}_openmp_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      openmp/lib_omp_opt.cpp
-            COMPILE_DEFS       OPENMP
+        if(FFTW3_FOUND)    
+            # --- OpenMP-lib ---
+            compile_target(${PROJECT_NAME}_openmp_lib
+                BENCH_DIR          ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES      openmp/lib_omp_opt.cpp
+                COMPILE_DEFS       OPENMP
 
-            LIBRARIES          OpenMP::OpenMP_CXX # openmp flags
-                               m                  # Corresponds to -lm
-                               fftw3_omp         # Corresponds to -lfftw3_omps
-                               fftw3             # Corresponds to -lfftw3
-                               
-            SHORTCUTS_NAMES    openmp-lib OpenMP-lib
-        )
+                LIBRARIES          OpenMP::OpenMP_CXX # openmp flags
+                                m                  # Corresponds to -lm
+                                fftw3_omp         # Corresponds to -lfftw3_omps
+                                fftw3             # Corresponds to -lfftw3
+                                
+                SHORTCUTS_NAMES    openmp-lib OpenMP-lib
+            )
+        endif()
 
     endif()
 
