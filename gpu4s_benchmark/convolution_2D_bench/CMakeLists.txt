@@ -53,7 +53,6 @@ if(ANDROID)
             BENCH_DIR          ${CMAKE_SOURCE_DIR}
             SOURCES_FILES      opencl/lib_opencl_opt.cpp
             COMPILE_DEFS       OPENCL
-                               NUMBER_OF_STREAMS=${NSTREAMS}   
                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
 
             INCLUDES           ${ANDROID_INC}
@@ -112,7 +111,6 @@ if(NOT ANDROID)
             BENCH_DIR          ${CMAKE_SOURCE_DIR}
             SOURCES_FILES      opencl/lib_opencl_opt.cpp
             COMPILE_DEFS       OPENCL
-                               NUMBER_OF_STREAMS=${NSTREAMS}
                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
 
             LIBRARIES          OpenCL::OpenCL
@@ -169,7 +167,6 @@ if(NOT ANDROID)
             BENCH_DIR          ${CMAKE_SOURCE_DIR}
             SOURCES_FILES      cuda/lib_cuda_opt.cu
             COMPILE_DEFS       CUDA
-                               NUMBER_OF_STREAMS=${NSTREAMS}
 
             SET_CUDA           1
             LIBRARIES          CUDA::cudart 

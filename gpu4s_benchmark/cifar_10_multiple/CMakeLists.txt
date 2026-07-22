@@ -16,6 +16,13 @@ list(APPEND CMAKE_MODULE_PATH
 # Global:
 include(setup)
 include(compileBlueprint)
+
+# Check for NSTREAMS :
+if(NOT NSTREAMS)
+    message(STATUS "${Esc}[1;34mNote: NSTREAMS is empty. Fallback to default: 8${Esc}[0m")
+    set(NSTREAMS       8          CACHE STRING "number of thread : 2,4,16")
+endif()
+
 # Module:
 include(findOpenMP)
 include(findHIP)

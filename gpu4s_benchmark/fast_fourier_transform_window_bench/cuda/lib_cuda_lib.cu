@@ -110,10 +110,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A,int64_t siz
 
 }
 
-void aux_execute_kernel(GraficCommon* device_object, int64_t size, bench_cuda_complex *d_A, bench_cuda_complex *d_B, cufftHandle *plan){
-    
-GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    
+void aux_execute_kernel(GraficCommon* device_object, int64_t size, bench_cuda_complex *d_A, bench_cuda_complex *d_B, cufftHandle *plan){    
     //bench_cuda_complex* d_B = deviceObj->d_B;
     
     #ifdef FLOAT
@@ -123,14 +120,12 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cufftPlan1d(plan, size/2, CUFFT_Z2Z, 1);
     cufftExecZ2Z(*plan, (bench_cuda_complex *)d_A, (bench_cuda_complex *)d_B, CUFFT_FORWARD);
     #endif
-    
-    
 }
 
 void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    bench_cuda_complex* d_A = deviceObj->d_A;
-    bench_cuda_complex* d_B = deviceObj->d_B;
+    bench_cuda_complex* d_A = (bench_cuda_complex*)deviceObj->d_A;
+    bench_cuda_complex* d_B = (bench_cuda_complex*)deviceObj->d_B;
     cudaEventRecord(*deviceObj->start);
     cufftHandle plan;
     for (unsigned int i = 0; i < (size * 2  - window + 1); i+=1){
