@@ -39,6 +39,9 @@
 **/build-android/
 
 
+**/extern/
+
+
 
 # OpenCL Dependency Downloads
 **/opencl/opencl_headers/
