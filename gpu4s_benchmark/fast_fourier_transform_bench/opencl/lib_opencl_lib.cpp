@@ -1,16 +1,15 @@
 // OpenCL lib code 
 #include <cmath>
 #include "../benchmark_library.h"
-#include <chrono>
-#include <clFFT.h>
+#include "Clock.h"
+#include "vkFFT.h"
 
-#ifdef ANDROID
-    // kernel time execution
-    Clock kernelCLK;
-    // host <-> device 
-    Clock h2dCLK;
-    Clock d2hCLK;
-#endif
+
+// kernel time execution
+Clock kernelCLK;
+// host <-> device 
+Clock h2dCLK;
+Clock d2hCLK;
 
 //#define BLOCK_SIZE 32
 void init(GraficCommon* device_object, char* device_name){
@@ -67,9 +66,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_B,int64_t siz
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 	// copy memory host -> device
 
-    #ifdef ANDROID
-        h2dCLK.start();
-    #endif
+    h2dCLK.start();
 
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_B,CL_TRUE,0,sizeof(bench_t)*size, h_B, NULL, deviceObj->evt_copyB);
     if (err != CL_SUCCESS) 
@@ -78,92 +75,81 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_B,int64_t siz
         return;
     }
     
-    #ifdef ANDROID
-        deviceObj->queue->finish();
-        h2dCLK.end();
-    #endif
+    deviceObj->queue->finish();
+    h2dCLK.end();
 }
 
 void execute_kernel(GraficCommon* device_object, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    struct timespec start, end;
-    const unsigned int x_local= BLOCK_SIZE;
-    unsigned int mode = (unsigned int)log2(size);
 
-    /* Setup clFFT. */
-    clfftSetupData fftSetup;
-    clfftInitSetupData(&fftSetup);
-    clfftSetup(&fftSetup);
+    // --- convert c++ pointer to raw c ---
+    cl_context          raw_context = (*deviceObj->context)();
+    cl_device_id        raw_device  = deviceObj->default_device();
+    cl_command_queue    raw_queue   = (*deviceObj->queue)();
+    cl_mem              raw_input   = (*deviceObj->d_B)();
+    cl_mem              raw_output  = (*deviceObj->d_Br)();
 
-    clfftPlanHandle planHandle;
-    size_t clLengths[1] = {size};
-    // clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-    #ifdef ANDROID
-        deviceObj->queue->finish(); // Clear queue to ensure accurate start
-        kernelCLK.start();
+     // --- VkFFT configuration ---
+    VkFFTConfiguration config = {};
+    config.FFTdim           = 1;            // number of dim of FFT
+    config.size[0]          = size;         // size of D1
+    config.device           = &raw_device;  // select the device 
+    config.context          = &raw_context; // memory space
+    config.buffer           = &raw_output;  // output buff
+    config.inputBuffer      = &raw_input;   // input buff  
+    config.isInputFormatted = 1;            // different buffer for input/output
+    #ifdef DOUBLE
+    config.doublePrecision  = 1;
     #endif
-    clfftCreateDefaultPlan(&planHandle, (*deviceObj->context)(), CLFFT_1D, clLengths);
 
-    /* Set plan parameters. */
-    #ifdef FLOAT
-    clfftSetPlanPrecision(planHandle, CLFFT_SINGLE);
-    #else
-    clfftSetPlanPrecision(planHandle, CLFFT_DOUBLE);
-    #endif
-    clfftSetLayout(planHandle, CLFFT_COMPLEX_INTERLEAVED, CLFFT_COMPLEX_INTERLEAVED);
-    clfftSetResultLocation(planHandle, CLFFT_INPLACE);
 
-    /* Bake the plan. */
-    clfftBakePlan(planHandle, 1, &(*deviceObj->queue)(), NULL, NULL);
+    // --- init ---
+    kernelCLK.start(); // Start clock
+    VkFFTApplication app = {};
+    initializeVkFFT(&app, config); // compile the FFT kernel for your GPU
 
-    /* Execute the plan. */
-    clfftEnqueueTransform(planHandle, CLFFT_FORWARD, 1, &(*deviceObj->queue)(), 0,NULL, &(*deviceObj->evt)(), &(*deviceObj->d_B)(), NULL, NULL);
+    // --- launch ---
+    VkFFTLaunchParams launchParams = {};
+    launchParams.commandQueue  = &raw_queue; //select the queue
+
+    VkFFTAppend(&app, -1, &launchParams); // -1 = forward FFT
 
     deviceObj->queue->finish();
-    clfftDestroyPlan( &planHandle );
-    clfftTeardown( );
-    // clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    #ifdef ANDROID
-        kernelCLK.end();
-    #endif
-    deviceObj->elapsed_time =  (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
-   
+    kernelCLK.end(); // End clock
+
+
+    // --- cleanup ---
+    deleteVkFFT(&app);
 }
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    #ifdef ANDROID
-        d2hCLK.start();
-    #endif
+    d2hCLK.start();
 
     deviceObj->queue->enqueueReadBuffer(*deviceObj->d_Br,CL_TRUE,0,sizeof(bench_t)*size,h_B, NULL, deviceObj->evt_copyBr);
      
-    #ifdef ANDROID
-        deviceObj->queue->finish();
-        d2hCLK.end();
-    #endif
+    deviceObj->queue->finish();
+    d2hCLK.end();
 }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     deviceObj->evt_copyBr->wait();
     float elapsed_h_d = 0, elapsed = 0, elapsed_d_h = 0;
-    elapsed_h_d = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
+    // elapsed_h_d = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    // //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
 
-    elapsed = deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
+    // elapsed = deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    // //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
 
-    elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    //printf("Elapsed time Device->Host: %.10f \n", );
+    // elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    // //printf("Elapsed time Device->Host: %.10f \n", );
 
-    #ifdef ANDROID
-        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
-        elapsed_h_d  = h2dCLK.getElapsed();
-        elapsed      = kernelCLK.getElapsed();
-        elapsed_d_h  = d2hCLK.getElapsed();
-    #endif
 
+    // --- FIX: unify all the clock ---
+    elapsed_h_d  = h2dCLK.getElapsed();
+    elapsed      = kernelCLK.getElapsed();
+    elapsed_d_h  = d2hCLK.getElapsed();
 
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n",elapsed_h_d / 1000000.0, deviceObj->elapsed_time , elapsed_d_h / 1000000.0, current_time);

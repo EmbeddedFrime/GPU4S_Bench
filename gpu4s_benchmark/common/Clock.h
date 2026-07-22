@@ -1,3 +1,10 @@
+/** * ====================================================================
+ * @file        clock.h
+ * @brief       High-resolution timing utility using std::chrono for
+ *              accurate execution benchmarking.
+ * @paragraph   License
+ * ESA-PL Strong Copyleft – v2.5
+ * ======================================================================= */
 #pragma once
 #include <chrono>
 

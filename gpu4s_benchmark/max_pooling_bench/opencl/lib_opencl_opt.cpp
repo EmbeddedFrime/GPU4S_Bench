@@ -115,6 +115,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(deviceObj->default_device)<<"\n";
         exit(1);
     }
+
+     #ifdef ANDROID
+        deviceObj->queue->finish();
+        kernelCLK.start();
+    #endif
     
     cl::Kernel kernel_add=cl::Kernel(program,"kernel_max");
     kernel_add.setArg(0,*deviceObj->d_A);
@@ -123,10 +128,6 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     kernel_add.setArg(3,stride);
     kernel_add.setArg(4,lateral_stride);
 
-    #ifdef ANDROID
-        deviceObj->queue->finish();
-        kernelCLK.start();
-    #endif
 
     deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evt);
     deviceObj->queue->finish();

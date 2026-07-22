@@ -138,7 +138,6 @@ void clean(GraficCommon* device_object){
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 	cudaError_t err = cudaSuccess;
 	err = cudaFree(deviceObj->d_A);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));
@@ -146,17 +145,16 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->d_B);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector B (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->d_C);
 
+    err = cudaFree(deviceObj->d_C);
     if (err != cudaSuccess)
     {
-        fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));
+        fprintf(stderr, "Failed to free device vector C (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
 

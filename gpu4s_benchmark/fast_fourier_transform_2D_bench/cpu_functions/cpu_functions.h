@@ -2,6 +2,7 @@
 #include <chrono>
 #include <sys/time.h>
 #include <ctime>
+#include "../benchmark_library.h"
 
 #ifndef CPU_LIB_H
 #define CPU_LIB_H
@@ -53,4 +54,4 @@ void get_double_hexadecimal_values(const char* filename, bench_t* float_vector, 
 long int get_timestamp();
 
 
-#endif
+#endif	

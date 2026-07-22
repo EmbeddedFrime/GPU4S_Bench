@@ -7,14 +7,16 @@
 # =======================================================================
 
 # ====== CMake Configuration ======
+include(FetchContent)
 
 # --- Global Variable ---
-set(NSTREAMS       8          CACHE STRING "number of thread : 2,4,16")
 set(OPENCL_VERSION 300        CACHE STRING "API OpenCL Version : 200, 210, 220, 300, 310")
 set(ENDIANFLAGS    ""         CACHE STRING "ENDIANFLAGS : , BIGENDIAN")
 set(OPT_FLAG       "-O3"      CACHE STRING "Compiler optimization level : -O2, -O3, -Ofast")
 set(CUDA_ARCH      "native"   CACHE STRING "API CUDA version: native, sm_72-86")
 set(BLA_VENDOR     "OpenBLAS" CACHE STRING "BLAS lib : ATLAS, OpenBLAS")
+set(EXTERN_DIR          ${CMAKE_SOURCE_DIR}/../common/extern/)
+
 
 string(ASCII 27 Esc)
 if(NOT BLOCKSIZE)
@@ -26,6 +28,12 @@ if(NOT DATATYPE)
     message(STATUS "${Esc}[1;34mNote: DATATYPE is empty. Fallback to default: FLOAT${Esc}[0m")
     set(DATATYPE       "FLOAT"    CACHE STRING "Data type: FLOAT, DOUBLE, INT")
 endif()
+
+if(NOT NSTREAMS)
+    message(STATUS "${Esc}[1;34mNote: NSTREAMS is empty. Fallback to default: 8${Esc}[0m")
+    set(NSTREAMS       8          CACHE STRING "number of thread : 2,4,16")
+endif()
+
 
 
 # --- Android Variable ---

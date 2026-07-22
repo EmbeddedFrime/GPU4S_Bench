@@ -20,6 +20,8 @@ include(compileBlueprint)
 include(findOpenMP)
 include(findHIP)
 include(findOpenBLAS)
+include(findVkFFT)
+include(findFFTW)
 
 # ====== Compilation of the targets ======
 
@@ -36,39 +38,45 @@ if(ANDROID)
     if(ANDROID_OPENCL_LIB_INC)
         # --- OpenCL ---
         compile_target(${PROJECT_NAME}_opencl
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl.cpp
-            COMPILE_DEFS       OPENCL
-                            CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl.cpp
+            COMPILE_DEFS        OPENCL
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
                                 
-            INCLUDES           ${ANDROID_INC}
-            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-            SHORTCUTS_NAMES    cl OpenCL
+            INCLUDES            ${ANDROID_INC}
+            LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+            SHORTCUTS_NAMES     cl OpenCL
         )
         # --- OpenCL-opt ---
         compile_target(${PROJECT_NAME}_opencl_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl_opt.cpp
-            COMPILE_DEFS       OPENCL   
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl_opt.cpp
+            COMPILE_DEFS        OPENCL   
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
 
-            INCLUDES           ${ANDROID_INC}
-            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-            SHORTCUTS_NAMES    opencl-opt OpenCL-opt
+            INCLUDES            ${ANDROID_INC}
+            LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+            SHORTCUTS_NAMES     opencl-opt OpenCL-opt
         )
 
-        # # --- OpenCL-lib ---
-        # compile_target(${PROJECT_NAME}_opencl_lib
-        #     BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        #     SOURCES_FILES      opencl/lib_opencl_lib.cpp
-        #     COMPILE_DEFS       OPENCL   
-        #                        CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+        if(VKFFT_FOUND)
+            # --- OpenCL-lib ---
+            compile_target(${PROJECT_NAME}_opencl_lib
+                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES       opencl/lib_opencl_lib.cpp
+                COMPILE_DEFS        OPENCL   
+                                    OPENCL VKFFT_BACKEND=3
+                                    CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
 
-        #     INCLUDES           ${ANDROID_INC}
-        #     LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+                COMPILE_OPTIONS     -Wno-deprecated-declarations   #hide warning from vkfft 
+                INCLUDES            ${ANDROID_INC} 
+                                    ${VKFFT_INCLUDE_DIR}
 
-        #     SHORTCUTS_NAMES    opencl-lib OpenCL-lib
-        # )
+                LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so  
+                                    ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3.a                        
+                SHORTCUTS_NAMES    opencl-lib OpenCL-lib
+            )
+        endif()
     endif()
 
     # --- OpenMP---
@@ -97,20 +105,23 @@ if(ANDROID)
         SHORTCUTS_NAMES    openmp-opt OpenMP-opt
     )
 
-    # # --- OpenMP-lib ---
-    # compile_target(${PROJECT_NAME}_openmp_lib
-    #     BENCH_DIR          ${CMAKE_SOURCE_DIR}
-    #     SOURCES_FILES      openmp/lib_omp_opt.cpp
-    #     COMPILE_DEFS       OPENMP 
-    #     COMPILE_OPTIONS    -fopenmp  
-    #     LIBRARIES          -static-openmp   #openmp flags
-    #                        -fopenmp  
-    #                        -lm              # add math lib
-    #                        -lfftw3_threads  #fftw3 libs
-    #                        -lfftw3
+     # --- OpenMP-lib ---
+    if(ANDROID_FFTW_LIB_INC)    
+        compile_target(${PROJECT_NAME}_openmp_lib
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       openmp/lib_omp_opt.cpp
+            COMPILE_DEFS        OPENMP 
+            COMPILE_OPTIONS     -fopenmp  
+            LIBRARIES           -static-openmp   #openmp flags
+                                -fopenmp  
+                                -lm              # add math lib
+                                ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3_omp.a  
+                                ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3.a   
 
-    #     SHORTCUTS_NAMES    openmp-lib OpenMP-lib
-    # )
+            SHORTCUTS_NAMES    openmp-lib OpenMP-lib
+        )
+    endif(ANDROID_OPENCL_LIB_INC)
+
 
 endif(ANDROID)
 
@@ -120,13 +131,13 @@ if(NOT ANDROID)
     if(OpenCL_FOUND)
         # --- OpenCL ---
         compile_target(${PROJECT_NAME}_opencl
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl.cpp
-            COMPILE_DEFS       OPENCL
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl.cpp
+            COMPILE_DEFS        OPENCL
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
 
-            LIBRARIES          OpenCL::OpenCL
-            SHORTCUTS_NAMES    cl OpenCL
+            LIBRARIES           OpenCL::OpenCL
+            SHORTCUTS_NAMES     cl OpenCL
         )
 
         # --- OpenCL-opt ---
@@ -140,16 +151,21 @@ if(NOT ANDROID)
             SHORTCUTS_NAMES    opencl-opt OpenCL-opt
         )
 
-        # # --- OpenCL-lib ---
-        # compile_target(${PROJECT_NAME}_opencl_lib
-        #     BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        #     SOURCES_FILES      opencl/lib_opencl_lib.cpp
-        #     COMPILE_DEFS       OPENCL
-        #                        CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+        if(VKFFT_FOUND)        
+            # --- OpenCL-lib ---
+            compile_target(${PROJECT_NAME}_opencl_lib
+                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES       opencl/lib_opencl_lib.cpp
+                COMPILE_DEFS        OPENCL
+                                    OPENCL VKFFT_BACKEND=3
+                                    CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
 
-        #     LIBRARIES          OpenCL::OpenCL 
-        #     SHORTCUTS_NAMES    opencl-lib OpenCL-lib
-        # )
+                COMPILE_OPTIONS     -Wno-deprecated-declarations   #hide warning from vkfft 
+                INCLUDES            ${VKFFT_INCLUDE_DIR}
+                LIBRARIES           OpenCL::OpenCL fftw3 
+                SHORTCUTS_NAMES     opencl-lib OpenCL-lib
+            )
+        endif()
       
     endif()
 
@@ -180,18 +196,21 @@ if(NOT ANDROID)
         )
 
         # --- OpenMP-lib ---
-        compile_target(${PROJECT_NAME}_openmp_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      openmp/lib_omp_opt.cpp
-            COMPILE_DEFS       OPENMP
+        if(FFTW3_FOUND)
+            compile_target(${PROJECT_NAME}_openmp_lib
+                BENCH_DIR          ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES      openmp/lib_omp_opt.cpp
+                COMPILE_DEFS       OPENMP
 
-            LIBRARIES          OpenMP::OpenMP_CXX # openmp flags
-                               m                  # Corresponds to -lm
-                               fftw3_threads     # Corresponds to -lfftw3_threads
-                               fftw3             # Corresponds to -lfftw3
-                               
-            SHORTCUTS_NAMES    openmp-lib OpenMP-lib
-        )
+                LIBRARIES          OpenMP::OpenMP_CXX # openmp flags
+                                m                  # Corresponds to -lm
+                                fftw3_threads     # Corresponds to -lfftw3_threads
+                                fftw3             # Corresponds to -lfftw3
+                                
+                SHORTCUTS_NAMES    openmp-lib OpenMP-lib
+            )
+        endif()
+
 
     endif()
 
@@ -276,7 +295,7 @@ endif()
 
 
 # --- all-openmp (Android) ---
-if(ANDROID AND ANDROID_OPENBLAS_LIB_INC  )
+if(ANDROID AND ANDROID_OPENBLAS_LIB_INC)
     add_custom_target(all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
         ${PROJECT_NAME}_openmp_opt 

@@ -2,6 +2,7 @@
 #include "benchmark_library.h"
 #include "cpu_functions/cpu_functions.h"
 #include <sys/time.h>
+#include <cstring>
 
 #define NUMBER_BASE 1
 // OUTPUT C is N x W matrix
