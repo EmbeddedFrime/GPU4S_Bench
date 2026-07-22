@@ -201,16 +201,16 @@ if(NOT ANDROID)
         if(FFTW3_FOUND)    
             # --- OpenMP-lib ---
             compile_target(${PROJECT_NAME}_openmp_lib
-                BENCH_DIR          ${CMAKE_SOURCE_DIR}
-                SOURCES_FILES      openmp/lib_omp_opt.cpp
-                COMPILE_DEFS       OPENMP
+                BENCH_DIR            ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES        openmp/lib_omp_opt.cpp
+                COMPILE_DEFS         OPENMP
 
-                LIBRARIES          OpenMP::OpenMP_CXX # openmp flags
-                                m                  # Corresponds to -lm
-                                fftw3_omp         # Corresponds to -lfftw3_omps
-                                fftw3             # Corresponds to -lfftw3
+                LIBRARIES            OpenMP::OpenMP_CXX # openmp flags
+                                    m                  # Corresponds to -lm
+                                    fftw3_omp         # Corresponds to -lfftw3_omps
+                                    fftw3             # Corresponds to -lfftw3
                                 
-                SHORTCUTS_NAMES    openmp-lib OpenMP-lib
+                SHORTCUTS_NAMES     openmp-lib OpenMP-lib
             )
         endif()
 

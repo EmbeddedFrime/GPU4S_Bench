@@ -21,6 +21,8 @@ include(compileBlueprint)
 include(findOpenMP)
 include(findHIP)
 include(findOpenBLAS)
+include(findCUDNN)
+
 
 # ====== Compilation of the targets ======
 
@@ -167,16 +169,18 @@ if(NOT ANDROID)
             SHORTCUTS_NAMES    cuda-opt CUDA-opt
         )
 
-        # --- CUDA-lib ---
-        compile_target(${PROJECT_NAME}_cuda_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda_lib.cu
-            COMPILE_DEFS       CUDA
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart cudnn
-            SHORTCUTS_NAMES    cuda-lib CUDA-lib
-        )
+        if(CUDNN_FOUND)
+            # --- CUDA-lib ---
+            compile_target(${PROJECT_NAME}_cuda_lib
+                BENCH_DIR          ${CMAKE_SOURCE_DIR}
+                BENCH_DIR          ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES      cuda/lib_cuda_lib.cu
+                COMPILE_DEFS       CUDA
+                SET_CUDA           1
+                LIBRARIES          CUDA::cudart cudnn
+                SHORTCUTS_NAMES    cuda-lib CUDA-lib
+            )
+        endif()
     endif()
 
     # --- HIP targets---
