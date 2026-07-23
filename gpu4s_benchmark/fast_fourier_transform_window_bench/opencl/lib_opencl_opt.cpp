@@ -2,10 +2,15 @@
 #include <cmath>
 #include "../benchmark_library.h"
 #include "GEN_kernel_opt.hcl"
-#include <chrono>
 
+// kernel time execution
+Clock kernelCLK;
 
-
+#ifdef ANDROID
+    // host <-> device 
+    Clock h2dCLK;
+    Clock d2hCLK;
+#endif
 
 //#define BLOCK_SIZE 256
 void init(GraficCommon* device_object, char* device_name){
@@ -138,9 +143,9 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
 }
 void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    struct timespec start, end;
     cl::Program::Sources sources;
     deviceObj->evt = new cl::Event;
+    Clock kernelCLK;
     // load kernel from file
     kernel_code = type_kernel_common + kernel_code;
     sources.push_back({kernel_code.c_str(),kernel_code.length()});
@@ -151,15 +156,14 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(deviceObj->default_device)<<"\n";
         exit(1);
     }
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+	kernelCLK.start();
 
     for (unsigned int i = 0; i < (size * 2 - window + 1); i+=2){
         aux_execute_kernel(device_object, window, i, program);
     }
    
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-
-    deviceObj->elapsed_time =  (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
+    kernelCLK.end();
+    deviceObj->elapsed_time =  kernelCLK.getElapsedMS();
 }
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size){

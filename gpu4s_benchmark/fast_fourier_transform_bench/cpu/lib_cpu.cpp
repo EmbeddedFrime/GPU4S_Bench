@@ -31,8 +31,8 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_B,int64_t siz
 void execute_kernel(GraficCommon* device_object, int64_t size)
 {
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    Clock kernelCLK;
+	kernelCLK.start();
 
 	int64_t loop_w = 0, loop_for_1 = 0, loop_for_2 = 0; 
 	int64_t n, mmax, m, j, istep, i;
@@ -92,9 +92,8 @@ void execute_kernel(GraficCommon* device_object, int64_t size)
         mmax=istep;
     	++loop_w;    
     }
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    //FIX: add float division
-    deviceObj->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
+    kernelCLK.end();
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 

@@ -241,12 +241,13 @@ int main(int argc, char *argv[]){
 
 	if (arguments_parameters->verification)
 	{
-		clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+		Clock cpuKernelCLK;
+		cpuKernelCLK.start();
 		cifar10(output_data, conv_1_output, pooling_1_output, conv_2_output, pooling_2_output, dense_layer_1_output, dense_layer_2_output, input_data, kernel_1, kernel_2, weights_1 , weights_2, CIFAR_10_INPUT, CIFAR_10_OUTPUT, KERNEL_CON_1, KERNEL_CON_2, STRIDE_1,STRIDE_2, DENSE_1, DENSE_2, arguments_parameters->size);		
-		clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+		cpuKernelCLK.end();
 		if (arguments_parameters->print_timing)
 		{
-			printf("CPU Time %lu milliseconds\n", (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000);
+			printf("CPU Time %lu milliseconds\n", cpuKernelCLK.getElapsedMS());
 		}
 		if (arguments_parameters->print_output)
 		{

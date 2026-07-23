@@ -38,15 +38,14 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m, unsigned int w, unsigned int stride, unsigned int lateral_stride)
 {
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-	// Start compute timer
-	struct timespec start, end;
-	// Start compute timer
-	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 	bench_t max_value = 0;
 	const unsigned int block_size = n/stride;
 	const unsigned int stride_squared = stride*stride;
 	unsigned int blockx, blocky, block_zero, x, y = 0;
+	Clock kernelCLK;
 
+	// Start compute timer
+	kernelCLK.start();
 	for (unsigned int block = 0; block < block_size*block_size; ++block)
 	{
 		{
@@ -64,10 +63,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 		}
 	}
     // End compute timer
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-	//FIX: add float division
-    deviceObj->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
-	// End compute timer
+    kernelCLK.end();
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 

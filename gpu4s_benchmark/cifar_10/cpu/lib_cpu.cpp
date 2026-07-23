@@ -206,9 +206,10 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, ben
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2)
 {
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+	Clock kernelCLK;
+
 	// Start compute timer
-	struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+	kernelCLK.start();
 	
 	// 1-1 Step convolution
 	convolution_kernel(deviceObj->input_data, deviceObj->conv_1_output, deviceObj->kernel_1, input_data, input_data, input_data, kernel_1);
@@ -252,9 +253,9 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 	softmax_kernel(deviceObj->dense_layer_2_output, deviceObj->output_data, neurons_dense_2);
 
 	// End compute timer
-	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+	kernelCLK.end();
 	//FIX: add float division 
-    deviceObj->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 

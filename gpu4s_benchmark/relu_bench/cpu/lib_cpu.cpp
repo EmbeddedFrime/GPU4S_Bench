@@ -32,9 +32,8 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m, unsigned int w)
 {
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    struct timespec start, end;
-	// Start compute timer
-	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+    Clock kernelCLK;
+	kernelCLK.start();
 	// Compute traditional relu approach 
 	for (unsigned int i = 0; i < n; ++i)
 	{
@@ -52,9 +51,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 	}
 
 	// End compute timer
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-	//FIX: add float division
-    deviceObj->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
+    kernelCLK.end();
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 

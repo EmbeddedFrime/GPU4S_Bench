@@ -35,7 +35,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);   
     struct timespec start, end;
 	// Start compute timer
-	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+	Clock kernelCLK;
+	kernelCLK.start();
 
 	// Compute traditional matrix multiplication approach 
 	for (unsigned int i = 0; i < n; i++)
@@ -50,15 +51,14 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 	}
 
 	// End compute timer
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    //FIX: add float division
-    deviceObj->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
+	kernelCLK.end();
+	deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size)
 {
-	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);	     
+	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);	
 	memcpy(h_C, &deviceObj->d_C[0], sizeof(bench_t)*size);
 }
 
@@ -75,7 +75,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
 	else
 	{
 		printf("Elapsed time Host->Device: %.10f milliseconds\n", (bench_t) 0);
-		printf("Elapsed time kernel: %.10f milliseconds\n", deviceObj->elapsed_time );
+		printf("Elapsed time kernel: %.10f milliseconds\n", deviceObj->elapsed_time);
 		printf("Elapsed time Device->Host: %.10f milliseconds\n", (bench_t) 0);
     }
     return deviceObj->elapsed_time;

@@ -158,12 +158,13 @@ int main(int argc, char *argv[]){
 	
 	if (arguments_parameters->verification)
 	{
-		clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+		Clock cpuKernelCLK;
+		cpuKernelCLK.start();	
 		correlation_2D(A,B, h_R ,arguments_parameters->size);
-		clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+		cpuKernelCLK.end();
 		if (arguments_parameters->print_timing)
 		{
-			printf("CPU Time %f milliseconds\n", (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f);
+			printf("CPU Time %d milliseconds\n", cpuKernelCLK.getElapsedMS());
 		}
 		if (arguments_parameters->print_output)
 		{

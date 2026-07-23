@@ -147,9 +147,9 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
 
 
     // --- FIX: unify all the clock ---
-    elapsed_h_d  = h2dCLK.getElapsed();
-    elapsed      = kernelCLK.getElapsed();
-    elapsed_d_h  = d2hCLK.getElapsed();
+    elapsed_h_d  = h2dCLK.getElapsedNS();
+    elapsed      = kernelCLK.getElapsedNS();
+    elapsed_d_h  = d2hCLK.getElapsedNS();
 
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n",elapsed_h_d / 1000000.0, deviceObj->elapsed_time , elapsed_d_h / 1000000.0, current_time);

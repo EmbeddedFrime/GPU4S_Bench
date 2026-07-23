@@ -4,9 +4,10 @@
 #include "GEN_kernel_opt.hcl"
 // #include <chrono>
 
+
+// kernel time execution
+Clock kernelCLK;
 #ifdef ANDROID
-    // kernel time execution
-    Clock kernelCLK;
     // host <-> device 
     Clock h2dCLK;
     Clock d2hCLK;
@@ -86,7 +87,6 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_B,int64_t siz
 
 void execute_kernel(GraficCommon* device_object, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    struct timespec start, end;
     const unsigned int x_local= BLOCK_SIZE;
     unsigned int mode = (unsigned int)log2(size);
     cl::NDRange local_reverse, global_reverse, local, global;
@@ -116,6 +116,10 @@ void execute_kernel(GraficCommon* device_object, int64_t size){
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(deviceObj->default_device)<<"\n";
         exit(1);
     }
+    
+    deviceObj->queue->finish(); // Clear queue to ensure accurate start
+    kernelCLK.start();
+
     // reverse bit operation 
     cl::Kernel kernel_add=cl::Kernel(program,"binary_reverse_kernel");
     kernel_add.setArg(0,*deviceObj->d_B);
@@ -123,11 +127,8 @@ void execute_kernel(GraficCommon* device_object, int64_t size){
     kernel_add.setArg(2,size);
     kernel_add.setArg(3,mode);
 
-    // clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-    #ifdef ANDROID
-        deviceObj->queue->finish(); // Clear queue to ensure accurate start
-        kernelCLK.start();
-    #endif
+
+    
     deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global_reverse,local_reverse, NULL, deviceObj->evt);
 
     deviceObj->queue->finish();
@@ -169,13 +170,8 @@ void execute_kernel(GraficCommon* device_object, int64_t size){
 
     
     deviceObj->queue->finish();
-    // clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    #ifdef ANDROID
-        kernelCLK.end();
-    #endif
-
-    deviceObj->elapsed_time =  (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
-
+    kernelCLK.end();
+    deviceObj->elapsed_time =  kernelCLK.getElapsedMS();
 }
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size){
@@ -207,9 +203,9 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
 
     #ifdef ANDROID
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
-        elapsed_h_d  = h2dCLK.getElapsed();
-        elapsed      = kernelCLK.getElapsed();
-        elapsed_d_h  = d2hCLK.getElapsed();
+        elapsed_h_d  = h2dCLK.getElapsedNS();
+        elapsed      = kernelCLK.getElapsedNS();
+        elapsed_d_h  = d2hCLK.getElapsedNS();
     #endif
 
 

@@ -154,9 +154,9 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format){
 
     #ifdef ANDROID
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
-        elapsed_h_d  = h2dCLK.getElapsed();
-        elapsed      = kernelCLK.getElapsed();
-        elapsed_d_h  = d2hCLK.getElapsed();
+        elapsed_h_d  = h2dCLK.getElapsedNS();
+        elapsed      = kernelCLK.getElapsedNS();
+        elapsed_d_h  = d2hCLK.getElapsedNS();
     #endif
 
 

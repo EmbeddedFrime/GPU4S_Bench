@@ -48,8 +48,8 @@ return final_value;
 
 void execute_kernel(GraficCommon* device_object, unsigned int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+	Clock kernelCLK;
+	kernelCLK.start();
 
 	result_bench_t mean_a_matrix =  get_mean_matrix(deviceObj->d_A, size);
 	result_bench_t mean_b_matrix =  get_mean_matrix(deviceObj->d_B, size);
@@ -75,9 +75,9 @@ void execute_kernel(GraficCommon* device_object, unsigned int size){
 	deviceObj->acumulate_value_a_b = acumulate_value_a_b;
 	deviceObj->acumulate_value_a_a = acumulate_value_a_a;
 	deviceObj->acumulate_value_b_b = acumulate_value_b_b;
-	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+	kernelCLK.end();
 	//FIX: add float division
-    deviceObj->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 

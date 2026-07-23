@@ -33,8 +33,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 {
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 	// Start compute timer
-    struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+   	Clock kernelCLK;
+	kernelCLK.start();
 	const unsigned int kernel_rad = kernel_size / 2;
 	const unsigned int output_size = n + kernel_size - 1;
 
@@ -49,9 +49,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 		}
 	}
 	// End compute timer
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    //FIX: add float division
-    deviceObj->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
+    kernelCLK.end();
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 

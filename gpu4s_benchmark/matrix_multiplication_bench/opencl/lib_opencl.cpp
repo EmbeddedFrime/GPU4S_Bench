@@ -13,8 +13,6 @@
 #endif
 
 
-
-
 //#define BLOCK_SIZE 16
 void init(GraficCommon* device_object, char* device_name){
 	init(device_object, 0,0, device_name);
@@ -168,9 +166,9 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
 
     #ifdef ANDROID
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
-        elapsed_h_d  = h2dCLK.getElapsed();
-        elapsed      = kernelCLK.getElapsed();
-        elapsed_d_h  = d2hCLK.getElapsed();
+        elapsed_h_d  = h2dCLK.getElapsedNS();
+        elapsed      = kernelCLK.getElapsedNS();
+        elapsed_d_h  = d2hCLK.getElapsedNS();
     #endif
 
     if (csv_format_timestamp){

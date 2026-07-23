@@ -96,17 +96,16 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size)
 {
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 	// Start compute timer
-	struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+	Clock kernelCLK;
+	kernelCLK.start();
 
 	for (unsigned int i = 0; i < (size * 2 - window + 1); i+=2){
         aux_fft_function(device_object, window, i);
     }
 
 	// End compute timer
-	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    //FIX: add float division
-    deviceObj->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
+	kernelCLK.end();
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 

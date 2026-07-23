@@ -200,12 +200,14 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, ben
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2, unsigned int number_of_images)
 {
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-	// Start compute timer
-	struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
 	bench_t* aux_output_data = deviceObj->output_data;
     bench_t* aux_input_data = deviceObj->input_data;
+
+
+	// Start compute timer
+	Clock kernelCLK;
+	kernelCLK.start();	
 
 	for(unsigned int position = 0; position < number_of_images; ++position)
     {
@@ -255,9 +257,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 	}
 
 	// End compute timer
-	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-	//FIX: add float division
-    deviceObj->elapsed_time = (end.tv_sec - start.tv_sec) * 1000.0f + (end.tv_nsec - start.tv_nsec) / 1000000.0f;
+	kernelCLK.end();
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 

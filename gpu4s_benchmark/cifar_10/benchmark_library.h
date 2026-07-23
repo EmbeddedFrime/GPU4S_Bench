@@ -8,6 +8,7 @@
 #pragma once
 // Include all the benchmark common variable, struct, prototype, lib
 #include "benchmark_common.h"
+#include "Clock.h"
 
 // ======= Benchmark local variable =======
 // --- Compute ---

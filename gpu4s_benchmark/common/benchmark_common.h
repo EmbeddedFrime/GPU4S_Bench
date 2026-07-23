@@ -14,9 +14,7 @@
 #include <string>
 
 // --- project lib ---
-#ifdef ANDROID
 	#include "Clock.h"
-#endif
 
 // --- Specefic framework lib ---
 #ifdef CUDA

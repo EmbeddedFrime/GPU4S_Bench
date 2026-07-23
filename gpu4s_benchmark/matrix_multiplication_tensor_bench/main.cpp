@@ -160,12 +160,13 @@ int main(int argc, char *argv[]){
 
 	if (verification)
 	{
-		clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+		Clock kernelCLK;
+		kernelCLK.start();
 		matrix_multiplication(A, B, h_C, size,  size, size);
-		clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+		kernelCLK.end();
 		if (print_timing)
 		{
-			printf("CPU Time %lu milliseconds\n", (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000);
+			printf("CPU Time %d milliseconds\n", kernelCLK.getElapsedMS() );
 		}
 		if (print_output)
 		{

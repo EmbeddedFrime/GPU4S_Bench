@@ -5,9 +5,9 @@
 #include "GEN_kernel_opt.hcl"
 #include "GEN_atomic_functions.hcl"
 
+// kernel time execution
+Clock kernelCLK;
 #ifdef ANDROID
-    // kernel time execution
-    Clock kernelCLK;
     // host <-> device 
     Clock h2dCLK;
     Clock d2hCLK;
@@ -189,7 +189,6 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     unsigned int x_local= BLOCK_SIZE;
     unsigned int y_local= BLOCK_SIZE;
     unsigned int x_local_plane= BLOCK_SIZE_PLANE;
-    struct timespec start, end;
     cl::NDRange local;
     cl::NDRange global;
 
@@ -211,11 +210,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
          queues[i] = cl::CommandQueue(*deviceObj->context,deviceObj->default_device,CL_QUEUE_PROFILING_ENABLE);
     }
     // timing  
-    // clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-    #ifdef ANDROID
-        deviceObj->queue->finish(); // Clear queue to ensure accurate start
-        kernelCLK.start();
-    #endif
+    deviceObj->queue->finish(); // Clear queue to ensure accurate start
+    kernelCLK.start();
     for (unsigned int position = 0; position < number_of_images; ++position)
     {
         unsigned int stream = position % NUMBER_OF_STREAMS;
@@ -522,12 +518,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
    
     // end 
     deviceObj->queue->finish();
-    // clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    #ifdef ANDROID
-        kernelCLK.end();
-    #endif
-    deviceObj->elapsed_time =  (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
-
+    kernelCLK.end();
+    deviceObj->elapsed_time =  kernelCLK.getElapsedMS();
 }
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size, unsigned int number_of_images){
@@ -581,9 +573,9 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
 
     #ifdef ANDROID
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
-        elapsed_h_d  = h2dCLK.getElapsed();
-        elapsed      = kernelCLK.getElapsed();
-        elapsed_d_h  = d2hCLK.getElapsed();
+        elapsed_h_d  = h2dCLK.getElapsedNS();
+        elapsed      = kernelCLK.getElapsedNS();
+        elapsed_d_h  = d2hCLK.getElapsedNS();
     #endif
 
     if (csv_format_timestamp){

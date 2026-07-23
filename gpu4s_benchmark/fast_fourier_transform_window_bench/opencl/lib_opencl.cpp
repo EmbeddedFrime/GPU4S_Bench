@@ -79,7 +79,6 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
     //cl::NDRange local(x_local, y_local);
     //cl::NDRange global(n, w);
 
-   // clock_gettime(CLOCK_MONOTONIC_RAW, &start);
     // reverse bit operation 
     cl::Kernel kernel_add=cl::Kernel(program,"binary_reverse_kernel");
     kernel_add.setArg(0,*deviceObj->d_A);
@@ -92,10 +91,7 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
     deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global_reverse,local_reverse, NULL, deviceObj->evt);
 
     deviceObj->queue->finish();
-    //clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 
-    //deviceObj->elapsed_time +=  (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
-    //clock_gettime(CLOCK_MONOTONIC_RAW, &start);
     // FFT calculation
     bench_t wtemp, wr, wpr, wpi, wi, theta;
     unsigned int theads = size/2;
@@ -145,17 +141,12 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
        
     }
 
-    
     deviceObj->queue->finish();
-    //clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-
-    //deviceObj->elapsed_time +=  (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
-
 }
 void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    struct timespec start, end;
     deviceObj->elapsed_time = 0;
+    Clock kernelCLK;
     cl::Program::Sources sources;
     deviceObj->evt = new cl::Event;
     // load kernel from file
@@ -168,21 +159,15 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(deviceObj->default_device)<<"\n";
         exit(1);
     }
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-
+    kernelCLK.start();
     for (unsigned int i = 0; i < (size * 2 - window + 1); i+=2){
         aux_execute_kernel(device_object, window, i, program);
     }
-   
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    kernelCLK.end();
 
-    deviceObj->elapsed_time =  (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
-void execute_kernel(GraficCommon* device_object, int64_t size){
-   
-   
 
-}
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);

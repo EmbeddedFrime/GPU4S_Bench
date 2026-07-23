@@ -24,7 +24,11 @@ public:
 		_timePointB = std::chrono::high_resolution_clock::now();
 	}
 
-	float getElapsed(){
-		return std::chrono::duration<float, std::milli>(_timePointB - _timePointA).count() * 1000000.0f;
+	float getElapsedNS(){
+		return std::chrono::duration<float, std::nano>(_timePointB - _timePointA).count();
+	}
+
+	float getElapsedMS(){
+		return std::chrono::duration<float, std::milli>(_timePointB - _timePointA).count();
 	}
 };

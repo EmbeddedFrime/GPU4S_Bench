@@ -127,12 +127,13 @@ int main(int argc, char *argv[]){
 
 	if (arguments_parameters->verification)
 	{
-		clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+		Clock cpuKernelCLK;
+		cpuKernelCLK.start();
 		fft_function(h_B,arguments_parameters->size>>1);
-		clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+		cpuKernelCLK.end();
 		if (arguments_parameters->print_timing)
 		{
-			printf("CPU Time %lu milliseconds\n", (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000);
+			printf("CPU Time %d milliseconds\n", cpuKernelCLK.getElapsedMS());
 		}
 		if (arguments_parameters->print_output)
 		{
