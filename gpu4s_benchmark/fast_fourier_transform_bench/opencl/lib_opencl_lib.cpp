@@ -7,9 +7,11 @@
 
 // kernel time execution
 Clock kernelCLK;
-// host <-> device 
-Clock h2dCLK;
-Clock d2hCLK;
+#ifdef ANDROID
+    // host <-> device 
+    Clock h2dCLK;
+    Clock d2hCLK;
+#endif
 
 //#define BLOCK_SIZE 32
 void init(GraficCommon* device_object, char* device_name){
@@ -136,26 +138,26 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     deviceObj->evt_copyBr->wait();
     float elapsed_h_d = 0, elapsed = 0, elapsed_d_h = 0;
-    // elapsed_h_d = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    // //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
+    elapsed_h_d = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
 
-    // elapsed = deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    // //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
+    elapsed = kernelCLK.getElapsedNS();
+    //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
 
-    // elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    // //printf("Elapsed time Device->Host: %.10f \n", );
+    elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    //printf("Elapsed time Device->Host: %.10f \n", );
 
-
-    // --- FIX: unify all the clock ---
-    elapsed_h_d  = h2dCLK.getElapsedNS();
-    elapsed      = kernelCLK.getElapsedNS();
-    elapsed_d_h  = d2hCLK.getElapsedNS();
+     #ifdef ANDROID
+        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
+        elapsed_h_d  = h2dCLK.getElapsedNS();
+        elapsed_d_h  = d2hCLK.getElapsedNS();
+    #endif
 
     if (csv_format_timestamp){
-        printf("%.10f;%.10f;%.10f;%ld;\n",elapsed_h_d / 1000000.0, deviceObj->elapsed_time , elapsed_d_h / 1000000.0, current_time);
+        printf("%.10f;%.10f;%.10f;%ld;\n",elapsed_h_d / 1000000.0, elapsed / 1000000.0, elapsed_d_h / 1000000.0, current_time);
     }
     else if (csv_format){
-         printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,deviceObj->elapsed_time,elapsed_d_h / 1000000.0);
+         printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0, elapsed / 1000000.0,elapsed_d_h / 1000000.0);
     }else{
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
          printf("Elapsed time kernel: %.10f milliseconds\n", elapsed / 1000000.0 );

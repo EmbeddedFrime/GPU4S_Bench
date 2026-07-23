@@ -23,6 +23,9 @@ include(findOpenBLAS)
 include(findVkFFT)
 include(findFFTW)
 
+# show the configuration of the project
+showConfig()
+
 # ====== Compilation of the targets ======
 
 # --- CPU target ---

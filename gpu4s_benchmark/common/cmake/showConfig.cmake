@@ -1,0 +1,66 @@
+# =======================================================================
+# File:         showCOnfig.cmake
+# Description:  Global configuration script managing variables, flags,
+#               and hardware dependency configurations (OpenCL/CUDA) for
+#               both host and Android environments.
+# License:      ESA-PL Strong Copyleft – v2.5
+# =======================================================================
+
+# --- Define the color---
+string(ASCII 27 Esc)
+set(ColorReset "${Esc}[0m")
+set(ColorBold  "${Esc}[1m")
+set(ColorRed   "${Esc}[1;31m")
+set(ColorGreen "${Esc}[1;32m")
+set(ColorBlue  "${Esc}[1;34m")
+set(ColorCyan  "${Esc}[1;36m")
+
+
+if(ANDROID)
+    set(TARGET_PLATFORM "Android (${ANDROID_ABI}, ${ANDROID_PLATFORM})")
+else()
+    set(TARGET_PLATFORM "Computer (${CMAKE_SYSTEM_PROCESSOR})")
+endif()
+
+function(showConfig)
+    set(ACTIVE_TARGETS "CPU") # CPU target is always compiled
+
+    if(ANDROID)
+        if(ANDROID_OPENCL_LIB_INC)
+            string(APPEND ACTIVE_TARGETS ", OpenCL")
+        endif()
+        if(NOT NO_OPENMP_TARGET)
+            string(APPEND ACTIVE_TARGETS ", OpenMP")
+        endif()
+    else()
+        if(OpenCL_FOUND)
+            string(APPEND ACTIVE_TARGETS ", OpenCL")
+        endif()
+        if(OpenMP_CXX_FOUND)
+            string(APPEND ACTIVE_TARGETS ", OpenMP")
+        endif()
+        if(CUDAToolkit_FOUND)
+            string(APPEND ACTIVE_TARGETS ", CUDA")
+        endif()
+        if(hip_FOUND)
+            string(APPEND ACTIVE_TARGETS ", HIP")
+        endif()
+    endif()
+
+# --- show all the  ---
+    message(STATUS "${ColorCyan}============ ${ColorReset}${ColorBold}GPU4S Benchmark Configuration 🚀 ${ColorCyan}============${ColorReset}")
+    message(STATUS "  Benchmark             : ${ColorBlue}${PROJECT_NAME}${ColorReset}")
+    message(STATUS "  Target Platform       : ${ColorBlue}${TARGET_PLATFORM}${ColorReset}")
+    message(STATUS "  Active Backends       : ${ColorBlue}${ACTIVE_TARGETS}${ColorReset}")
+    message(STATUS "  Data Type             : ${ColorBlue}${DATATYPE}${ColorReset}")
+    message(STATUS "  Block Size            : ${ColorBold}${BLOCKSIZE}${ColorReset}")
+    if(NSTREAMS)
+    message(STATUS "  Number of Sreams      : ${ColorBold}${NSTREAMS}${ColorReset}")
+    endif()
+    message(STATUS "  Profiling Mode        : ${ColorBold}${PROFILING}${ColorReset}")
+    message(STATUS "  Optimization Level    : ${ColorRed}${OPT_FLAG}${ColorReset}")
+    message(STATUS "  CUDA Architecture     : ${ColorRed}${CUDA_ARCH}${ColorReset}")
+    message(STATUS "  OpenCL Version        : ${ColorRed}${OPENCL_VERSION}${ColorReset}")
+    # show the list of benchark 
+    message(STATUS "${ColorCyan}==========================================================${ColorReset}")
+endfunction(showConfig)

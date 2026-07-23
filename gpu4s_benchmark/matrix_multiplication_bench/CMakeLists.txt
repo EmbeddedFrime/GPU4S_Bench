@@ -21,6 +21,9 @@ include(findHIP)
 include(findOpenBLAS)
 include(findCLBlast)
 
+# show the configuration of the project
+showConfig()
+
 # ====== Compilation ======
 
 # --- CPU target ---

@@ -1,7 +1,6 @@
 // OpenCL lib code 
 #include <cmath>
 #include "../benchmark_library.h"
-#include "Clock.h"
 #include "vkFFT.h"
 
 
@@ -60,10 +59,7 @@ bool device_memory_init(GraficCommon* device_object, int64_t size){
 
 void copy_memory_to_device(GraficCommon *device_object, COMPLEX **h_B,int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-	// copy memory host -> device
-	//TODO Errors check
-    h2dCLK.start();
-
+    // --- init ---
     bench_t *h_signal = (bench_t *)malloc(sizeof(bench_t) * size * size * 2);
     for (int i=0; i<size; ++i)
         {
@@ -73,10 +69,13 @@ void copy_memory_to_device(GraficCommon *device_object, COMPLEX **h_B,int64_t si
                     h_signal[2*(j+i*size)+1] = h_B[i][j].y;
             }
         }
+
+    h2dCLK.start();
+    // copy memory host -> device
     deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size*size*2, h_signal, NULL, deviceObj->evt_copyB);
-    free(h_signal);
 
     h2dCLK.end();
+    free(h_signal);
 }
 
 void execute_kernel(GraficCommon* device_object, int64_t size) {
@@ -149,24 +148,23 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     deviceObj->evt_copyBr->wait();
     float elapsed_h_d = 0, elapsed = 0, elapsed_d_h = 0;
-    // elapsed_h_d = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    // //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
-    // elapsed = deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    // //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
-    // elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    // //printf("Elapsed time Device->Host: %.10f \n", );
-
-
-    // --- FIX: unify all the clock ---
-    elapsed_h_d  = h2dCLK.getElapsedNS();
+    elapsed_h_d = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
     elapsed      = kernelCLK.getElapsedNS();
-    elapsed_d_h  = d2hCLK.getElapsedNS();
+    elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    //printf("Elapsed time Device->Host: %.10f \n", );
+
+
+    #ifdef ANDROID
+        elapsed_h_d  = h2dCLK.getElapsedNS();
+        elapsed_d_h  = d2hCLK.getElapsedNS();
+    #endif
 
     if (csv_format_timestamp){
-        printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0, current_time);
+        printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0, elapsed / 1000000.0,elapsed_d_h / 1000000.0, current_time);
     }
     else if (csv_format){
-         printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0);
+         printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0, elapsed / 1000000.0,elapsed_d_h / 1000000.0);
     }else{
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
          printf("Elapsed time kernel: %.10f milliseconds\n", elapsed / 1000000.0);

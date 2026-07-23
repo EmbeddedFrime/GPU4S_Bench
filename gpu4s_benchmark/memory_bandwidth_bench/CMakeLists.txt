@@ -19,6 +19,10 @@ include(compileBlueprint)
 # Module:
 include(findHIP)
 
+# show the configuration of the project
+set(NO_OPENMP_TARGET true) #For the list of backend
+showConfig()
+
 # ====== Compilation of the targets ======
 
 # --- Android Targets---

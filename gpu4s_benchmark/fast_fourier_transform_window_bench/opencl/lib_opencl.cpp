@@ -2,8 +2,15 @@
 #include <cmath>
 #include "../benchmark_library.h"
 #include "GEN_kernel.hcl"
-#include <chrono>
 
+
+// kernel time execution
+Clock kernelCLK;
+#ifdef ANDROID
+    // host <-> device 
+    Clock h2dCLK;
+    Clock d2hCLK;
+#endif
 
 //#define BLOCK_SIZE 256
 void init(GraficCommon* device_object, char* device_name){
@@ -180,7 +187,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     float elapsed_h_d = 0, elapsed = 0, elapsed_d_h = 0;
     elapsed_h_d = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
-    elapsed = deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    elapsed = kernelCLK.getElapsedNS();
     //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
     elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Device->Host: %.10f \n", );

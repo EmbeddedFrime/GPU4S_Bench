@@ -19,6 +19,10 @@ include(compileBlueprint)
 # Module:
 include(findCLBlast)
 
+# show the configuration of the project
+set(NO_OPENMP_TARGET true) #For the list of backend
+showConfig()
+
 # ====== Compilation ======
 
 # --- Android Targets---

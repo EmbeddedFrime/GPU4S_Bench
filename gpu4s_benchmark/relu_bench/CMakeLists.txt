@@ -23,6 +23,9 @@ include(findHIP)
 include(findOpenBLAS)
 include(findCUDNN)
 
+# show the configuration of the project
+showConfig()
+
 
 # ====== Compilation of the targets ======
 

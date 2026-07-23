@@ -20,6 +20,9 @@ include(findOpenMP)
 include(findHIP)
 include(findCUDNN)
 
+# show the configuration of the project
+showConfig()
+
 
 # --- CPU target ---
 compile_target(${PROJECT_NAME}_cpu

@@ -21,6 +21,9 @@ include(findOpenMP)
 include(findHIP)
 include(findCUDNN)
 
+# show the configuration of the project
+showConfig()
+
 
 # ====== Compilation ======
 
