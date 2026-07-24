@@ -5,7 +5,7 @@
 #include <string>
 #include "GEN_kernel_opt.hcl"
 
-#ifdef ANDROID
+#ifdef PROFILING_CLOCK
     // kernel time execution
     Clock kernelCLK;
     // host <-> device 
@@ -71,7 +71,7 @@ bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix,
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h_B, unsigned int size_a, unsigned int size_b){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
         h2dCLK.start();
     #endif
 
@@ -92,7 +92,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
         return;
     }
 
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
         deviceObj->queue->finish();
         h2dCLK.end();
     #endif
@@ -114,7 +114,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(deviceObj->default_device)<<"\n";
         exit(1);
     }
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
         deviceObj->queue->finish();
         kernelCLK.start();
     #endif
@@ -128,7 +128,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     kernel_add.setArg(5,w);
     kernel_add.setArg(6,BLOCK_SIZE);
 
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
             // Ensure queue is idle before measuring
             deviceObj->queue->finish();
             kernelCLK.start();
@@ -138,20 +138,20 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 
     // Wait for completion before stopping the clock
     deviceObj->queue->finish();
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
         kernelCLK.end();
     #endif
 }
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
         d2hCLK.start();
     #endif
 
 	deviceObj->queue->enqueueReadBuffer(*deviceObj->d_C,CL_TRUE,0,sizeof(bench_t)*size,h_C, NULL, deviceObj->evt_copyC);
 
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
         deviceObj->queue->finish();
         d2hCLK.end();
     #endif
@@ -172,11 +172,14 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     //printf("Elapsed time Device->Host: %.10f \n", );
 
 
-    #ifdef ANDROID
-        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
+    #ifdef PROFILING_CLOCK
+        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
         elapsed_h_d  = h2dCLK.getElapsedNS();
         elapsed      = kernelCLK.getElapsedNS();
         elapsed_d_h  = d2hCLK.getElapsedNS();
+        const char* profilingMode = "CLOCK";
+    #else
+        const char* profilingMode = "GPU";
     #endif
 
     if (csv_format_timestamp){
@@ -185,6 +188,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     else if (csv_format){
         printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0);
     }else{
+        printf("profiling mode: %s\n", profilingMode);
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
          printf("Elapsed time kernel: %.10f milliseconds\n", elapsed / 1000000.0);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", elapsed_d_h / 1000000.0);

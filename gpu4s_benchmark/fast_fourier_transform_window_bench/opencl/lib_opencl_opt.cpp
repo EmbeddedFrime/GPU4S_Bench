@@ -6,7 +6,7 @@
 // kernel time execution
 Clock kernelCLK;
 
-#ifdef ANDROID
+#ifdef PROFILING_CLOCK
     // host <-> device 
     Clock h2dCLK;
     Clock d2hCLK;
@@ -52,8 +52,14 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
 
 bool device_memory_init(GraficCommon* device_object,  int64_t size_a_array, int64_t size_b_array){
    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-   deviceObj->d_A = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_array);
-   deviceObj->d_B = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_b_array);
+   cl_int err;
+
+   deviceObj->d_A = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_array, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
+   deviceObj->d_B = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_b_array, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
    // inicialice Arrays
    return true;
 }
@@ -61,8 +67,21 @@ bool device_memory_init(GraficCommon* device_object,  int64_t size_a_array, int6
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A,int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     // copy memory host -> device
-    //TODO Errors check
-    deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size, h_A, NULL, deviceObj->evt_copyB);
+    #ifdef PROFILING_CLOCK
+        h2dCLK.start();
+    #endif
+
+    cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size, h_A, NULL, deviceObj->evt_copyB);
+    if (err != CL_SUCCESS) 
+    {
+        fprintf(stderr, "Failed to copy data vector A from host to device (OpenCL error code %d)!\n", err);
+        return;
+    }
+
+    #ifdef PROFILING_CLOCK
+        deviceObj->queue->finish();
+        h2dCLK.end();
+    #endif
 }
 void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t position, cl::Program program){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -135,11 +154,6 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
         loop = loop * 2;
        
     }
-
-    
-    deviceObj->queue->finish();
-    
-
 }
 void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -162,6 +176,7 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
         aux_execute_kernel(device_object, window, i, program);
     }
    
+    deviceObj->queue->finish();
     kernelCLK.end();
     deviceObj->elapsed_time =  kernelCLK.getElapsedMS();
 }
@@ -177,18 +192,29 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     float elapsed_h_d = 0, elapsed = 0, elapsed_d_h = 0;
     elapsed_h_d = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
-    elapsed = deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    elapsed = kernelCLK.getElapsedNS();
     //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
     elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Device->Host: %.10f \n", );
 
 
-    if (csv_format_timestamp){
+     #ifdef PROFILING_CLOCK
+        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
+        elapsed_h_d  = h2dCLK.getElapsedNS();
+        elapsed_d_h  = d2hCLK.getElapsedNS();
+        // --- select the profiling message ---
+        const char* profilingMode = "CLOCK";
+    #else
+        const char* profilingMode = "GPU";
+    #endif
+
+if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0,deviceObj->elapsed_time ,elapsed_d_h / 1000000.0, current_time);
     }
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,deviceObj->elapsed_time ,elapsed_d_h / 1000000.0);
     }else{
+         printf("profiling mode: %s\n", profilingMode);
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
          printf("Elapsed time kernel: %.10f milliseconds\n",  deviceObj->elapsed_time);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", elapsed_d_h / 1000000.0);

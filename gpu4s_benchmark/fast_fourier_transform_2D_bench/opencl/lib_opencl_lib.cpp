@@ -155,9 +155,12 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     //printf("Elapsed time Device->Host: %.10f \n", );
 
 
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
         elapsed_h_d  = h2dCLK.getElapsedNS();
         elapsed_d_h  = d2hCLK.getElapsedNS();
+        const char* profilingMode = "CLOCK";
+    #else
+        const char* profilingMode = "GPU";
     #endif
 
     if (csv_format_timestamp){
@@ -166,6 +169,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0, elapsed / 1000000.0,elapsed_d_h / 1000000.0);
     }else{
+         printf("profiling mode: %s\n", profilingMode);
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
          printf("Elapsed time kernel: %.10f milliseconds\n", elapsed / 1000000.0);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", elapsed_d_h / 1000000.0);

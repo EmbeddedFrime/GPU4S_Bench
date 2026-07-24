@@ -3,7 +3,7 @@
 #include "../benchmark_library.h"
 #include <clblast.h>
 
-#ifdef ANDROID
+#ifdef PROFILING_CLOCK
     // kernel time execution
     Clock kernelCLK;
     // host <-> device 
@@ -72,7 +72,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     // copy memory host -> device
 
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
         h2dCLK.start();
     #endif
 
@@ -92,7 +92,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
         return;
     }
 
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
         deviceObj->queue->finish();
         h2dCLK.end();
     #endif
@@ -109,7 +109,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     #ifdef INT
     printf("CLBLAST NOT SUPPORT INT OPERATIOS\n");
     #else
-        #ifdef ANDROID
+        #ifdef PROFILING_CLOCK
             // Ensure queue is idle before measuring
             deviceObj->queue->finish();
             kernelCLK.start();
@@ -119,7 +119,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         
         // Wait for completion before stopping the clock
         deviceObj->queue->finish();
-        #ifdef ANDROID
+        #ifdef PROFILING_CLOCK
             kernelCLK.end();
         #endif
     #endif
@@ -127,13 +127,13 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
         d2hCLK.start();
     #endif
 
     deviceObj->queue->enqueueReadBuffer(*deviceObj->d_C,CL_TRUE,0,sizeof(bench_t)*size,h_C, NULL, deviceObj->evt_copyC);
 
-    #ifdef ANDROID
+    #ifdef PROFILING_CLOCK
         deviceObj->queue->finish();
         d2hCLK.end();
     #endif
@@ -153,17 +153,21 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format){
     elapsed_d_h = deviceObj->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Device->Host: %.10f \n", );
 
-    #ifdef ANDROID
-        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on Android) ---
+    #ifdef PROFILING_CLOCK
+        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
         elapsed_h_d  = h2dCLK.getElapsedNS();
         elapsed      = kernelCLK.getElapsedNS();
         elapsed_d_h  = d2hCLK.getElapsedNS();
+        const char* profilingMode = "CLOCK";
+    #else
+        const char* profilingMode = "GPU";
     #endif
 
 
     if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0);
     }else{
+         printf("profiling mode: %s\n", profilingMode);
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
          printf("Elapsed time kernel: %.10f milliseconds\n", elapsed / 1000000.0);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", elapsed_d_h / 1000000.0);
