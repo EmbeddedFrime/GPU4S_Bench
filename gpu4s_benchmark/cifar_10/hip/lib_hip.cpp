@@ -1,6 +1,14 @@
 #include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
 
+
+#ifdef PROFILING_CLOCK
+    // kernel time execution
+    Clock kernelCLK;
+    // host <-> device 
+    Clock h2dCLK;
+    Clock d2hCLK;
+#endif
 /**
  * CUDA Kernel Device code
  *
@@ -300,6 +308,9 @@ bool device_memory_init(GraficCommon* device_object, unsigned int input_data, un
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, bench_t* kernel_1_data, bench_t* kernel_2_data, bench_t* weights_1 ,bench_t* weights_2,unsigned int input , unsigned int kernel_size_1, unsigned int kernel_size_2, unsigned int weights_1_size, unsigned int weights_2_size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    #ifdef PROFILING_CLOCK
+        h2dCLK.start();
+    #endif
     (void)hipEventRecord(*deviceObj->start_memory_copy_device);
     hipError_t err = hipMemcpy(deviceObj->input_data, input_data, sizeof(bench_t) * input * input, hipMemcpyHostToDevice);
     if (err != hipSuccess)
@@ -332,12 +343,18 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, ben
         return;
     }
     (void)hipEventRecord(*deviceObj->stop_memory_copy_device);
+    #ifdef PROFILING_CLOCK
+        h2dCLK.end();
+    #endif
     
 }
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     // execute net 
     // 1-1 step convolution
+    #ifdef PROFILING_CLOCK
+        kernelCLK.start();
+    #endif
     (void)hipEventRecord(*deviceObj->start);
     dim3 dimBlock, dimGrid;
     dimBlock = dim3(BLOCK_SIZE, BLOCK_SIZE);
@@ -409,14 +426,24 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     hipLaunchKernelGGL((softmax_kernel), dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->dense_layer_2_output, deviceObj->output_data, deviceObj->sum_ouput, neurons_dense_2);
     hipLaunchKernelGGL((softmax_finish_kernel), dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->output_data, deviceObj->sum_ouput, neurons_dense_2);
     (void)hipEventRecord(*deviceObj->stop);
+    #ifdef PROFILING_CLOCK
+        cudaDeviceSynchronize(); 
+        kernelCLK.end();
+    #endif
 }
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    #ifdef PROFILING_CLOCK
+        d2hCLK.start();
+    #endif
     (void)hipEventRecord(*deviceObj->start_memory_copy_host);
     hipMemcpy(h_C, deviceObj->output_data, size * sizeof(bench_t), hipMemcpyDeviceToHost);
     //hipMemcpy(h_C, deviceObj->dense_layer_2_output, 10 * sizeof(bench_t), hipMemcpyDeviceToHost);
     (void)hipEventRecord(*deviceObj->stop_memory_copy_host);
+    #ifdef PROFILING_CLOCK
+        d2hCLK.end();
+    #endif
 }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_format_timestamp, long int current_time){
@@ -429,6 +456,16 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
     (void)hipEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
     //  memory transfer time device-host
     (void)hipEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
+
+    #ifdef PROFILING_CLOCK
+        // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
+        milliseconds_h_d  = h2dCLK.getElapsedMS();
+        milliseconds      = kernelCLK.getElapsedMS();
+        milliseconds_d_h  = d2hCLK.getElapsedMS();
+        const char* profilingMode = "CLOCK";
+    #else
+        const char* profilingMode = "GPU";
+    #endif
     
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n",  milliseconds_h_d,milliseconds,milliseconds_d_h, current_time);
@@ -436,6 +473,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", milliseconds_h_d,milliseconds,milliseconds_d_h);
     }else{
+         printf("profiling mode: %s\n", profilingMode);
          printf("Elapsed time Host->Device: %.10f milliseconds\n", milliseconds_h_d);
          printf("Elapsed time kernel: %.10f milliseconds\n", milliseconds);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", milliseconds_d_h);
