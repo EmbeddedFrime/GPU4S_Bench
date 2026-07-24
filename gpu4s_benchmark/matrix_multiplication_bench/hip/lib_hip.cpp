@@ -1,7 +1,6 @@
 #include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
 
-
 #ifdef PROFILING_CLOCK
     // kernel time execution
     Clock kernelCLK;
@@ -9,7 +8,6 @@
     Clock h2dCLK;
     Clock d2hCLK;
 #endif
-
 
 /**
  * CUDA Kernel Device code
@@ -59,7 +57,6 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     (void)hipEventCreate(deviceObj->start_memory_copy_host);
     (void)hipEventCreate(deviceObj->stop_memory_copy_host);
 }
-
 
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix){
    
@@ -132,7 +129,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     (void)hipEventRecord(*deviceObj->stop);
 
     #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
+        hipDeviceSynchronize(); 
         kernelCLK.end();
     #endif
 }
@@ -164,6 +161,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     //  memory transfer time device-host
     (void)hipEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
     
+
     #ifdef PROFILING_CLOCK
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
         milliseconds_h_d  = h2dCLK.getElapsedMS();
@@ -213,7 +211,6 @@ void clean(GraficCommon* device_object){
         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-
 
     // delete events
     delete deviceObj->start;
