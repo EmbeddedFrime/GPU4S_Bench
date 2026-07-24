@@ -6,9 +6,11 @@
 
 // kernel time execution
 Clock kernelCLK;
-// host <-> device 
-Clock h2dCLK;
-Clock d2hCLK;
+#ifdef PROFILING_CLOCK
+    // host <-> device 
+    Clock h2dCLK;
+    Clock d2hCLK;
+#endif
 
 
 //#define BLOCK_SIZE 32
@@ -51,8 +53,14 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
 
 bool device_memory_init(GraficCommon* device_object, int64_t size){
    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-   deviceObj->d_A = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,sizeof(bench_t)* size * size * 2);
-   deviceObj->d_B = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,sizeof(bench_t)* size * size * 2);
+   cl_int err;
+
+   deviceObj->d_A = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,sizeof(bench_t)* size * size * 2, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
+   deviceObj->d_B = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,sizeof(bench_t)* size * size * 2, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+   
    // inicialice Arrays
    return true;
 }
@@ -70,11 +78,17 @@ void copy_memory_to_device(GraficCommon *device_object, COMPLEX **h_B,int64_t si
             }
         }
 
-    h2dCLK.start();
+    #ifdef PROFILING_CLOCK
+        h2dCLK.start();
+    #endif
+
     // copy memory host -> device
     deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size*size*2, h_signal, NULL, deviceObj->evt_copyB);
 
-    h2dCLK.end();
+    #ifdef PROFILING_CLOCK
+        deviceObj->queue->finish();
+        h2dCLK.end();
+    #endif
     free(h_signal);
 }
 
@@ -126,12 +140,16 @@ void copy_memory_to_host(GraficCommon* device_object, COMPLEX **h_B, int64_t siz
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     bench_t *h_signal = (bench_t *)malloc(sizeof(bench_t) * size * size * 2);
 
-    d2hCLK.start();
+    #ifdef PROFILING_CLOCK
+        d2hCLK.start();
+    #endif
     
     deviceObj->queue->enqueueReadBuffer(*deviceObj->d_B,CL_TRUE,0,sizeof(bench_t)*size*size * 2,h_signal, NULL, deviceObj->evt_copyBr);
     
-    deviceObj->queue->finish();
-    d2hCLK.end();
+    #ifdef PROFILING_CLOCK
+        deviceObj->queue->finish();
+        d2hCLK.end();
+    #endif
     
     for (int i=0; i<size; ++i)
         {

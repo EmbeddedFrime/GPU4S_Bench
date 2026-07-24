@@ -68,7 +68,9 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_B,int64_t siz
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 	// copy memory host -> device
 
-    h2dCLK.start();
+    #ifdef PROFILING_CLOCK
+        h2dCLK.start();
+    #endif
 
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_B,CL_TRUE,0,sizeof(bench_t)*size, h_B, NULL, deviceObj->evt_copyB);
     if (err != CL_SUCCESS) 
@@ -78,7 +80,9 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_B,int64_t siz
     }
     
     deviceObj->queue->finish();
-    h2dCLK.end();
+    #ifdef PROFILING_CLOCK
+        h2dCLK.end();
+    #endif
 }
 
 void execute_kernel(GraficCommon* device_object, int64_t size){
@@ -126,12 +130,16 @@ void execute_kernel(GraficCommon* device_object, int64_t size){
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    d2hCLK.start();
+    #ifdef PROFILING_CLOCK
+        d2hCLK.start();
+    #endif
 
     deviceObj->queue->enqueueReadBuffer(*deviceObj->d_Br,CL_TRUE,0,sizeof(bench_t)*size,h_B, NULL, deviceObj->evt_copyBr);
      
     deviceObj->queue->finish();
-    d2hCLK.end();
+    #ifdef PROFILING_CLOCK
+        d2hCLK.end();
+    #endif
 }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){

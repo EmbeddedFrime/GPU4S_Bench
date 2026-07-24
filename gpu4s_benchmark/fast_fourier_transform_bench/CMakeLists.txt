@@ -157,7 +157,7 @@ if(NOT ANDROID)
             SHORTCUTS_NAMES     opencl-opt OpenCL-opt
         )
 
-        if(VKFFT_FOUND)        
+        if(VKFFT_FOUND AND FFTW3_FOUND)        
             # --- OpenCL-lib ---
             compile_target(${PROJECT_NAME}_opencl_lib
                 BENCH_DIR           ${CMAKE_SOURCE_DIR}
@@ -285,7 +285,7 @@ if(ANDROID AND ANDROID_OPENCL_LIB_INC )
     add_custom_target(all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
-        # ${PROJECT_NAME}_opencl_lib
+        ${PROJECT_NAME}_opencl_lib
     )
 endif()
 
@@ -294,7 +294,7 @@ if(NOT ANDROID AND OpenCL_FOUND )
     add_custom_target(all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
-        # ${PROJECT_NAME}_opencl_lib
+        ${PROJECT_NAME}_opencl_lib
     )
 endif()
 

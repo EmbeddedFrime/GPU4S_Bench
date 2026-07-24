@@ -47,8 +47,8 @@ struct GraficObject : public GraficCommon {
 	
 	#else
 		//CPU PART
-		bench_t* d_A;
-		bench_t* d_B;
+		COMPLEX** d_A;
+		COMPLEX** d_B;
 	#endif
 };
 

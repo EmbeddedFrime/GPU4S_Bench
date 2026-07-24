@@ -25,6 +25,12 @@ showConfig()
 
 # ====== Compilation of the targets ======
 
+compile_target(${PROJECT_NAME}_cpu
+    BENCH_DIR               ${CMAKE_SOURCE_DIR}
+    SOURCES_FILES           cpu/lib_cpu.cpp 
+    SHORTCUTS_NAMES         cpu CPU
+)
+
 # --- Android Targets---
 if(ANDROID)
 

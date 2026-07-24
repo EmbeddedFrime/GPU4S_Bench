@@ -154,7 +154,7 @@ if(NOT ANDROID)
             SHORTCUTS_NAMES    opencl-opt OpenCL-opt
         )
 
-        if(VKFFT_FOUND)        
+        if(VKFFT_FOUND AND FFTW3_FOUND)        
             # --- OpenCL-lib ---
             compile_target(${PROJECT_NAME}_opencl_lib
                 BENCH_DIR           ${CMAKE_SOURCE_DIR}
@@ -199,18 +199,18 @@ if(NOT ANDROID)
         )
 
         # --- OpenMP-lib ---
-        if(FFTW3_FOUND)
+        if(FFTW3_FOUND AND FFTW3_FOUND)
             compile_target(${PROJECT_NAME}_openmp_lib
-                BENCH_DIR          ${CMAKE_SOURCE_DIR}
-                SOURCES_FILES      openmp/lib_omp_opt.cpp
-                COMPILE_DEFS       OPENMP
+                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES       openmp/lib_omp_opt.cpp
+                COMPILE_DEFS        OPENMP
 
-                LIBRARIES          OpenMP::OpenMP_CXX # openmp flags
-                                m                  # Corresponds to -lm
-                                fftw3_threads     # Corresponds to -lfftw3_threads
-                                fftw3             # Corresponds to -lfftw3
+                LIBRARIES           OpenMP::OpenMP_CXX # openmp flags
+                                    m                  # Corresponds to -lm
+                                    fftw3_threads     # Corresponds to -lfftw3_threads
+                                    fftw3             # Corresponds to -lfftw3
                                 
-                SHORTCUTS_NAMES    openmp-lib OpenMP-lib
+                SHORTCUTS_NAMES     openmp-lib OpenMP-lib
             )
         endif()
 
@@ -239,16 +239,17 @@ if(NOT ANDROID)
             LIBRARIES          CUDA::cudart 
             SHORTCUTS_NAMES    cuda-opt CUDA-opt
         )
-
-        # --- CUDA-lib ---
-        compile_target(${PROJECT_NAME}_cuda_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda_lib.cu
-            COMPILE_DEFS       CUDA
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart CUDA::cufft fftw3
-            SHORTCUTS_NAMES    cuda-lib CUDA-lib
-        )
+        if(FFTW3_FOUND)
+            # --- CUDA-lib ---
+            compile_target(${PROJECT_NAME}_cuda_lib
+                BENCH_DIR          ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES      cuda/lib_cuda_lib.cu
+                COMPILE_DEFS       CUDA
+                SET_CUDA           1
+                LIBRARIES          CUDA::cudart CUDA::cufft fftw3
+                SHORTCUTS_NAMES    cuda-lib CUDA-lib
+            )
+        endif()
     endif()
 
     # --- HIP targets---
@@ -283,7 +284,7 @@ if(ANDROID AND ANDROID_OPENCL_LIB_INC )
     add_custom_target(all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
-        # ${PROJECT_NAME}_opencl_lib
+        ${PROJECT_NAME}_opencl_lib
     )
 endif()
 
@@ -292,7 +293,7 @@ if(NOT ANDROID AND OpenCL_FOUND )
     add_custom_target(all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
-        # ${PROJECT_NAME}_opencl_lib
+        ${PROJECT_NAME}_opencl_lib
     )
 endif()
 

@@ -33,8 +33,9 @@ struct GraficObject : public GraficCommon {
 		// OpenMP part
 		bench_t* d_A;
 		bench_t* d_B;
-	#else
-		
+	#else // CPU
+		bench_t* d_A;
+		bench_t* d_B;
 	#endif
 };
 

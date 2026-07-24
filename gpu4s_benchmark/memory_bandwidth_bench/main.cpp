@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 	// execute kernel
 	execute_kernel(mem_bench, size_A);
 	// copy memory to host
-	copy_memory_to_host(mem_bench, d_B, size_B);
+=	copy_memory_to_host(mem_bench, h_B, size_B);
 
 	// get time
 	if (print_timing || csv_format)
