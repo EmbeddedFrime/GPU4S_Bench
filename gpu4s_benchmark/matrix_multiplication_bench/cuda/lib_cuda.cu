@@ -8,6 +8,7 @@
     Clock h2dCLK;
     Clock d2hCLK;
 #endif
+
 /**
  * CUDA Kernel Device code
  *
