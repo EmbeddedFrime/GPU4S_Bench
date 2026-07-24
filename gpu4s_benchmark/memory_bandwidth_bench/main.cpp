@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 	{
 		if (print_timing)
 		{
-			printf("CPU Time %d milliseconds\n", 0);
+			printf("CPU Time %.0f milliseconds\n", 0);
 		}
 		if (print_output)
 		{

@@ -229,7 +229,7 @@ int main(int argc, char *argv[]){
 		cpuKernelCLK.end();
 		if (arguments_parameters->print_timing)
 		{
-			printf("CPU Time %d milliseconds\n", cpuKernelCLK.getElapsedMS());
+			printf("CPU Time %.0f milliseconds\n", cpuKernelCLK.getElapsedMS());
 		}
 		if (arguments_parameters->print_output)
 		{

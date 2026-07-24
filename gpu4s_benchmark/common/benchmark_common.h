@@ -14,7 +14,7 @@
 #include <string>
 
 // --- project lib ---
-	#include "Clock.h"
+#include "Clock.h"
 
 // --- Specefic framework lib ---
 #ifdef CUDA
@@ -32,6 +32,11 @@
     #include <omp.h>
 #else
     //CPU part
+#endif
+
+// --- profiling mangement ---
+#if defined(CLOCK) || defined(ANDROID)
+    #define PROFILING_CLOCK 
 #endif
 
 

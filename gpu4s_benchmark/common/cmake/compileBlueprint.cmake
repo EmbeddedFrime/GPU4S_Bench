@@ -57,7 +57,8 @@ cmake_parse_arguments(ARG "" "${singleArgs}" "${multipleArgs}" ${ARGN})
         ${DATATYPE}
         BLOCK_SIZE=${BLOCKSIZE}
         ${ARG_COMPILE_DEFS}
-        ${ENDIANFLAGS}    
+        ${ENDIANFLAGS}
+        ${PROFILING}    
     )
 
     # --- Set specific compiler flags ---

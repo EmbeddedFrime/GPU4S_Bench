@@ -23,6 +23,8 @@ else()
 endif()
 
 function(showConfig)
+
+    # --- check the active targets ---
     set(ACTIVE_TARGETS "CPU") # CPU target is always compiled
 
     if(ANDROID)
@@ -47,12 +49,12 @@ function(showConfig)
         endif()
     endif()
 
-# --- show all the  ---
+# --- show all the configuration ---
     message(STATUS "${ColorCyan}============ ${ColorReset}${ColorBold}GPU4S Benchmark Configuration 🚀 ${ColorCyan}============${ColorReset}")
     message(STATUS "  Benchmark             : ${ColorBlue}${PROJECT_NAME}${ColorReset}")
     message(STATUS "  Target Platform       : ${ColorBlue}${TARGET_PLATFORM}${ColorReset}")
     message(STATUS "  Active Backends       : ${ColorBlue}${ACTIVE_TARGETS}${ColorReset}")
-    message(STATUS "  Data Type             : ${ColorBlue}${DATATYPE}${ColorReset}")
+    message(STATUS "  Data Type             : ${ColorBold}${DATATYPE}${ColorReset}")
     message(STATUS "  Block Size            : ${ColorBold}${BLOCKSIZE}${ColorReset}")
     if(NSTREAMS)
     message(STATUS "  Number of Sreams      : ${ColorBold}${NSTREAMS}${ColorReset}")

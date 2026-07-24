@@ -166,7 +166,7 @@ int main(int argc, char *argv[]){
 		kernelCLK.end();
 		if (print_timing)
 		{
-			printf("CPU Time %d milliseconds\n", kernelCLK.getElapsedMS() );
+			printf("CPU Time %.0f milliseconds\n", kernelCLK.getElapsedMS() );
 		}
 		if (print_output)
 		{
