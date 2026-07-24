@@ -1,6 +1,5 @@
 #include "../benchmark_library.h"
 
-
 #ifdef PROFILING_CLOCK
     // kernel time execution
     Clock kernelCLK;
@@ -8,6 +7,7 @@
     Clock h2dCLK;
     Clock d2hCLK;
 #endif
+
 /**
  * CUDA Kernel Device code
  *
@@ -19,6 +19,7 @@
 #ifndef NUMBER_OF_STREAMS
     #define NUMBER_OF_STREAMS 8
 #endif
+
 __global__ void
 covolution_kernel(const bench_t *A, bench_t *B, const bench_t *kernel,const int n, const int m, const int w, const int kernel_size, const int shared_size, const int kernel_rad)
 {
@@ -311,6 +312,7 @@ softmax_kernel(const bench_t *A, bench_t *B, bench_t *sum_d_B,const int size)
         #else
         value = exp(A[i]);
         #endif
+
         shared_data[tid] = value;
         B[i] = value;
         // sync threads
@@ -342,7 +344,6 @@ softmax_finish_kernel(bench_t *B, bench_t *sum_d_B,const int size)
 // End CUDA part
 //////////////////////////////////////////////////////////////////////////////////////
 
-
 void init(GraficCommon* device_object, char* device_name){
     init(device_object, 0,0, device_name);
 }
@@ -369,7 +370,6 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     cudaEventCreate(deviceObj->start_memory_copy_host);
     cudaEventCreate(deviceObj->stop_memory_copy_host);
 }
-
 
 bool device_memory_init(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2, unsigned int number_of_images){
    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -475,9 +475,11 @@ bool device_memory_init(GraficCommon* device_object, unsigned int input_data, un
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, bench_t* kernel_1_data, bench_t* kernel_2_data, bench_t* weights_1 ,bench_t* weights_2,unsigned int input , unsigned int kernel_size_1, unsigned int kernel_size_2, unsigned int weights_1_size, unsigned int weights_2_size, unsigned int number_of_images){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_device);
     cudaError_t err = cudaMemcpy(deviceObj->input_data, input_data, sizeof(bench_t) * input * input * number_of_images, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
@@ -511,6 +513,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, ben
     }
     cudaMemset(deviceObj->sum_ouput, 0, NUMBER_OF_STREAMS * sizeof(bench_t));
     cudaEventRecord(*deviceObj->stop_memory_copy_device);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.end();
     #endif
@@ -520,9 +523,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     // execute net 
     // 1-1 step convolution
+
     #ifdef PROFILING_CLOCK
         kernelCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start);
     bench_t* aux_output_data;
     bench_t* aux_input_data;
@@ -664,6 +669,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         cudaMemsetAsync(aux_sum, 0, sizeof(bench_t),cuda_streams[stream]);
     }
     cudaEventRecord(*deviceObj->stop);
+
     #ifdef PROFILING_CLOCK
         cudaDeviceSynchronize(); 
         kernelCLK.end();
@@ -672,13 +678,16 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size, unsigned int number_of_images){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_host);
     cudaMemcpy(h_C, deviceObj->output_data, number_of_images * size * sizeof(bench_t), cudaMemcpyDeviceToHost);
     //cudaMemcpy(h_C, deviceObj->dense_layer_2_output, 10 * sizeof(bench_t), cudaMemcpyDeviceToHost);
     cudaEventRecord(*deviceObj->stop_memory_copy_host);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.end();
     #endif
@@ -817,7 +826,6 @@ void clean(GraficCommon* device_object){
         fprintf(stderr, "Failed to free device vector sum_ouput (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-
 
     // delete events
     delete deviceObj->start;

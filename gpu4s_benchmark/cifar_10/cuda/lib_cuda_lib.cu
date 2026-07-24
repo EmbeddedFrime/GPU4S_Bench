@@ -2,7 +2,6 @@
 #include <cublas_v2.h>
 #include "../benchmark_library.h"
 
-
 #ifdef PROFILING_CLOCK
     // kernel time execution
     Clock kernelCLK;
@@ -10,6 +9,7 @@
     Clock h2dCLK;
     Clock d2hCLK;
 #endif
+
 #define checkCUDNN(expression)                               \
   {                                                          \
     cudnnStatus_t status = (expression);                     \
@@ -655,7 +655,6 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudnnDestroyActivationDescriptor(activation_algorithm);
 }
 
-
 void softmax(GraficCommon* device_object, cudnnHandle_t cudnn, unsigned int input_data){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudnnTensorDescriptor_t input_descriptor;
@@ -724,7 +723,6 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     cudaEventCreate(deviceObj->start_memory_copy_host);
     cudaEventCreate(deviceObj->stop_memory_copy_host);
 }
-
 
 bool device_memory_init(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2){
    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -830,9 +828,11 @@ bool device_memory_init(GraficCommon* device_object, unsigned int input_data, un
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, bench_t* kernel_1_data, bench_t* kernel_2_data, bench_t* weights_1 ,bench_t* weights_2,unsigned int input , unsigned int kernel_size_1, unsigned int kernel_size_2, unsigned int weights_1_size, unsigned int weights_2_size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_device);
   cudaError_t err = cudaMemcpy(deviceObj->input_data, input_data, sizeof(bench_t) * input * input, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
@@ -865,6 +865,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, ben
         return;
     }
     cudaEventRecord(*deviceObj->stop_memory_copy_device);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.end();
     #endif
@@ -879,6 +880,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     #ifdef PROFILING_CLOCK
         kernelCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start);
     checkCUDNN(cudnnCreate(&cudnn));
     
@@ -908,7 +910,6 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     // dense activation 1
     activation_d_1(device_object,cudnn, neurons_dense_1);
 
-
     // dense layer 2
     dense_2(device_object, neurons_dense_2, 1, neurons_dense_1);
     // dense activation 2
@@ -916,22 +917,27 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     //softmax
     softmax(device_object,cudnn, neurons_dense_2);
     cudaEventRecord(*deviceObj->stop);
+
     #ifdef PROFILING_CLOCK
         cudaDeviceSynchronize(); 
         kernelCLK.end();
     #endif
+
     cudnnDestroy(cudnn);
 }
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_host);
     cudaMemcpy(h_C, deviceObj->output_data, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
     //cudaMemcpy(h_C, deviceObj->dense_layer_2_output, 10 * sizeof(bench_t), cudaMemcpyDeviceToHost);
     cudaEventRecord(*deviceObj->stop_memory_copy_host);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.end();
     #endif
@@ -1069,7 +1075,6 @@ void clean(GraficCommon* device_object){
         fprintf(stderr, "Failed to free device vector sum_ouput (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-
 
     // delete events
     delete deviceObj->start;

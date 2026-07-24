@@ -1,6 +1,5 @@
 #include "../benchmark_library.h"
 
-
 #ifdef PROFILING_CLOCK
     // kernel time execution
     Clock kernelCLK;
@@ -8,6 +7,7 @@
     Clock h2dCLK;
     Clock d2hCLK;
 #endif
+
 /**
  * CUDA Kernel Device code
  *
@@ -43,7 +43,6 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     cudaEventCreate(deviceObj->stop_memory_copy_host);
 }
 
-
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
    
 GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -69,9 +68,11 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned int size_a){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_device);
 	cudaError_t err = cudaMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
@@ -80,6 +81,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
         return;
     }
     cudaEventRecord(*deviceObj->stop_memory_copy_device);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.end();
     #endif
@@ -88,9 +90,11 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
 
 void execute_kernel(GraficCommon* device_object, unsigned int n){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         kernelCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start);
     cudaError_t err = cudaMemcpy(deviceObj->d_B, deviceObj->d_A, sizeof(bench_t) * n, cudaMemcpyDeviceToDevice);
     if (err != cudaSuccess)
@@ -99,6 +103,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int n){
         return;
     }
     cudaEventRecord(*deviceObj->stop);
+
     #ifdef PROFILING_CLOCK
         cudaDeviceSynchronize(); 
         kernelCLK.end();
@@ -107,12 +112,15 @@ void execute_kernel(GraficCommon* device_object, unsigned int n){
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_host);
     cudaMemcpy(h_C, deviceObj->d_B, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
     cudaEventRecord(*deviceObj->stop_memory_copy_host);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.end();
     #endif

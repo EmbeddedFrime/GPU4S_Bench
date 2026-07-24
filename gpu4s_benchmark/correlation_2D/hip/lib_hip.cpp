@@ -1,7 +1,6 @@
 #include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
 
-
 #ifdef PROFILING_CLOCK
     // kernel time execution
     Clock kernelCLK;
@@ -9,6 +8,7 @@
     Clock h2dCLK;
     Clock d2hCLK;
 #endif
+
 /**
  * CUDA Kernel Device code
  *
@@ -54,8 +54,6 @@ correlation_2D(const bench_t *A,const bench_t *B, result_bench_t *R, result_benc
 
 }
 
-
-
 void init(GraficCommon* device_object, char* device_name){
 	init(device_object, 0,0, device_name);
 }
@@ -82,7 +80,6 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     (void)hipEventCreate(deviceObj->start_memory_copy_host);
     (void)hipEventCreate(deviceObj->stop_memory_copy_host);
 }
-
 
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -147,9 +144,11 @@ bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix,
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.start();
     #endif
+
     (void)hipEventRecord(*deviceObj->start_memory_copy_device);
 	hipError_t err = hipMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, hipMemcpyHostToDevice);
     if (err != hipSuccess)
@@ -166,6 +165,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
     }
     
     (void)hipEventRecord(*deviceObj->stop_memory_copy_device);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.end();
     #endif
@@ -175,25 +175,30 @@ void execute_kernel(GraficCommon* device_object, unsigned int n){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     dim3 dimBlock(BLOCK_SIZE,BLOCK_SIZE);
     dim3 dimGrid(ceil(float(n)/dimBlock.x),ceil(float(n)/dimBlock.y));
+
     #ifdef PROFILING_CLOCK
         kernelCLK.start();
     #endif
+
     (void)hipEventRecord(*deviceObj->start);
     hipLaunchKernelGGL(mean_matrices, dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->d_A, deviceObj->d_B, deviceObj->mean_A, deviceObj->mean_B , n);
     hipLaunchKernelGGL(correlation_2D, dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->d_A, deviceObj->d_B, deviceObj->d_R, deviceObj->mean_A, deviceObj->mean_B,deviceObj->acumulate_value_a_b, deviceObj->acumulate_value_a_a, deviceObj->acumulate_value_b_b, n);
 
     (void)hipEventRecord(*deviceObj->stop);
+
     #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
+        hipDeviceSynchronize(); 
         kernelCLK.end();
     #endif
 }
 
 void copy_memory_to_host(GraficCommon* device_object, result_bench_t* h_R){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.start();
     #endif
+
     (void)hipEventRecord(*deviceObj->start_memory_copy_host);
     result_bench_t acumulate_value_a_a;
     result_bench_t acumulate_value_a_b;
@@ -204,6 +209,7 @@ void copy_memory_to_host(GraficCommon* device_object, result_bench_t* h_R){
     *h_R = (result_bench_t)(acumulate_value_a_b / (result_bench_t)(sqrt(acumulate_value_a_a * acumulate_value_b_b)));
     //hipMemcpy(h_R, deviceObj->d_R, sizeof(result_bench_t), hipMemcpyDeviceToHost);
     (void)hipEventRecord(*deviceObj->stop_memory_copy_host);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.end();
     #endif

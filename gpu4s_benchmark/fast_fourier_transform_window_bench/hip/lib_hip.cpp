@@ -1,7 +1,6 @@
 #include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
 
-
 #ifdef PROFILING_CLOCK
     // kernel time execution
     Clock kernelCLK;
@@ -9,6 +8,7 @@
     Clock h2dCLK;
     Clock d2hCLK;
 #endif
+
 /**
  * CUDA Kernel Device code
  *
@@ -79,7 +79,6 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     (void)hipEventCreate(deviceObj->stop_memory_copy_host);
 }
 
-
 bool device_memory_init(GraficCommon* device_object,  int64_t size_a_array, int64_t size_b_array){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     hipError_t err = hipSuccess;
@@ -103,9 +102,11 @@ bool device_memory_init(GraficCommon* device_object,  int64_t size_a_array, int6
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A,int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     hipError_t err = hipSuccess;
+
     #ifdef PROFILING_CLOCK
         h2dCLK.start();
     #endif
+
     (void)hipEventRecord(*deviceObj->start_memory_copy_device);
     err = hipMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size, hipMemcpyHostToDevice);
     if (err != hipSuccess)
@@ -114,6 +115,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A,int64_t siz
         return;
     }
     (void)hipEventRecord(*deviceObj->stop_memory_copy_device);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.end();
     #endif
@@ -181,26 +183,31 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     #ifdef PROFILING_CLOCK
         kernelCLK.start();
     #endif
+
     (void)hipEventRecord(*deviceObj->start);
     for (unsigned int i = 0; i < (size * 2 - window + 1); i+=2){
         aux_execute_kernel(device_object, window, i);
     }
    
     (void)hipEventRecord(*deviceObj->stop);
+
     #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
+        hipDeviceSynchronize(); 
         kernelCLK.end();
     #endif
 }
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.start();
     #endif
+
     (void)hipEventRecord(*deviceObj->start_memory_copy_host);
     hipMemcpy(h_B, deviceObj->d_B, size * sizeof(bench_t), hipMemcpyDeviceToHost);
     (void)hipEventRecord(*deviceObj->stop_memory_copy_host);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.end();
     #endif
@@ -259,7 +266,6 @@ void clean(GraficCommon* device_object){
         fprintf(stderr, "Failed to free device vector Br (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-
 
     // delete events
     delete deviceObj->start;

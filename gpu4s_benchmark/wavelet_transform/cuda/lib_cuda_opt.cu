@@ -1,6 +1,5 @@
 #include "../benchmark_library.h"
 
-
 #ifdef PROFILING_CLOCK
     // kernel time execution
     Clock kernelCLK;
@@ -8,6 +7,7 @@
     Clock h2dCLK;
     Clock d2hCLK;
 #endif
+
 /**
  * CUDA Kernel Device code
  *
@@ -15,7 +15,6 @@
  * number of elements numElements.
  */
 //#define BLOCK_SIZE 32
-
 
 #ifdef INT
 #define NUMBERSUBDIVISIONS  4
@@ -135,7 +134,6 @@ wavelet_transform_high(const bench_t *A, bench_t *B, const int n, const bench_t 
 
             sum_value_high = (highpass_filter[-3 + gi_end] * A[ (x_position - 3) < 0 ? (x_position - 3) * -1 : (x_position - 3) > full_size - 1 ? full_size - 1 - ((x_position- 3) - (full_size -1 )) : (x_position- 3)]) + (highpass_filter[-2 + gi_end] * A[ (x_position - 2) < 0 ? (x_position - 2) * -1 : (x_position - 2) > full_size - 1 ? full_size - 1 - ((x_position- 2) - (full_size -1 )) : (x_position- 2)]) + (highpass_filter[-1 + gi_end] * A[ (x_position - 1) < 0 ? (x_position - 1) * -1 : (x_position - 1) > full_size - 1 ? full_size - 1 - ((x_position- 1) - (full_size -1 )) : (x_position- 1)]) + (highpass_filter[gi_end] * A[ (x_position) < 0 ? (x_position) * -1 : (x_position) > full_size - 1 ? full_size - 1 - ((x_position) - (full_size -1 )) : (x_position)]) + (highpass_filter[1 + gi_end] * A[ (x_position  + 1) < 0 ? (x_position + 1) * -1 : (x_position + 1) > full_size - 1 ? full_size - 1 - ((x_position + 1) - (full_size -1 )) : (x_position + 1)]) + (highpass_filter[2 + gi_end] * A[ (x_position + 2) < 0 ? (x_position + 2) * -1 : (x_position + 2) > full_size - 1 ? full_size - 1 - ((x_position + 2) - (full_size -1 )) : (x_position + 2)]) + (highpass_filter[3 + gi_end] * A[ (x_position + 3) < 0 ? (x_position + 3) * -1 : (x_position + 3) > full_size - 1 ? full_size - 1 - ((x_position + 3) - (full_size -1 )) : (x_position + 3)]);
 
-
 			//sum_value_high += highpass_filter[gi + gi_end] * A[x_position];
 		//}
 		// store the value
@@ -191,7 +189,6 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     cudaEventCreate(deviceObj->stop_memory_copy_host);
 }
 
-
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
    
 GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -237,9 +234,11 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned int size_a){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_device);
 	cudaError_t err = cudaMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
@@ -267,6 +266,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
     #endif
 
     cudaEventRecord(*deviceObj->stop_memory_copy_device);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.end();
     #endif
@@ -276,9 +276,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int n){
     
 GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     
+
     #ifdef PROFILING_CLOCK
         kernelCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start);
     #ifdef INT
 
@@ -309,7 +311,9 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     wavelet_transform<<<dimGrid,dimBlock,0,cuda_streams[0]>>>(deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
     wavelet_transform_high<<<dimGrid,dimBlock,0,cuda_streams[1]>>>(deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
     #endif
+
     cudaEventRecord(*deviceObj->stop);
+
     #ifdef PROFILING_CLOCK
         cudaDeviceSynchronize(); 
         kernelCLK.end();
@@ -318,12 +322,15 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_host);
     cudaMemcpy(h_B, deviceObj->d_B, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
     cudaEventRecord(*deviceObj->stop_memory_copy_host);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.end();
     #endif
@@ -384,7 +391,6 @@ void clean(GraficCommon* device_object){
     }
     err = cudaFree(deviceObj->low_filter);
     err = cudaFree(deviceObj->high_filter);
-
 
     // delete events
     delete deviceObj->start;

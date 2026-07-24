@@ -1,1 +1,0 @@
-/usr/bin/c++ -O3 -DNDEBUG CMakeFiles/matrix_mult_openmp.dir/main.cpp.o CMakeFiles/matrix_mult_openmp.dir/openmp/lib_omp.cpp.o CMakeFiles/matrix_mult_openmp.dir/cpu_functions/cpu_functions.cpp.o -o bin/matrix_mult_openmp  -lm /usr/lib/gcc/x86_64-redhat-linux/15/libgomp.so /usr/lib64/libpthread.a 

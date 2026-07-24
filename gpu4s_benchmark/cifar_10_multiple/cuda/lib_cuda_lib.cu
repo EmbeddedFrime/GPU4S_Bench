@@ -2,7 +2,6 @@
 #include <cublas_v2.h>
 #include "../benchmark_library.h"
 
-
 #ifdef PROFILING_CLOCK
     // kernel time execution
     Clock kernelCLK;
@@ -10,6 +9,7 @@
     Clock h2dCLK;
     Clock d2hCLK;
 #endif
+
 #define checkCUDNN(expression)                               \
   {                                                          \
     cudnnStatus_t status = (expression);                     \
@@ -100,8 +100,6 @@ void convolution_1_1(cuddObject *cudd_object, GraficCommon* device_object ,cudnn
 
 GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 
-
-
     
     //use tensorcore
     //cudnnSetConvolutionMathType(convolution_descriptor, CUDNN_TENSOR_OP_MATH)
@@ -145,11 +143,8 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
                                    cudd_object->output_descriptor_1_1,
                                    deviceObj->conv_1_output));
 
-
-
     // destroy data
     cudaFree(d_workspace);
-
 
 }
 void activation_1_2(GraficCommon* device_object, cudnnHandle_t cudnn, unsigned int input_data){
@@ -234,7 +229,6 @@ void pooling_1_3(GraficCommon* device_object ,cudnnHandle_t cudnn, unsigned int 
                                            0,
                                            stride,
                                            stride))
-
 
     checkCUDNN(cudnnPoolingForward(cudnn,
                                    poolingDesc,
@@ -387,8 +381,6 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
                                    output_descriptor,
                                    deviceObj->conv_2_output));
 
-
-
     // destroy data
     cudaFree(d_workspace);
     cudnnDestroyTensorDescriptor(input_descriptor);
@@ -526,7 +518,6 @@ void pooling_2_4(GraficCommon* device_object, cudnnHandle_t cudnn, unsigned int 
                                            0,
                                            stride,
                                            stride))
-
 
     checkCUDNN(cudnnPoolingForward(cudnn,
                                    poolingDesc,
@@ -674,7 +665,6 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudnnDestroyActivationDescriptor(activation_algorithm);
 }
 
-
 void softmax(GraficCommon* device_object, cudnnHandle_t cudnn, unsigned int input_data, unsigned int offset){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudnnTensorDescriptor_t input_descriptor;
@@ -747,7 +737,6 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     cudaEventCreate(deviceObj->start_memory_copy_host);
     cudaEventCreate(deviceObj->stop_memory_copy_host);
 }
-
 
 bool device_memory_init(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2, unsigned int number_of_images){
    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -853,9 +842,11 @@ bool device_memory_init(GraficCommon* device_object, unsigned int input_data, un
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, bench_t* kernel_1_data, bench_t* kernel_2_data, bench_t* weights_1 ,bench_t* weights_2,unsigned int input , unsigned int kernel_size_1, unsigned int kernel_size_2, unsigned int weights_1_size, unsigned int weights_2_size, unsigned int number_of_images){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_device);
   cudaError_t err = cudaMemcpy(deviceObj->input_data, input_data, sizeof(bench_t) * input * input * number_of_images, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
@@ -889,6 +880,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, ben
     }
     cudaMemset(deviceObj->sum_ouput, 0,  sizeof(bench_t));
     cudaEventRecord(*deviceObj->stop_memory_copy_device);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.end();
     #endif
@@ -898,11 +890,12 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
      GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
      // cublas settings
 
-
     cudnnHandle_t cudnn;
+
     #ifdef PROFILING_CLOCK
         kernelCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start);
 
     checkCUDNN(cudnnCreate(&cudnn));
@@ -933,12 +926,10 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
       unsigned int size_lateral_2 = size_lateral_1 / stride_2;
       pooling_2_4(device_object,cudnn, size_lateral_1,size_lateral_2, stride_2);
 
-
       // dense layer 1
       dense_1(device_object, neurons_dense_1, 1, size_lateral_2*size_lateral_2);
       // dense activation 1
       activation_d_1(device_object,cudnn, neurons_dense_1);
-
 
       // dense layer 2
       dense_2(device_object, neurons_dense_2, 1, neurons_dense_1);
@@ -954,6 +945,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     free(cudd_object);
     cudnnDestroy(cudnn);
     cudaEventRecord(*deviceObj->stop);
+
     #ifdef PROFILING_CLOCK
         cudaDeviceSynchronize(); 
         kernelCLK.end();
@@ -963,13 +955,16 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size, unsigned int number_of_images){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_host);
     cudaMemcpy(h_C, deviceObj->output_data, number_of_images * size * sizeof(bench_t), cudaMemcpyDeviceToHost);
     //cudaMemcpy(h_C, deviceObj->dense_layer_2_output, 10 * sizeof(bench_t), cudaMemcpyDeviceToHost);
     cudaEventRecord(*deviceObj->stop_memory_copy_host);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.end();
     #endif
@@ -1108,7 +1103,6 @@ void clean(GraficCommon* device_object){
         fprintf(stderr, "Failed to free device vector sum_ouput (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-
 
     // delete events
     delete deviceObj->start;

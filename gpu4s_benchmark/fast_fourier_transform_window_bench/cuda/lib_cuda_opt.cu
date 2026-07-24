@@ -1,6 +1,5 @@
 #include "../benchmark_library.h"
 
-
 #ifdef PROFILING_CLOCK
     // kernel time execution
     Clock kernelCLK;
@@ -8,6 +7,7 @@
     Clock h2dCLK;
     Clock d2hCLK;
 #endif
+
 /**
  * CUDA Kernel Device code
  *
@@ -95,7 +95,6 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     cudaEventCreate(deviceObj->stop_memory_copy_host);
 }
 
-
 bool device_memory_init(GraficCommon* device_object,  int64_t size_a_array, int64_t size_b_array){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudaError_t err = cudaSuccess;
@@ -119,9 +118,11 @@ bool device_memory_init(GraficCommon* device_object,  int64_t size_a_array, int6
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A,int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudaError_t err = cudaSuccess;
+
     #ifdef PROFILING_CLOCK
         h2dCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_device);
     err = cudaMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
@@ -130,6 +131,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A,int64_t siz
         return;
     }
     cudaEventRecord(*deviceObj->stop_memory_copy_device);
+
     #ifdef PROFILING_CLOCK
         h2dCLK.end();
     #endif
@@ -165,7 +167,6 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
             dimGrid.x  = (unsigned int)(theads/BLOCK_SIZE);
     }
 
-
     while(loop < size ){
         // caluclate values 
         theta = -(M_PI/loop); // check
@@ -185,15 +186,18 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
 }
 void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         kernelCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start);
     for (unsigned int i = 0; i < (size * 2 - window + 1); i+=2){
         aux_execute_kernel(device_object, window, i);
     }
     
     cudaEventRecord(*deviceObj->stop);
+
     #ifdef PROFILING_CLOCK
         cudaDeviceSynchronize(); 
         kernelCLK.end();
@@ -202,12 +206,15 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.start();
     #endif
+
     cudaEventRecord(*deviceObj->start_memory_copy_host);
     cudaMemcpy(h_B, deviceObj->d_B, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
     cudaEventRecord(*deviceObj->stop_memory_copy_host);
+
     #ifdef PROFILING_CLOCK
         d2hCLK.end();
     #endif
@@ -266,7 +273,6 @@ void clean(GraficCommon* device_object){
         fprintf(stderr, "Failed to free device vector Br (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-
 
     // delete events
     delete deviceObj->start;
