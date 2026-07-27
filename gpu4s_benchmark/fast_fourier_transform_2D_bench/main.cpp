@@ -44,8 +44,6 @@ int main(int argc, char *argv[]){
     for(int64_t i = 0; i < arguments_parameters->size; ++i){ d_B[i] = (COMPLEX *)malloc(arguments_parameters->size * sizeof(COMPLEX));}
 	// comparation result
 	bool result = false;
-	// strucs for CPU timing
-	struct timespec start, end;
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// DATA INIT
 	///////////////////////////////////////////////////////////////////////////////////////////////

@@ -37,11 +37,15 @@ int main(int argc, char *argv[])
 	// A input matrix
 	unsigned int size_A = arguments_parameters->size * arguments_parameters->size;
     unsigned int mem_size_A = sizeof(bench_t) * size_A;
-	bench_t* A = (bench_t*) malloc(mem_size_A);
+	#ifndef ANDROID
+		bench_t* A = (bench_t*) malloc(mem_size_A);
+	#endif
 	// B input matrix
 	unsigned int size_B = arguments_parameters->size * arguments_parameters->size;
     unsigned int mem_size_B = sizeof(bench_t) * size_B;
-	bench_t* B = (bench_t*) malloc(mem_size_B);
+	#ifndef ANDROID
+		bench_t* B = (bench_t*) malloc(mem_size_B);
+	#endif
 	// C matrix
 	unsigned int size_C = arguments_parameters->size * arguments_parameters->size;
     unsigned int mem_size_C = sizeof(bench_t) * size_C;
@@ -51,14 +55,13 @@ int main(int argc, char *argv[])
 	bench_t* h_C_output = (bench_t*) malloc(mem_size_C);;
 	// comparation result
 	bool result = false;
-	// strucs for CPU timing
-	struct timespec start, end;
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// DATA INIT
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	if (strlen(arguments_parameters->input_file_A) == 0)
 	{
 	// inicialice A matrix 
+		#ifndef ANDROID
 		for (int i=0; i<arguments_parameters->size; i++){
 	    	for (int j=0; j<arguments_parameters->size; j++){
 	    		#ifdef INT
@@ -79,6 +82,7 @@ int main(int argc, char *argv[])
 	        	#endif
 	    	}
 		}
+		#endif
 	// iniciate C matrix
 		for (int i=0; i<arguments_parameters->size; i++){
 	    	for (int j=0; j<arguments_parameters->size; j++){
@@ -91,8 +95,10 @@ int main(int argc, char *argv[])
 	else
 	{	
 		// load data
+		#ifndef UNIFIED_MEMORY
 		get_double_hexadecimal_values(arguments_parameters->input_file_A, A,size_A);
 		get_double_hexadecimal_values(arguments_parameters->input_file_B, B,size_B);
+		#endif
 		//get_values_file(input_file, A, B);
 
 		// iniciate C matrix
@@ -120,12 +126,74 @@ int main(int argc, char *argv[])
 	
 	// init memory
 	device_memory_init(matrix_bench, arguments_parameters->size * arguments_parameters->size, arguments_parameters->size * arguments_parameters->size, size_matrix);
-	// copy memory to device
-	copy_memory_to_device(matrix_bench, A, B, arguments_parameters->size * arguments_parameters->size, arguments_parameters->size * arguments_parameters->size);
+	
+	
+	GraficObject* deviceObj = static_cast<GraficObject*>(matrix_bench);
+
+	#ifdef UNIFIED_MEMORY
+		// map GPU buffers directly — fill without any intermediate buffer
+		Clock h2dCLK;
+
+
+		h2dCLK.start();
+		bench_t* A = (bench_t*)deviceObj->queue->enqueueMapBuffer(
+			*deviceObj->d_A, CL_TRUE, CL_MAP_WRITE, 0, mem_size_A);
+		bench_t* B = (bench_t*)deviceObj->queue->enqueueMapBuffer(
+			*deviceObj->d_B, CL_TRUE, CL_MAP_WRITE, 0, mem_size_B);
+		bench_t* C = (bench_t*)deviceObj->queue->enqueueMapBuffer(
+			*deviceObj->d_B, CL_TRUE, CL_MAP_WRITE, 0, mem_size_C);
+		h2dCLK.end();
+		
+		float timeTotal = h2dCLK.getElapsedMS();
+
+		for (int i = 0; i < arguments_parameters->size; i++)
+			for (int j = 0; j < arguments_parameters->size; j++)
+			A[i*arguments_parameters->size+j] = (bench_t)rand()/(bench_t)(RAND_MAX/NUMBER_BASE);
+
+		for (int i = 0; i < arguments_parameters->size; i++)
+			for (int j = 0; j < arguments_parameters->size; j++)
+				B[i*arguments_parameters->size+j] = (bench_t)rand()/(bench_t)(RAND_MAX/NUMBER_BASE);
+
+		for (int i = 0; i < arguments_parameters->size; i++)
+			for (int j = 0; j < arguments_parameters->size; j++)
+				C[i*arguments_parameters->size+j] = 0;
+
+
+		h2dCLK.start();
+		deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_A, A, NULL, deviceObj->evt_copyA);
+		deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_B, B, NULL, deviceObj->evt_copyB);
+		deviceObj->queue->finish();
+		h2dCLK.end();
+		timeTotal += h2dCLK.getElapsedMS();
+
+
+		printf("measurement h2d : %f \n",timeTotal);
+
+	#else   
+		// copy memory to device
+		copy_memory_to_device(matrix_bench, A, B, arguments_parameters->size * arguments_parameters->size, arguments_parameters->size * arguments_parameters->size);
+	#endif
+
 	// execute kernel
 	execute_kernel(matrix_bench, arguments_parameters->size, arguments_parameters->size,arguments_parameters-> size);
+	
+	
 	// copy memory to host
-	copy_memory_to_host(matrix_bench, d_C, size_matrix);
+	#ifdef UNIFIED_MEMORY
+		Clock d2hCLK;
+        // Map the output buffer to d_C pointer   
+
+		d2hCLK.start();
+        d_C = (bench_t*)deviceObj->queue->enqueueMapBuffer(
+            *deviceObj->d_C, CL_TRUE, CL_MAP_READ, 0, mem_size_C, NULL, deviceObj->evt_copyC);
+        deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_C, d_C);
+        deviceObj->queue->finish();
+		d2hCLK.end();
+		printf("measurement d2h : %f \n",d2hCLK.getElapsedMS());
+    #else
+        copy_memory_to_host(matrix_bench, d_C, size_matrix);
+    #endif
+
 
 	// get time
 	if (arguments_parameters->print_timing || arguments_parameters->csv_format || arguments_parameters->csv_format_timestamp)

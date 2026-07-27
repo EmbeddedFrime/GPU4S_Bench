@@ -143,7 +143,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     #ifdef PROFILING_CLOCK
         d2hCLK.start();
     #endif
-
+    
     deviceObj->queue->enqueueReadBuffer(*deviceObj->d_C,CL_TRUE,0,sizeof(bench_t)*size,h_C, NULL, deviceObj->evt_copyC);
 
     #ifdef PROFILING_CLOCK

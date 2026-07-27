@@ -33,7 +33,6 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 {
 	//Fix: cast to merge all the prototype in on single file 
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);   
-    struct timespec start, end;
 	// Start compute timer
 	Clock kernelCLK;
 	kernelCLK.start();
