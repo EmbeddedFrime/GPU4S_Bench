@@ -17,7 +17,7 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
 bool device_memory_init(GraficCommon* device_object,  int64_t size_a_array, int64_t size_b_array)
 {
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-	deviceObj->d_B = (bench_t*) malloc ( size_b_array * sizeof(bench_t*));
+	deviceObj->d_B = (bench_t*) malloc( size_b_array * sizeof(bench_t));
 	return true;
 }
 
@@ -33,13 +33,14 @@ void aux_fft_function(GraficCommon* device_object, int64_t nn, int64_t start_pos
     
 GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     
-	bench_t Br[nn];
+	std::vector<bench_t> Br(nn);
 	// copy values of the  window to output
 	for(unsigned int j = 0; j < nn ; ++j){
 		Br[j] = deviceObj->d_A[start_pos+j];
 	}
 	
     int64_t n, mmax, m, j, istep, i , window = nn;
+	unsigned int window_idx = start_pos / 2;
     
     // reverse-binary reindexing for all data 
     nn = nn>>1;
@@ -56,8 +57,8 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 		j = (j & 0x0000FFFF) << 16 | (j & 0xFFFF0000) >> 16;                                                                    
 		j >>= (32-mode);                                                                                                       
 		position = j * 2;                                                                                                       																											
-		deviceObj->d_B[(start_pos * window) + position] = Br[i *2];
-		deviceObj->d_B[(start_pos * window) + position + 1] = Br[i *2 + 1];  
+		deviceObj->d_B[(window_idx * window) + position] = Br[i *2];
+		deviceObj->d_B[(window_idx * window) + position + 1] = Br[i *2 + 1];  
 	}
 
     
@@ -76,12 +77,13 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
         for (m=1; m < mmax; m += 2) {
             for (i=m; i <= n; i += istep) {
                 j=i+mmax;
-                tempr = wr*deviceObj->d_B[(start_pos * window) + j-1] - wi*deviceObj->d_B[(start_pos * window) +j];
-                tempi = wr * deviceObj->d_B[(start_pos * window) + j] + wi*deviceObj->d_B[(start_pos * window) + j-1];
-                deviceObj->d_B[(start_pos * window) + j-1] = deviceObj->d_B[(start_pos * window) + i-1] - tempr;
-                deviceObj->d_B[(start_pos * window) +j] = deviceObj->d_B[(start_pos * window) + i] - tempi;
-                deviceObj->d_B[(start_pos * window) + i-1] += tempr;
-                deviceObj->d_B[(start_pos * window) +i] += tempi;
+                tempr = wr  * deviceObj->d_B[(window_idx * window) + j]	- wi  * deviceObj->d_B[(window_idx * window) + j-1];
+				tempi = wr  * deviceObj->d_B[(window_idx * window) + j] + wi  * deviceObj->d_B[(window_idx * window) + j-1];  
+
+                deviceObj->d_B[(window_idx * window) + j-1]  = deviceObj->d_B[(window_idx * window) + i-1] - tempr;
+                deviceObj->d_B[(window_idx * window) +j] 	 = deviceObj->d_B[(window_idx * window) + i] - tempi;
+                deviceObj->d_B[(window_idx * window) + i-1] += tempr;
+                deviceObj->d_B[(window_idx * window) +i] 	+= tempi;
             }
             wtemp=wr;
             wr += wr*wpr - wi*wpi;
@@ -99,7 +101,7 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size)
 	const double start_wtime = omp_get_wtime();
 
 	#pragma omp parallel for
-	for (unsigned int i = 0; i < (size * 2 - window + 1); i+=2){
+	for (int64_t i = 0; i < (size * 2 - window + 1); i+=2){
         aux_fft_function(device_object, window, i);
     }
 

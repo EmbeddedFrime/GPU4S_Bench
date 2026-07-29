@@ -123,7 +123,7 @@ if(ANDROID)
 
             SHORTCUTS_NAMES    openmp-lib OpenMP-lib
         )
-    endif(ANDROID_OPENCL_LIB_INC)
+    endif()
 
 
 endif(ANDROID)

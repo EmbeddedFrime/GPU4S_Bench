@@ -78,7 +78,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A,int64_t siz
         return;
     }
 
-    #ifdef PROFILING_CL OCK
+    #ifdef PROFILING_CLOCK 
         deviceObj->queue->finish();
         h2dCLK.end();
     #endif
@@ -104,6 +104,7 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
 
     //cl::NDRange local(x_local, y_local);
     //cl::NDRange global(n, w);
+    
 
     // reverse bit operation 
     cl::Kernel kernel_add=cl::Kernel(program,"binary_reverse_kernel");
@@ -169,10 +170,10 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
 
     deviceObj->queue->finish();
 }
+
 void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     deviceObj->elapsed_time = 0;
-    Clock kernelCLK;
     cl::Program::Sources sources;
     deviceObj->evt = new cl::Event;
     // load kernel from file
@@ -186,9 +187,11 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
         exit(1);
     }
     kernelCLK.start();
+
     for (unsigned int i = 0; i < (size * 2 - window + 1); i+=2){
         aux_execute_kernel(device_object, window, i, program);
     }
+    
     deviceObj->queue->finish();
     kernelCLK.end();
 }

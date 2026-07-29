@@ -159,7 +159,6 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cl::Program::Sources sources;
     deviceObj->evt = new cl::Event;
-    Clock kernelCLK;
     // load kernel from file
     kernel_code = type_kernel_common + kernel_code;
     sources.push_back({kernel_code.c_str(),kernel_code.length()});
@@ -183,7 +182,16 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    
+    #ifdef PROFILING_CLOCK
+        d2hCLK.start();
+    #endif
+
     deviceObj->queue->enqueueReadBuffer(*deviceObj->d_B,CL_TRUE,0,sizeof(bench_t)*size,h_B, NULL, deviceObj->evt_copyBr);
+
+    #ifdef PROFILING_CLOCK
+        d2hCLK.end(); 
+    #endif
 }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
@@ -209,14 +217,14 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     #endif
 
 if (csv_format_timestamp){
-        printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0,deviceObj->elapsed_time ,elapsed_d_h / 1000000.0, current_time);
+        printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0, elapsed / 1000000.0,elapsed_d_h / 1000000.0, current_time);
     }
     else if (csv_format){
-         printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,deviceObj->elapsed_time ,elapsed_d_h / 1000000.0);
+         printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0, elapsed / 1000000.0,elapsed_d_h / 1000000.0);
     }else{
          printf("profiling mode: %s\n", profilingMode);
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
-         printf("Elapsed time kernel: %.10f milliseconds\n",  deviceObj->elapsed_time);
+         printf("Elapsed time kernel: %.10f milliseconds\n",  elapsed  / 1000000.0);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", elapsed_d_h / 1000000.0);
     }
     return elapsed / 1000000.0; // TODO Change

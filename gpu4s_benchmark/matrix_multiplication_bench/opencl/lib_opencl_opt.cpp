@@ -76,8 +76,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
     #endif
 
     // copy memory host -> device
-    cl_int err;
-    deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, deviceObj->evt_copyA);
+    cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, deviceObj->evt_copyA);
     if (err != CL_SUCCESS) 
     {
         fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
@@ -127,12 +126,6 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     kernel_add.setArg(4,m);
     kernel_add.setArg(5,w);
     kernel_add.setArg(6,BLOCK_SIZE);
-
-    #ifdef PROFILING_CLOCK
-            // Ensure queue is idle before measuring
-            deviceObj->queue->finish();
-            kernelCLK.start();
-    #endif
 
     deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evt);
 
