@@ -17,6 +17,8 @@ void init(GraficCommon* device_object, char* device_name){
 }
 void init(GraficCommon* device_object, int platform ,int device, char* device_name){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Fix Initialize the struct to prevent garbage values in C++ members ---
+    memset(device_object, 0, sizeof(GraficObject));
     //get all platforms (drivers)
     std::vector<cl::Platform> all_platforms;
     cl::Platform::get(&all_platforms);
