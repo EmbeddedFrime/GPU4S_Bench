@@ -3,6 +3,8 @@
 #include "../benchmark_library.h"
 #include <cstring>
 #include "GEN_kernel.hcl"
+#include "../cpu_functions/cpu_functions.h"
+
 
 #ifdef PROFILING_CLOCK
     // kernel time execution
@@ -10,6 +12,10 @@
     // host <-> device 
     Clock h2dCLK;
     Clock d2hCLK;
+
+    #ifdef UNIFIED_MEMORY
+        float h2dTotal = 0;
+    #endif
 #endif
 
 
@@ -68,6 +74,7 @@ bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix,
 }
 
 
+
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h_B, unsigned int size_a, unsigned int size_b){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     #ifdef PROFILING_CLOCK
@@ -97,6 +104,59 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
     #endif
 }
 
+void device_unified_memory_init_copy(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int buff_size, char input_file_A[100], char input_file_B[100]){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    unsigned int squared_buff_size = buff_size * buff_size;
+    unsigned int mem_size = squared_buff_size * sizeof(bench_t);
+
+    h2dCLK.start();
+    //--- Aquire the pointer of buffer from graphic card ---
+    A = (bench_t*)deviceObj->queue->enqueueMapBuffer(
+        *deviceObj->d_A, CL_TRUE, CL_MAP_WRITE, 0, mem_size);
+    B = (bench_t*)deviceObj->queue->enqueueMapBuffer(
+        *deviceObj->d_B, CL_TRUE, CL_MAP_WRITE, 0, mem_size);
+    C = (bench_t*)deviceObj->queue->enqueueMapBuffer(
+        *deviceObj->d_C, CL_TRUE, CL_MAP_WRITE, 0, mem_size);
+    h2dCLK.end();
+    
+    h2dTotal += h2dCLK.getElapsedNS();
+
+    if (strlen(input_file_A) == 0)
+    {
+
+        // --- Initialize the buffer ---
+        for (int i = 0; i < buff_size; i++)
+            for (int j = 0; j < buff_size; j++)
+            A[i*buff_size+j] = (bench_t)rand()/(bench_t)(RAND_MAX/NUMBER_BASE);
+
+        for (int i = 0; i < buff_size; i++)
+            for (int j = 0; j < buff_size; j++)
+                B[i*buff_size+j] = (bench_t)rand()/(bench_t)(RAND_MAX/NUMBER_BASE);
+
+        for (int i = 0; i < buff_size; i++)
+            for (int j = 0; j < buff_size; j++)
+                C[i*buff_size+j] = 0;
+
+    } else 
+    {
+        get_double_hexadecimal_values(input_file_A, A,mem_size);
+		get_double_hexadecimal_values(input_file_B, B,mem_size);
+    }
+    
+
+    h2dCLK.start();
+    // --- Unmap the buffers for GPU kernel ---
+    deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_A, A, NULL, deviceObj->evt_copyA);
+    deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_B, B, NULL, deviceObj->evt_copyB);
+    deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_C, C, NULL, deviceObj->evt_copyC);
+
+
+    deviceObj->queue->finish();
+    h2dCLK.end();
+
+    h2dTotal += h2dCLK.getElapsedNS();
+}
+ 
 
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m, unsigned int w){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -138,6 +198,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     #endif
 }
 
+
+
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     #ifdef PROFILING_CLOCK
@@ -150,6 +212,18 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
         deviceObj->queue->finish();
         d2hCLK.end();
     #endif
+}
+
+void copy_memory_unified_to_host(GraficCommon* device_object, bench_t* &d_C, unsigned int buff_size){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
+    d2hCLK.start();
+    // Map the output buffer to d_C pointer   
+    d_C = (bench_t*)deviceObj->queue->enqueueMapBuffer(*deviceObj->d_C, CL_TRUE, CL_MAP_READ, 0, buff_size, NULL, deviceObj->evt_copyC);
+    
+    
+    deviceObj->queue->finish();
+    d2hCLK.end();
 }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
@@ -175,6 +249,9 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
         const char* profilingMode = "GPU";
     #endif
 
+    #ifdef UNIFIED_MEMORY
+        elapsed_h_d = h2dTotal;
+    #endif
 
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0, current_time);
@@ -192,6 +269,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
 
 void clean(GraficCommon* device_object){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    
     // pointers clean
     delete deviceObj->context;
     delete deviceObj->queue;

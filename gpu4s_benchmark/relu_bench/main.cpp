@@ -36,7 +36,9 @@ int main(int argc, char *argv[]){
 	// A input matrix
 	unsigned int size_A = arguments_parameters->size * arguments_parameters->size;
     unsigned int mem_size_A = sizeof(bench_t) * size_A;
-	bench_t* A = (bench_t*) malloc(mem_size_A);
+	#ifndef UNIFIED_MEMORY
+		bench_t* A = (bench_t*) malloc(mem_size_A);
+	#endif
 	// B input matrix
 	unsigned int size_B = arguments_parameters->size * arguments_parameters->size;
     unsigned int mem_size_B = sizeof(bench_t) * size_B;
@@ -49,24 +51,26 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	if (strlen(arguments_parameters->input_file_A) == 0)
 	{
-	// inicialice A matrix 
-		for (int i=0; i<arguments_parameters->size; i++){
-	    	for (int j=0; j<arguments_parameters->size; j++){
-	    		#ifdef INT
-	        	A[i*arguments_parameters->size+j] = rand() % (NUMBER_BASE * 100);
+		#ifndef UNIFIED_MEMORY
+			// inicialice A matrix 
+			for (int i=0; i<arguments_parameters->size; i++){
+				for (int j=0; j<arguments_parameters->size; j++){
+					#ifdef INT
+					A[i*arguments_parameters->size+j] = rand() % (NUMBER_BASE * 100);
 
-	        	#else
-	        	A[i*arguments_parameters->size+j] = (double)rand()/RAND_MAX*2.0-1.0;
-	        	#endif
-	    	}
-		}
-	// iniciate B matrix 
-		for (int i=0; i<arguments_parameters->size; i++){
-	    	for (int j=0; j<arguments_parameters->size; j++){
-	        	h_B[i*arguments_parameters->size+j] = 0;
-	        	d_B[i*arguments_parameters->size+j] = 0;
-	    	}
-		}
+					#else
+					A[i*arguments_parameters->size+j] = (double)rand()/RAND_MAX*2.0-1.0;
+					#endif
+				}
+			}
+			// iniciate B matrix 
+			for (int i=0; i<arguments_parameters->size; i++){
+				for (int j=0; j<arguments_parameters->size; j++){
+					h_B[i*arguments_parameters->size+j] = 0;
+					d_B[i*arguments_parameters->size+j] = 0;
+				}
+			}
+		#endif
 	}
 	else
 	{	
@@ -84,21 +88,21 @@ int main(int argc, char *argv[]){
 		}*/
 	}
 	// print input
-	if (arguments_parameters->print_input)
-	{
-		for (int i=0; i<arguments_parameters->size; i++){
-	    	for (int j=0; j<arguments_parameters->size; j++){
-	    		#ifdef INT
-	    		printf("%d ",A[i*arguments_parameters->size+j]);
-	        	#else
-	        	printf("%f ",A[i*arguments_parameters->size+j]);
-	        	#endif
-	    	}
-	    	printf("\n");
-		}
-		printf("\n\n");
+	// if (arguments_parameters->print_input)
+	// {
+	// 	for (int i=0; i<arguments_parameters->size; i++){
+	//     	for (int j=0; j<arguments_parameters->size; j++){
+	//     		#ifdef INT
+	//     		printf("%d ",A[i*arguments_parameters->size+j]);
+	//         	#else
+	//         	printf("%f ",A[i*arguments_parameters->size+j]);
+	//         	#endif
+	//     	}
+	//     	printf("\n");
+	// 	}
+	// 	printf("\n\n");
 
-	}
+	// }
 
 
 
@@ -117,12 +121,26 @@ int main(int argc, char *argv[]){
 	
 	// init memory
 	device_memory_init(relu_bench, arguments_parameters->size * arguments_parameters->size, arguments_parameters->size * arguments_parameters->size);
+	
+	#ifdef UNIFIED_MEMORY
+		bench_t *A, *B;
+		//init and iniciate the buffer
+		device_unified_memory_init_copy(relu_bench, A, B, arguments_parameters->size,arguments_parameters->input_file_A,arguments_parameters->input_file_B);
+	#else   
 	// copy memory to device
-	copy_memory_to_device(relu_bench, A, arguments_parameters->size * arguments_parameters->size);
+		copy_memory_to_device(relu_bench, A, arguments_parameters->size * arguments_parameters->size);
+	#endif
+
 	// execute kernel
 	execute_kernel(relu_bench, arguments_parameters->size, arguments_parameters->size, arguments_parameters->size);
+	
 	// copy memory to host
-	copy_memory_to_host(relu_bench, d_B, size_matrix);
+	#ifdef UNIFIED_MEMORY
+		copy_memory_unified_to_host(relu_bench, d_B, mem_size_B);
+    #else
+		copy_memory_to_host(relu_bench, d_B, size_matrix);
+	#endif
+
 	if (arguments_parameters->print_timing || arguments_parameters->csv_format || arguments_parameters->csv_format_timestamp)
 	{
 		get_elapsed_time(relu_bench, arguments_parameters->csv_format, arguments_parameters->csv_format_timestamp, get_timestamp());

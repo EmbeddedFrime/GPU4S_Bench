@@ -3,7 +3,6 @@
 #include "cpu_functions/cpu_functions.h"
 #include <sys/time.h>
 
-#define NUMBER_BASE 1
 // OUTPUT C is N x W matrix
 // Print hexadecimal values of result 
 
@@ -82,7 +81,6 @@ int main(int argc, char *argv[])
 	        	#endif
 	    	}
 		}
-		#endif
 	// iniciate C matrix
 		for (int i=0; i<arguments_parameters->size; i++){
 	    	for (int j=0; j<arguments_parameters->size; j++){
@@ -91,6 +89,7 @@ int main(int argc, char *argv[])
 	        	
 	    	}
 		}
+		#endif
 	}
 	else
 	{	
@@ -126,49 +125,11 @@ int main(int argc, char *argv[])
 	
 	// init memory
 	device_memory_init(matrix_bench, arguments_parameters->size * arguments_parameters->size, arguments_parameters->size * arguments_parameters->size, size_matrix);
-	
-	
-	GraficObject* deviceObj = static_cast<GraficObject*>(matrix_bench);
 
 	#ifdef UNIFIED_MEMORY
-		// map GPU buffers directly — fill without any intermediate buffer
-		Clock h2dCLK;
-
-
-		h2dCLK.start();
-		bench_t* A = (bench_t*)deviceObj->queue->enqueueMapBuffer(
-			*deviceObj->d_A, CL_TRUE, CL_MAP_WRITE, 0, mem_size_A);
-		bench_t* B = (bench_t*)deviceObj->queue->enqueueMapBuffer(
-			*deviceObj->d_B, CL_TRUE, CL_MAP_WRITE, 0, mem_size_B);
-		bench_t* C = (bench_t*)deviceObj->queue->enqueueMapBuffer(
-			*deviceObj->d_B, CL_TRUE, CL_MAP_WRITE, 0, mem_size_C);
-		h2dCLK.end();
-		
-		float timeTotal = h2dCLK.getElapsedMS();
-
-		for (int i = 0; i < arguments_parameters->size; i++)
-			for (int j = 0; j < arguments_parameters->size; j++)
-			A[i*arguments_parameters->size+j] = (bench_t)rand()/(bench_t)(RAND_MAX/NUMBER_BASE);
-
-		for (int i = 0; i < arguments_parameters->size; i++)
-			for (int j = 0; j < arguments_parameters->size; j++)
-				B[i*arguments_parameters->size+j] = (bench_t)rand()/(bench_t)(RAND_MAX/NUMBER_BASE);
-
-		for (int i = 0; i < arguments_parameters->size; i++)
-			for (int j = 0; j < arguments_parameters->size; j++)
-				C[i*arguments_parameters->size+j] = 0;
-
-
-		h2dCLK.start();
-		deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_A, A, NULL, deviceObj->evt_copyA);
-		deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_B, B, NULL, deviceObj->evt_copyB);
-		deviceObj->queue->finish();
-		h2dCLK.end();
-		timeTotal += h2dCLK.getElapsedMS();
-
-
-		printf("measurement h2d : %f \n",timeTotal);
-
+		bench_t *A, *B, *C;
+		//init and iniciate the buffer
+		device_unified_memory_init_copy(matrix_bench, A, B, C, arguments_parameters->size,arguments_parameters->input_file_A,arguments_parameters->input_file_B);
 	#else   
 		// copy memory to device
 		copy_memory_to_device(matrix_bench, A, B, arguments_parameters->size * arguments_parameters->size, arguments_parameters->size * arguments_parameters->size);
@@ -180,16 +141,7 @@ int main(int argc, char *argv[])
 	
 	// copy memory to host
 	#ifdef UNIFIED_MEMORY
-		Clock d2hCLK;
-        // Map the output buffer to d_C pointer   
-
-		d2hCLK.start();
-        d_C = (bench_t*)deviceObj->queue->enqueueMapBuffer(
-            *deviceObj->d_C, CL_TRUE, CL_MAP_READ, 0, mem_size_C, NULL, deviceObj->evt_copyC);
-        deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_C, d_C);
-        deviceObj->queue->finish();
-		d2hCLK.end();
-		printf("measurement d2h : %f \n",d2hCLK.getElapsedMS());
+		copy_memory_unified_to_host(matrix_bench, d_C, mem_size_C);
     #else
         copy_memory_to_host(matrix_bench, d_C, size_matrix);
     #endif
