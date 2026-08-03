@@ -51,7 +51,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int n)
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size)
 {
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-	h_C = deviceObj->d_B;	     
+	//Must have memcpy otherwise, we need to modify the prototype of the function with &
+	memcpy(h_C, deviceObj->d_B, size * sizeof(bench_t));	     
 }
 
 

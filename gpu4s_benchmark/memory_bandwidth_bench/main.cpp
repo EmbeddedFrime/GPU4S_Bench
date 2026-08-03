@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	if(validation_timing){
 		if (!mute_messages){
-			printf("CPU Time %lu milliseconds\n", 0);
+			printf("CPU Time %.0f milliseconds\n", 0.0f);
 		}
 		exit(0);
 	}
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 	// execute kernel
 	execute_kernel(mem_bench, size_A);
 	// copy memory to host
-=	copy_memory_to_host(mem_bench, h_B, size_B);
+	copy_memory_to_host(mem_bench, h_B, size_B);
 
 	// get time
 	if (print_timing || csv_format)
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 	{
 		if (print_timing)
 		{
-			printf("CPU Time %.0f milliseconds\n", 0);
+			printf("CPU Time %.0f milliseconds\n", 0.0f);
 		}
 		if (print_output)
 		{
@@ -174,19 +174,19 @@ int main(int argc, char *argv[])
 			printf("\n");
 		#endif
 		} 
-	    result = compare_vectors(A, d_B, size_B);
+	    result = compare_vectors(A, h_B, size_B);
 	    if (result){
 	    	printf("OK\n");
 	    }
 	    if (export_results){
-	    	print_double_hexadecimal_values(GPU_FILE, d_B, size_B);
+	    	print_double_hexadecimal_values(GPU_FILE, h_B, size_B);
 	    	print_double_hexadecimal_values(CPU_FILE, A, size_B);
 	    }
 
 	}
 	if (export_results_gpu)
 	{
-		print_double_hexadecimal_values(GPU_FILE, d_B, size_B);
+		print_double_hexadecimal_values(GPU_FILE, h_B, size_B);
 	}
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// CLEAN MEMORY
