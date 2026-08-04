@@ -211,8 +211,6 @@ int main(int argc, char *argv[]){
 		#else
 		for (int i=0; i<CIFAR_10_OUTPUT; i++){
 	    		printf("%f ", d_output[i]);
-	        	
-    		
 		}
 		printf("\n");
 		#endif

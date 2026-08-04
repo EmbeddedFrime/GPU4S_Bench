@@ -223,6 +223,12 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     unsigned int size_shared = (BLOCK_SIZE + kernel_rad *2 ) * sizeof(bench_t) * (BLOCK_SIZE + kernel_rad *2) * sizeof(bench_t);
     unsigned int size_shared_position = (BLOCK_SIZE + kernel_rad *2);
 
+    #ifdef PROFILING_CLOCK
+        deviceObj->queue->finish(); // Clear queue to ensure accurate start
+        kernelCLK.start();
+    #endif
+
+    // 1-1 step convolution
     cl::Kernel kernel_conv=cl::Kernel(program,"kernel_matrix_convolution");
     kernel_conv.setArg(0,*deviceObj->input_data);
     kernel_conv.setArg(1,*deviceObj->conv_1_output);
@@ -235,14 +241,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     kernel_conv.setArg(8, size_shared_position);
     kernel_conv.setArg(9, kernel_rad);
 
-    #ifdef PROFILING_CLOCK
-        deviceObj->queue->finish(); // Clear queue to ensure accurate start
-        kernelCLK.start();
-    #endif
+    
+
+    deviceObj->queue->enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, deviceObj->evt1_1);
 
     // 1-2 step activation
-    deviceObj->queue->enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, deviceObj->evt1_1);
-    
     if (input_data*input_data <= BLOCK_SIZE_PLANE)
     {
         local = cl::NullRange;
@@ -298,11 +301,9 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     kernel_add.setArg(3,K);
     kernel_add.setArg(4,ALPHA);
     kernel_add.setArg(5,BETA);
-
     deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evt1_4);
 
     // 2-1 step convolutions
-
     int kernel_rad_2 =  kernel_2 / 2;
     int size_shared_2 = (BLOCK_SIZE + kernel_rad_2 *2 ) * sizeof(bench_t) * (BLOCK_SIZE + kernel_rad_2 *2) * sizeof(bench_t);
     int size_shared_position_2 = (BLOCK_SIZE + kernel_rad_2 *2);    
@@ -319,7 +320,6 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     //kernel_conv.setArg(8, size_shared_position_2);
     //kernel_conv.setArg(9, kernel_rad_2);
     deviceObj->queue->enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, deviceObj->evt2_1);
-
 
     // 2-2 step activation
     if (size_lateral_1*size_lateral_1 <= BLOCK_SIZE_PLANE)
@@ -389,7 +389,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     }
     else
     {
-        local = cl::NDRange(x_local, 1);
+        local = cl::NullRange;
         global = cl::NDRange(neurons_dense_1, 1);
     }
     kernel_add=cl::Kernel(program,"kernel_matrix_multiplication");
@@ -410,7 +410,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     }
     else
     {
-        local = cl::NDRange(x_local_plane);
+        local = cl::NullRange;
         global = cl::NDRange(neurons_dense_1);
     }
     kernel_add=cl::Kernel(program,"kernel_relu_linear");
@@ -420,10 +420,9 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evtd_1_a);
 
     // dense layer 2
-
     if(neurons_dense_2 <= BLOCK_SIZE)
     {
-        local = cl::NDRange(1, 1);
+        local = cl::NullRange;
         global = cl::NDRange (neurons_dense_2, 1);
     }
     else
@@ -458,7 +457,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     kernel_add.setArg(2,neurons_dense_2);
     deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evtd_2_a);
 
-    //soft max
+    //soft max - output
     if((neurons_dense_2) <= BLOCK_SIZE)
     {
         local = cl::NullRange;
@@ -483,6 +482,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     softmax_end_kernel.setArg(2,neurons_dense_2);
 
     deviceObj->queue->enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, deviceObj->evt_softmax_fin);
+
     // end 
     deviceObj->queue->finish();
 
