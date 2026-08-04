@@ -104,6 +104,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
     #endif
 }
 
+#ifdef UNIFIED_MEMORY
 void device_unified_memory_init_copy(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int buff_size, char input_file_A[100], char input_file_B[100]){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     unsigned int squared_buff_size = buff_size * buff_size;
@@ -156,7 +157,7 @@ void device_unified_memory_init_copy(GraficCommon* device_object, bench_t* &A, b
 
     h2dTotal += h2dCLK.getElapsedNS();
 }
- 
+#endif
 
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m, unsigned int w){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -214,6 +215,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     #endif
 }
 
+#ifdef UNIFIED_MEMORY
 void copy_memory_unified_to_host(GraficCommon* device_object, bench_t* &d_C, unsigned int buff_size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 
@@ -225,6 +227,7 @@ void copy_memory_unified_to_host(GraficCommon* device_object, bench_t* &d_C, uns
     deviceObj->queue->finish();
     d2hCLK.end();
 }
+#endif
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);

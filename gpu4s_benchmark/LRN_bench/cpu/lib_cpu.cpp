@@ -47,7 +47,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 
 	// End compute timer
 	kernelCLK.end();
-    deviceObj->elapsed_time = kernelCLK.getElapsedMS() / 1000000.0;
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 

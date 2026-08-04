@@ -6,9 +6,10 @@
 #include "GEN_atomic_functions.hcl"
 
 
-// kernel time execution
-Clock kernelCLK;
+
 #ifdef PROFILING_CLOCK
+    // kernel time execution
+    Clock kernelCLK;
     // host <-> device 
     Clock h2dCLK;
     Clock d2hCLK;
@@ -205,7 +206,14 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 
     // timing  
     deviceObj->queue->finish(); // Clear queue to ensure accurate start
-    kernelCLK.start();
+    
+    
+    #ifdef PROFILING_CLOCK
+        kernelCLK.start();
+    #endif
+
+    //FIX : GPU profiling use opencl marker
+    deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt1_1);
 
     cl::Buffer* aux_output_data = deviceObj->output_data;
     cl::Buffer* aux_input_data = deviceObj->input_data;
@@ -234,14 +242,14 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_conv.setArg(6,kernel_1);
         kernel_conv.setArg(7, position * input_data * input_data);
 
-        deviceObj->queue->enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, deviceObj->evt1_1);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, NULL);
 
         // 1-2 step activation
         cl::Kernel  kernel_add=cl::Kernel(program,"kernel_relu");
         kernel_add.setArg(0,*deviceObj->conv_1_output);
         kernel_add.setArg(1,*deviceObj->conv_1_output);
         kernel_add.setArg(2,input_data);
-        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evt1_2);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
         // 1-3 step pooling
         unsigned int size_lateral_1 = input_data / stride_1;
@@ -261,7 +269,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_add.setArg(2,input_data);
         kernel_add.setArg(3,stride_1);
         kernel_add.setArg(4,size_lateral_1);
-        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evt1_3);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
         
         // 1-4 step normalitation
         kernel_add=cl::Kernel(program,"kernel_lrn");
@@ -272,7 +280,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_add.setArg(4,ALPHA);
         kernel_add.setArg(5,BETA);
 
-       deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evt1_4);
+       deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
         // 2-1 step convolution
         kernel_conv=cl::Kernel(program,"kernel_matrix_convolution");
@@ -285,14 +293,14 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_conv.setArg(6,kernel_2);
         kernel_conv.setArg(7, 0);
 
-        deviceObj->queue->enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, deviceObj->evt2_1);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, NULL);
 
         // 2-2 step activation
         kernel_add=cl::Kernel(program,"kernel_relu");
         kernel_add.setArg(0,*deviceObj->conv_2_output);
         kernel_add.setArg(1,*deviceObj->conv_2_output);
         kernel_add.setArg(2,size_lateral_1);
-        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evt2_2);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
         
         // 2-3 normalization
         kernel_add=cl::Kernel(program,"kernel_lrn");
@@ -303,7 +311,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_add.setArg(4,ALPHA);
         kernel_add.setArg(5,BETA);
 
-        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evt2_3);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
         // 2-4 step pooling
         unsigned int size_lateral_2 = size_lateral_1 / stride_2;
@@ -323,7 +331,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_add.setArg(2,size_lateral_1);
         kernel_add.setArg(3,stride_2);
         kernel_add.setArg(4,size_lateral_2);
-        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evt2_4);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
         // dense layer 1
         if(neurons_dense_1 <= BLOCK_SIZE)
         {
@@ -343,7 +351,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_add.setArg(4,1);
         kernel_add.setArg(5,size_lateral_2*size_lateral_2);
 
-        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evtd_1);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
         //activation layer dense 1
         if(neurons_dense_1 <= BLOCK_SIZE)
@@ -360,7 +368,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_add.setArg(0,*deviceObj->dense_layer_1_output);
         kernel_add.setArg(1,*deviceObj->dense_layer_1_output);
         kernel_add.setArg(2,neurons_dense_1/2);
-        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evtd_1_a);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
         // dense layer 2
         if(neurons_dense_2 <= BLOCK_SIZE)
@@ -381,7 +389,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_add.setArg(4,1);
         kernel_add.setArg(5,neurons_dense_1);
 
-        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evtd_2);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
         //activation layer dense 2
         if(neurons_dense_2 < BLOCK_SIZE)
@@ -398,7 +406,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_add.setArg(0,*deviceObj->dense_layer_2_output);
         kernel_add.setArg(1,*deviceObj->dense_layer_2_output);
         kernel_add.setArg(2,neurons_dense_2/2);
-        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evtd_2_a);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
         //soft max
         if(neurons_dense_2 < BLOCK_SIZE)
@@ -418,7 +426,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         softmax_kernel.setArg(3,neurons_dense_2);
         softmax_kernel.setArg(4, position * output_data);
 
-        deviceObj->queue->enqueueNDRangeKernel(softmax_kernel,cl::NullRange,global,local, NULL, deviceObj->evt_softmax);
+        deviceObj->queue->enqueueNDRangeKernel(softmax_kernel,cl::NullRange,global,local, NULL, NULL);
 
         cl::Kernel softmax_end_kernel=cl::Kernel(program,"kernel_softmax_end");
         softmax_end_kernel.setArg(0,*aux_output_data);
@@ -426,14 +434,18 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         softmax_end_kernel.setArg(2,neurons_dense_2);
         softmax_end_kernel.setArg(3, position * output_data);
 
-        deviceObj->queue->enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, deviceObj->evt_softmax_fin);
+        deviceObj->queue->enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, NULL);
         deviceObj->queue->enqueueWriteBuffer(*deviceObj->sum_ouput,CL_TRUE,0,sizeof(bench_t), 0, NULL,NULL);
         
     }
-    // end 
+
+    //FIX : GPU profiling use opencl marker
+    deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt_softmax_fin);
     deviceObj->queue->finish();
+
+    #ifdef PROFILING_CLOCK
     kernelCLK.end();
-    deviceObj->elapsed_time =  kernelCLK.getElapsedMS();
+    #endif
 
 }
 
@@ -467,21 +479,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
     elapsed_h_d += deviceObj->evt_copyW2->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyW2->getProfilingInfo<CL_PROFILING_COMMAND_START>();
 
     // kernel time
-
-    elapsed = deviceObj->evt1_1->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt1_1->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evt1_2->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt1_2->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evt1_3->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt1_3->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evt1_4->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt1_4->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evt2_1->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt2_1->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evt2_2->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt2_2->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evt2_3->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt2_3->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evt2_4->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt2_4->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evtd_1->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evtd_1->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evtd_1_a->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evtd_1_a->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evtd_2->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evtd_2->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evtd_2_a->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evtd_2_a->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evt_softmax->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_softmax->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed += deviceObj->evt_softmax_fin->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_softmax_fin->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+    elapsed = deviceObj->evt_softmax_fin->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt1_1->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     
     // copy memory D -> H
     elapsed_d_h = deviceObj->evt_copyOut->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyOut->getProfilingInfo<CL_PROFILING_COMMAND_START>();

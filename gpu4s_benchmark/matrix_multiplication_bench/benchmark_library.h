@@ -48,7 +48,7 @@ struct GraficObject : public GraficCommon {
 };
 
 // --- Specefic overload of benchmarking function ---
-	#define UNIFIED_MEMORY
+	// #define UNIFIED_MEMORY
 #ifdef UNIFIED_MEMORY
 	void device_unified_memory_init_copy(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int buff_size, char input_file_A[100],char input_file_B[100]);
 	void copy_memory_unified_to_host(GraficCommon* device_object, bench_t* &d_C, unsigned int buff_size);
