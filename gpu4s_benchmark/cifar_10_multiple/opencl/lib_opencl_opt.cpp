@@ -247,9 +247,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_conv.setArg(11, stream * input_data * input_data);
 
         queues[stream].enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, deviceObj->evt1_1);
-        // 1-2 step activation
         
-
+        // 1-2 step activation
         if (input_data*input_data <= BLOCK_SIZE_PLANE)
         {
             local = cl::NullRange;
@@ -408,7 +407,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         }
         else
         {
-            local = cl::NDRange(x_local, 1);
+            local = cl::NullRange;
             global = cl::NDRange(neurons_dense_1, 1);
         }
         kernel_add=cl::Kernel(program,"kernel_matrix_multiplication");
@@ -431,7 +430,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         }
         else
         {
-            local = cl::NDRange(x_local_plane);
+            local = cl::NullRange;
             global = cl::NDRange((neurons_dense_1/2) *(neurons_dense_1/2));
         }
         kernel_add=cl::Kernel(program,"kernel_relu");
@@ -442,10 +441,9 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         queues[stream].enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evtd_1_a);
 
         // dense layer 2
-
         if(neurons_dense_2 <= BLOCK_SIZE)
         {
-            local = cl::NDRange(1, 1);
+            local = cl::NullRange;
             global = cl::NDRange (neurons_dense_2, 1);
         }
         else

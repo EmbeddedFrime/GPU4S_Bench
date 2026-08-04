@@ -255,34 +255,37 @@ __global__ void
 softmax_kernel(const bench_t *A, bench_t *B, bench_t *sum_d_B,const int size)
 {   unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned int tid = threadIdx.x;
-    bench_t value = 0;
     __shared__ bench_t shared_data[BLOCK_SIZE];
-    if (i  < (size)){
-        
-        #ifdef INT
-        value = exp(A[i]);
-        #elif FLOAT
-        value = expf(A[i]);
-        #else
-        value = exp(A[i]);
-        #endif
 
+    if (i < size){
+        #ifdef INT
+        bench_t value = exp(A[i]);
+        #elif FLOAT
+        bench_t value = expf(A[i]);
+        #else
+        bench_t value = exp(A[i]);
+        #endif
         shared_data[tid] = value;
         B[i] = value;
-        // sync threads
-        __syncthreads();
-        for (unsigned int s=blockDim.x/2; s>0; s>>=1) 
-        {
-            if (tid < s)  
-            {
-                shared_data[tid] += shared_data[tid + s];
-            }
-        __syncthreads();
-        }
-        if (tid == 0){
-            atomicAdd(sum_d_B, shared_data[0]);
-        }    
+    } else {
+        shared_data[tid] = 0; // Prevent garbage values in reduction
     }
+    
+    // sync ALL threads in the block
+    __syncthreads();
+    
+    for (unsigned int s=blockDim.x/2; s>0; s>>=1) 
+    {
+        if (tid < s)  
+        {
+            shared_data[tid] += shared_data[tid + s];
+        }
+        __syncthreads(); //fix add sync
+    }
+    
+    if (tid == 0){
+        atomicAdd(sum_d_B, shared_data[0]);
+    }    
 }
 __global__ void
 softmax_finish_kernel(bench_t *B, bench_t *sum_d_B,const int size)
@@ -625,7 +628,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     (void)hipEventRecord(*deviceObj->stop);
 
     #ifdef PROFILING_CLOCK
-        hipDeviceSynchronize(); 
+        (void)hipDeviceSynchronize(); 
         kernelCLK.end();
     #endif
 }
