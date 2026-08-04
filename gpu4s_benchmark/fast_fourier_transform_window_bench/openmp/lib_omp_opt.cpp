@@ -33,7 +33,7 @@ void aux_fft_function(GraficCommon* device_object, int64_t nn, int64_t start_pos
     
 GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     
-    unsigned int window_idx = start_pos / 2;
+    unsigned int window_idx = start_pos;
     bench_t* b_out = &deviceObj->d_B[window_idx * nn];
 
 	// copy values of the  window to output
@@ -83,7 +83,7 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
                 j=i+mmax;
                 tempr = wr * b_out[j-1] - wi * b_out[j];
                 tempi = wr * b_out[j]   + wi * b_out[j-1];
-                
+
                 b_out[j-1]  = b_out[i-1] - tempr;
                 b_out[j]    = b_out[i]   - tempi;
                 b_out[i-1] += tempr;

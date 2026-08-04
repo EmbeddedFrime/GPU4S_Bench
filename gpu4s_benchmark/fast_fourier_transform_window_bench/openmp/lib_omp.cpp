@@ -1,6 +1,7 @@
 #include "../benchmark_library.h"
 #include <cstring>
 #include <cmath>
+#include <vector>
 
 
 void init(GraficCommon* device_object, char* device_name)
@@ -40,7 +41,7 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 	}
 	
     int64_t n, mmax, m, j, istep, i , window = nn;
-	unsigned int window_idx = start_pos / 2;
+	unsigned int window_idx = start_pos;
     
     // reverse-binary reindexing for all data 
     nn = nn>>1;
@@ -77,8 +78,8 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
         for (m=1; m < mmax; m += 2) {
             for (i=m; i <= n; i += istep) {
                 j=i+mmax;
-                tempr = wr  * deviceObj->d_B[(window_idx * window) + j]	- wi  * deviceObj->d_B[(window_idx * window) + j-1];
-				tempi = wr  * deviceObj->d_B[(window_idx * window) + j] + wi  * deviceObj->d_B[(window_idx * window) + j-1];  
+                tempr = wr * deviceObj->d_B[(window_idx * window) + j-1] - wi * deviceObj->d_B[(window_idx * window) + j];
+				tempi = wr * deviceObj->d_B[(window_idx * window) + j]   + wi * deviceObj->d_B[(window_idx * window) + j-1]; 
 
                 deviceObj->d_B[(window_idx * window) + j-1]  = deviceObj->d_B[(window_idx * window) + i-1] - tempr;
                 deviceObj->d_B[(window_idx * window) +j] 	 = deviceObj->d_B[(window_idx * window) + i] - tempi;
