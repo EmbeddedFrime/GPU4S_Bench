@@ -33,35 +33,39 @@ mean_matrices(const bench_t *A,const bench_t *B,result_bench_t *mean_A ,result_b
 
         shared_data_A[tid_x*blockDim.y + tid_y] = A[i*size + j];
         shared_data_B[tid_x*blockDim.y + tid_y] = B[i*size + j];
-        
-        // sinc theads
+    } else {
+        shared_data_A[tid_x*blockDim.y + tid_y] = 0;
+        shared_data_B[tid_x*blockDim.y + tid_y] = 0;
+    }
+
+    // sinc theads
+    __syncthreads();
+
+    // --- Reduce Y-axis ---
+    for(unsigned int s_y = blockDim.y/2; s_y > 0; s_y >>= 1){
+        if (tid_y < s_y)
+        {
+            shared_data_A[tid_x * blockDim.y + tid_y] += shared_data_A[tid_x * blockDim.y + tid_y + s_y];
+            shared_data_B[tid_x * blockDim.y + tid_y] += shared_data_B[tid_x * blockDim.y + tid_y + s_y];
+        }
+        __syncthreads();
+    }
+
+    // --- Reduce X-axis ---
+    for(unsigned int s_x = blockDim.x/2; s_x > 0; s_x >>= 1 ){
+        if(tid_x < s_x && tid_y == 0)
+        {
+            shared_data_A[tid_x * blockDim.y] += shared_data_A[(tid_x + s_x) * blockDim.y];
+            shared_data_B[tid_x * blockDim.y] += shared_data_B[(tid_x + s_x) * blockDim.y];
+        }
         __syncthreads();
         
-        for(unsigned int s_y = blockDim.y/2; s_y > 0; s_y >>= 1)
-        {
-            if (tid_y < s_y)
-            {
-                shared_data_A[tid_x * blockDim.y + tid_y] += shared_data_A[tid_x * blockDim.y + tid_y + s_y];
-                shared_data_B[tid_x * blockDim.y + tid_y] += shared_data_B[tid_x * blockDim.y + tid_y + s_y];
-            }
-            __syncthreads();
-        }
-        for(unsigned int s_x = blockDim.x/2; s_x > 0; s_x >>= 1 )
-        {
-            if(tid_x < s_x)
-            {
-                shared_data_A[tid_x * blockDim.y] += shared_data_A[(tid_x + s_x) * blockDim.y];
-                shared_data_B[tid_x * blockDim.y] += shared_data_B[(tid_x + s_x) * blockDim.y];
-            }
-            __syncthreads();
-            
-        }
+    }
 
-        if( tid_x == 0 && tid_y == 0)
-        { 
-            atomicAdd(mean_A, shared_data_A[0]);
-            atomicAdd(mean_B, shared_data_B[0]);
-        }
+    if( tid_x == 0 && tid_y == 0)
+    { 
+        atomicAdd(mean_A, shared_data_A[0]);
+        atomicAdd(mean_B, shared_data_B[0]);
     }
 }
 
