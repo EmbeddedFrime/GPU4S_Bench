@@ -128,7 +128,8 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* k
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,unsigned int w, unsigned int kernel_size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     dim3 dimBlock(BLOCK_SIZE);
-    dim3 dimGrid(ceil(float(n)/dimBlock.x));
+    //FIX: Calculate the dimgrid with int to not loose precision
+    dim3 dimGrid((n + dimBlock.x - 1) / dimBlock.x);
 
     #ifdef PROFILING_CLOCK
         kernelCLK.start();
