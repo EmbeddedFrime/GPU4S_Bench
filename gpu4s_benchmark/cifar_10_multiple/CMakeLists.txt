@@ -45,27 +45,31 @@ if(ANDROID)
     if(ANDROID_OPENCL_LIB_INC)
         # --- OpenCL ---
         compile_target(${PROJECT_NAME}_opencl
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl.cpp
-            COMPILE_DEFS       OPENCL
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl.cpp
+                                opencl/opencl_common.cpp
+
+            COMPILE_DEFS        OPENCL
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
                                 
-            INCLUDES           ${ANDROID_INC}
-            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-            SHORTCUTS_NAMES    cl OpenCL
+            INCLUDES            ${ANDROID_INC}
+            LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+            SHORTCUTS_NAMES     cl OpenCL
         )
 
         # --- OpenCL-opt ---
         compile_target(${PROJECT_NAME}_opencl_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl_opt.cpp
-            COMPILE_DEFS       OPENCL
-                               NUMBER_OF_STREAMS=${NSTREAMS}   
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl_opt.cpp
+                                opencl/opencl_common.cpp
+                                
+            COMPILE_DEFS        OPENCL
+                                NUMBER_OF_STREAMS=${NSTREAMS}   
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
 
-            INCLUDES           ${ANDROID_INC}
-            LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-            SHORTCUTS_NAMES    opencl-opt OpenCL-opt
+            INCLUDES            ${ANDROID_INC}
+            LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+            SHORTCUTS_NAMES     opencl-opt OpenCL-opt
         )
 
     endif()
@@ -105,25 +109,29 @@ if(NOT ANDROID)
     if(OpenCL_FOUND)
         # --- OpenCL ---
         compile_target(${PROJECT_NAME}_opencl
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl.cpp
-            COMPILE_DEFS       OPENCL
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl.cpp
+                                opencl/opencl_common.cpp
 
-            LIBRARIES          OpenCL::OpenCL
-            SHORTCUTS_NAMES    cl OpenCL
+            COMPILE_DEFS        OPENCL
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+
+            LIBRARIES           OpenCL::OpenCL
+            SHORTCUTS_NAMES     cl OpenCL
         )
 
         # --- OpenCL-opt ---
         compile_target(${PROJECT_NAME}_opencl_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl_opt.cpp
-            COMPILE_DEFS       OPENCL
-                               NUMBER_OF_STREAMS=${NSTREAMS}
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl_opt.cpp
+                                opencl/opencl_common.cpp
 
-            LIBRARIES          OpenCL::OpenCL
-            SHORTCUTS_NAMES    opencl-opt OpenCL-opt
+            COMPILE_DEFS        OPENCL
+                                NUMBER_OF_STREAMS=${NSTREAMS}
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+
+            LIBRARIES           OpenCL::OpenCL
+            SHORTCUTS_NAMES     opencl-opt OpenCL-opt
         )
 
       
@@ -163,35 +171,41 @@ if(NOT ANDROID)
     if(CUDAToolkit_FOUND)
         # --- CUDA ---
         compile_target(${PROJECT_NAME}_cuda
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda.cu
-            COMPILE_DEFS       CUDA
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart 
-            SHORTCUTS_NAMES    cuda CUDA
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       cuda/lib_cuda.cu
+                                cuda/cuda_common.cu
+
+            COMPILE_DEFS        CUDA
+            SET_CUDA            1
+            LIBRARIES           CUDA::cudart 
+            SHORTCUTS_NAMES     cuda CUDA
         )
 
         # --- CUDA-opt ---
         compile_target(${PROJECT_NAME}_cuda_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda_opt.cu
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       cuda/lib_cuda_opt.cu
+                                cuda/cuda_common.cu
+
             COMPILE_DEFS       CUDA
                                NUMBER_OF_STREAMS=${NSTREAMS}
 
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart 
-            SHORTCUTS_NAMES    cuda-opt CUDA-opt
+            SET_CUDA            1
+            LIBRARIES           CUDA::cudart 
+            SHORTCUTS_NAMES     cuda-opt CUDA-opt
         )
 
         if(CUDNN_FOUND)
             # --- CUDA-lib ---
             compile_target(${PROJECT_NAME}_cuda_lib
-                BENCH_DIR          ${CMAKE_SOURCE_DIR}
-                SOURCES_FILES      cuda/lib_cuda_lib.cu
-                COMPILE_DEFS       CUDA
-                SET_CUDA           1
-                LIBRARIES          CUDA::cudart CUDA::cublas cudnn
-                SHORTCUTS_NAMES    cuda-lib CUDA-lib
+                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES       cuda/lib_cuda_lib.cu
+                                    cuda/cuda_common.cu
+
+                COMPILE_DEFS        CUDA
+                SET_CUDA            1
+                LIBRARIES           CUDA::cudart CUDA::cublas cudnn
+                SHORTCUTS_NAMES     cuda-lib CUDA-lib
             )
         endif()
 
@@ -202,9 +216,14 @@ if(NOT ANDROID)
     if(hip_FOUND)
         # --- HIP ---
         compile_target(${PROJECT_NAME}_hip
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       hip/lib_hip.cpp 
+                                hip/hip_common.cpp 
+
+
             SET_HIP_FILES       hip/lib_hip.cpp 
+                                hip/hip_common.cpp 
+
             COMPILE_DEFS        HIP
             LIBRARIES           hip::host
             SHORTCUTS_NAMES     hip- HIP
@@ -212,10 +231,16 @@ if(NOT ANDROID)
 
         # --- HIP-opt ---
         compile_target(${PROJECT_NAME}_hip_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       hip/lib_hip_opt.cpp 
+                                hip/hip_common.cpp 
+
             SET_HIP_FILES       hip/lib_hip_opt.cpp 
+                                hip/hip_common.cpp 
+
             COMPILE_DEFS        HIP
+                                NUMBER_OF_STREAMS=${NSTREAMS}
+
             LIBRARIES           hip::host
             SHORTCUTS_NAMES     hip-opt HIP-opt
         )
