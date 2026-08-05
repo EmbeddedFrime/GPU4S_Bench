@@ -1,7 +1,7 @@
 /** * ====================================================================
- * @file        opencl_common.h (./fast_fourier_transform_window_bench)
+ * @file        openmp_common.h (./fast_fourier_transform_bench)
  * @brief       Shared declarations, data structures, and timing utilities
- *              for OpenCL benchmark backends.
+ *              for OpenMP benchmark backends.
  * @paragraph   License
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */

@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        opencl_common.cpp (./fast_fourier_transform_window_bench)
+ * @file        opencl_common.cpp (./max_pooling_bench)
  * @brief       Common OpenCL platform initialization, device setup, 
  *              profiling timer evaluation, and generic cleanup routines.
  * @paragraph   License

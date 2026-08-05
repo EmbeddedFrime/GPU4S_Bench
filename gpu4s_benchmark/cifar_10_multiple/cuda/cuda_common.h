@@ -1,7 +1,7 @@
 /** * ====================================================================
- * @file        opencl_common.h (./fast_fourier_transform_window_bench)
+ * @file        cuda_common.h (./cifar_10_multiple)
  * @brief       Shared declarations, data structures, and timing utilities
- *              for OpenCL benchmark backends.
+ *              for CUDA benchmark backends.
  * @paragraph   License
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
