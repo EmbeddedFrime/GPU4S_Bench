@@ -1,68 +1,66 @@
 /** * ====================================================================
- * @file        hip_common.cpp (./matrix_multiplication_bench)
- * @brief       Common HIP platform initialization, device setup, 
+ * @file        cuda_common.cpp (./matrix_multiplication_bench)
+ * @brief       Common CUDA platform initialization, device setup, 
  *              profiling timer evaluation, and generic cleanup routines.
  * @paragraph   License
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
 #include "../benchmark_library.h"
-#include "hip/hip_runtime.h"
-
+#include "cuda_common.h"
 
 
 void init(GraficCommon* device_object, char* device_name){
-	init(device_object, 0,0, device_name);
+    init(device_object, 0,0, device_name);
 }
 
 void init(GraficCommon* device_object, int platform ,int device, char* device_name){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    // --- Fix: Cast to (void) to suppress warnings on non-critical setup functions ---
-	(void)hipSetDevice(device);
-	hipDeviceProp_t prop;
-	(void)hipGetDeviceProperties(&prop, device);
-	//printf("Using device: %s\n", prop.name);
+    cudaSetDevice(device);
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, device);
+    //printf("Using device: %s\n", prop.name);
     strcpy(device_name,prop.name);
     //event create 
-    deviceObj->start = new hipEvent_t;
-    deviceObj->stop = new hipEvent_t;
-    deviceObj->start_memory_copy_device = new hipEvent_t;
-    deviceObj->stop_memory_copy_device = new hipEvent_t;
-    deviceObj->start_memory_copy_host = new hipEvent_t;
-    deviceObj->stop_memory_copy_host= new hipEvent_t;
+    deviceObj->start = new cudaEvent_t;
+    deviceObj->stop = new cudaEvent_t;
+    deviceObj->start_memory_copy_device = new cudaEvent_t;
+    deviceObj->stop_memory_copy_device = new cudaEvent_t;
+    deviceObj->start_memory_copy_host = new cudaEvent_t;
+    deviceObj->stop_memory_copy_host= new cudaEvent_t;
     
-    (void)hipEventCreate(deviceObj->start);
-    (void)hipEventCreate(deviceObj->stop);
-    (void)hipEventCreate(deviceObj->start_memory_copy_device);
-    (void)hipEventCreate(deviceObj->stop_memory_copy_device);
-    (void)hipEventCreate(deviceObj->start_memory_copy_host);
-    (void)hipEventCreate(deviceObj->stop_memory_copy_host);
+    cudaEventCreate(deviceObj->start);
+    cudaEventCreate(deviceObj->stop);
+    cudaEventCreate(deviceObj->start_memory_copy_device);
+    cudaEventCreate(deviceObj->stop_memory_copy_device);
+    cudaEventCreate(deviceObj->start_memory_copy_host);
+    cudaEventCreate(deviceObj->stop_memory_copy_host);
 }
 
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix){
-   
-GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-   
-   // Allocate the device input vector A
-	hipError_t err = hipSuccess;
-    err = hipMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
 
-    if (err != hipSuccess)
+GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
+   // Allocate the device input vector A
+	cudaError_t err = cudaSuccess;
+    err = cudaMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
+
+    if (err != cudaSuccess)
     {
         return false;
     }
 
     // Allocate the device input vector B
-    err = hipMalloc((void **)&deviceObj->d_B, size_b_matrix * sizeof(bench_t));
+    err = cudaMalloc((void **)&deviceObj->d_B, size_b_matrix * sizeof(bench_t));
 
-    if (err != hipSuccess)
+    if (err != cudaSuccess)
     {
         return false;
     }
 
     // Allocate the device output vector C
-    err = hipMalloc((void **)&deviceObj->d_C, size_c_matrix * sizeof(bench_t));
+    err = cudaMalloc((void **)&deviceObj->d_C, size_c_matrix * sizeof(bench_t));
 
-    if (err != hipSuccess)
+    if (err != cudaSuccess)
     {
         return false;
     }
@@ -76,20 +74,20 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
         h2dCLK.start();
     #endif
 
-    (void)hipEventRecord(*deviceObj->start_memory_copy_device);
-	hipError_t err = hipMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, hipMemcpyHostToDevice);
-    if (err != hipSuccess)
+    cudaEventRecord(*deviceObj->start_memory_copy_device);
+	cudaError_t err = cudaMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess)
     {
-        fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", hipGetErrorString(err));
+        fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = hipMemcpy(deviceObj->d_B, h_B, sizeof(bench_t) * size_b, hipMemcpyHostToDevice);
-    if (err != hipSuccess)
+    err = cudaMemcpy(deviceObj->d_B, h_B, sizeof(bench_t) * size_b, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess)
     {
-        fprintf(stderr, "Failed to copy vector B from host to device (error code %s)!\n", hipGetErrorString(err));
+        fprintf(stderr, "Failed to copy vector B from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    (void)hipEventRecord(*deviceObj->stop_memory_copy_device);
+    cudaEventRecord(*deviceObj->stop_memory_copy_device);   
 
     #ifdef PROFILING_CLOCK
         h2dCLK.end();
@@ -105,26 +103,25 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
         d2hCLK.start();
     #endif
 
-    (void)hipEventRecord(*deviceObj->start_memory_copy_host);
-    hipMemcpy(h_C, deviceObj->d_C, size * sizeof(bench_t), hipMemcpyDeviceToHost);
-    (void)hipEventRecord(*deviceObj->stop_memory_copy_host);
+    cudaEventRecord(*deviceObj->start_memory_copy_host);
+    cudaMemcpy(h_C, deviceObj->d_C, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
+    cudaEventRecord(*deviceObj->stop_memory_copy_host);
 
     #ifdef PROFILING_CLOCK
         d2hCLK.end();
     #endif
-}
+    }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    (void)hipEventSynchronize(*deviceObj->stop_memory_copy_host);
+    cudaEventSynchronize(*deviceObj->stop_memory_copy_host);
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
     // memory transfer time host-device
-    (void)hipEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
+    cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
     // kernel time
-    (void)hipEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
+    cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
     //  memory transfer time device-host
-    (void)hipEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
-    
+    cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
 
     #ifdef PROFILING_CLOCK
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
@@ -135,7 +132,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     #else
         const char* profilingMode = "GPU";
     #endif
-
+    
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", milliseconds_h_d,milliseconds,milliseconds_d_h,current_time);
     }
@@ -151,28 +148,26 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
 }
 
 void clean(GraficCommon* device_object){
-    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    hipError_t err = hipSuccess;
-    err = hipFree(deviceObj->d_A);
-
-    if (err != hipSuccess)
+	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+	cudaError_t err = cudaSuccess;
+	err = cudaFree(deviceObj->d_A);
+    if (err != cudaSuccess)
     {
-        fprintf(stderr, "Failed to free device vector A (error code %s)!\n", hipGetErrorString(err));
+        fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
 
-    err = hipFree(deviceObj->d_B);
-
-    if (err != hipSuccess)
+    err = cudaFree(deviceObj->d_B);
+    if (err != cudaSuccess)
     {
-        fprintf(stderr, "Failed to free device vector B (error code %s)!\n", hipGetErrorString(err));
+        fprintf(stderr, "Failed to free device vector B (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = hipFree(deviceObj->d_C);
 
-    if (err != hipSuccess)
+    err = cudaFree(deviceObj->d_C);
+    if (err != cudaSuccess)
     {
-        fprintf(stderr, "Failed to free device vector A (error code %s)!\n", hipGetErrorString(err));
+        fprintf(stderr, "Failed to free device vector C (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
 

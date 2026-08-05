@@ -224,8 +224,10 @@ if(NOT ANDROID)
     if(CUDAToolkit_FOUND)
         # --- CUDA ---
         compile_target(${PROJECT_NAME}_cuda
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda.cu
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       cuda/lib_cuda.cu
+                                cuda/cuda_common.cu
+
             COMPILE_DEFS       CUDA
             SET_CUDA           1
             LIBRARIES          CUDA::cudart 
@@ -234,22 +236,26 @@ if(NOT ANDROID)
 
         # --- CUDA-opt ---
         compile_target(${PROJECT_NAME}_cuda_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda_opt.cu
-            COMPILE_DEFS       CUDA
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart 
-            SHORTCUTS_NAMES    cuda-opt CUDA-opt
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       cuda/lib_cuda_opt.cu
+                                cuda/cuda_common.cu
+
+            COMPILE_DEFS        CUDA
+            SET_CUDA            1
+            LIBRARIES           CUDA::cudart 
+            SHORTCUTS_NAMES     cuda-opt CUDA-opt
         )
 
         # --- CUDA-lib ---
         compile_target(${PROJECT_NAME}_cuda_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda_lib.cu
-            COMPILE_DEFS       CUDA
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart CUDA::cublas
-            SHORTCUTS_NAMES    cuda-lib CUDA-lib
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       cuda/lib_cuda_lib.cu
+                                cuda/cuda_common.cu
+
+            COMPILE_DEFS        CUDA
+            SET_CUDA            1
+            LIBRARIES           CUDA::cudart CUDA::cublas
+            SHORTCUTS_NAMES     cuda-lib CUDA-lib
         )
     endif()
 
@@ -257,8 +263,10 @@ if(NOT ANDROID)
     if(hip_FOUND)
         # --- HIP ---
         compile_target(${PROJECT_NAME}_hip
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       hip/lib_hip.cpp 
+                                hip/hip_common.cpp
+
             SET_HIP_FILES       hip/lib_hip.cpp 
             COMPILE_DEFS        HIP
             LIBRARIES           hip::host
@@ -267,8 +275,10 @@ if(NOT ANDROID)
 
         # --- HIP-opt ---
         compile_target(${PROJECT_NAME}_hip_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       hip/lib_hip_opt.cpp 
+                                hip/hip_common.cpp
+
             SET_HIP_FILES       hip/lib_hip_opt.cpp 
             COMPILE_DEFS        HIP
             LIBRARIES           hip::host

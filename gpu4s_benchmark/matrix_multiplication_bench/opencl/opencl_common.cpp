@@ -7,6 +7,7 @@
  * ======================================================================= */
 #include "../benchmark_library.h"
 #include "../cpu_functions/cpu_functions.h"
+#include "opencl_common.h"
 #include <cstring>
 
 
