@@ -6,6 +6,7 @@
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
 #include "../benchmark_library.h"
+#include "hip_common.h"
 
 
 void init(GraficCommon* device_object, char* device_name){
