@@ -6,7 +6,6 @@
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
 #include "../benchmark_library.h"
-#include "omp_common.h"
 #include <cstring>
 
 

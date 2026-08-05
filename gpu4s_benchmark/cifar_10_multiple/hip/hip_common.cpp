@@ -7,7 +7,6 @@
  * ======================================================================= */
 #include "../benchmark_library.h"
 #include "hip/hip_runtime.h"
-#include "hip_common.h"
 
 
 
