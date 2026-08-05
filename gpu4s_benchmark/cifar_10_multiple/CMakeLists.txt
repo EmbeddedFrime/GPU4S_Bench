@@ -76,29 +76,33 @@ if(ANDROID)
 
     # --- OpenMP---
     compile_target(${PROJECT_NAME}_openmp
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      openmp/lib_omp.cpp
-        COMPILE_DEFS       OPENMP 
-        COMPILE_OPTIONS    -fopenmp  
-        LIBRARIES          -static-openmp   #openmp flags
-                           -fopenmp  
-                           -lm              # add math lib
+        BENCH_DIR           ${CMAKE_SOURCE_DIR}
+        SOURCES_FILES       openmp/lib_omp.cpp
+                            openmp/omp_common.cpp
 
-        SHORTCUTS_NAMES    openmp OpenMP
+        COMPILE_DEFS        OPENMP 
+        COMPILE_OPTIONS     -fopenmp  
+        LIBRARIES           -static-openmp   #openmp flags
+                            -fopenmp  
+                            -lm              # add math lib
+
+        SHORTCUTS_NAMES     openmp OpenMP
     )
     
 
     # --- OpenMP-opt ---
     compile_target(${PROJECT_NAME}_openmp_opt
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      openmp/lib_omp_opt.cpp
-        COMPILE_DEFS       OPENMP 
-        COMPILE_OPTIONS    -fopenmp  
-        LIBRARIES          -static-openmp   #openmp flags
-                           -fopenmp  
-                           -lm              # add math lib
+        BENCH_DIR           ${CMAKE_SOURCE_DIR}
+        SOURCES_FILES       openmp/lib_omp_opt.cpp
+                            openmp/omp_common.cpp
 
-        SHORTCUTS_NAMES    openmp-opt OpenMP-opt
+        COMPILE_DEFS        OPENMP 
+        COMPILE_OPTIONS     -fopenmp  
+        LIBRARIES           -static-openmp   #openmp flags
+                            -fopenmp  
+                            -lm              # add math lib
+
+        SHORTCUTS_NAMES     openmp-opt OpenMP-opt
     )
 
 endif(ANDROID)
@@ -141,26 +145,30 @@ if(NOT ANDROID)
     if(OpenMP_CXX_FOUND)
         # --- OpenMP ---
         compile_target(${PROJECT_NAME}_openmp
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      openmp/lib_omp.cpp
-            COMPILE_DEFS       OPENMP
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       openmp/lib_omp.cpp
+                                openmp/omp_common.cpp
 
-            LIBRARIES          OpenMP::OpenMP_CXX # openmp flags
-                               m   # equivalent to -lm
+            COMPILE_DEFS        OPENMP
 
-            SHORTCUTS_NAMES    openmp OpenMP 
+            LIBRARIES           OpenMP::OpenMP_CXX # openmp flags
+                                m   # equivalent to -lm
+
+            SHORTCUTS_NAMES     openmp OpenMP 
         )
 
         # --- OpenMP-opt ---
         compile_target(${PROJECT_NAME}_openmp_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      openmp/lib_omp_opt.cpp
-            COMPILE_DEFS       OPENMP
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       openmp/lib_omp_opt.cpp
+                                openmp/omp_common.cpp
 
-            LIBRARIES          OpenMP::OpenMP_CXX #  openmp flags
-                               m   # equivalent to -lm 
+            COMPILE_DEFS        OPENMP
 
-            SHORTCUTS_NAMES    openmp-opt OpenMP-opt 
+            LIBRARIES           OpenMP::OpenMP_CXX #  openmp flags
+                                m   # equivalent to -lm 
+
+            SHORTCUTS_NAMES     openmp-opt OpenMP-opt 
         )
 
       
