@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        openmp_common.h (./fast_fourier_transform_window_bench)
+ * @file        omp_common.h (./fast_fourier_transform_window_bench)
  * @brief       Shared declarations, data structures, and timing utilities
  *              for OpenMP benchmark backends.
  * @paragraph   License
