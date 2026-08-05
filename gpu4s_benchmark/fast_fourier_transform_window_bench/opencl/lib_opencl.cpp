@@ -4,9 +4,9 @@
 #include "GEN_kernel.hcl"
 
 
-// kernel time execution
-Clock kernelCLK;
 #ifdef PROFILING_CLOCK
+    // kernel time execution
+    Clock kernelCLK;
     // host <-> device 
     Clock h2dCLK;
     Clock d2hCLK;
@@ -44,10 +44,9 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     
     // events
     deviceObj->evt = new cl::Event; 
+    deviceObj->evt_end = new cl::Event; 
     deviceObj->evt_copyB = new cl::Event;
     deviceObj->evt_copyBr = new cl::Event;
-    
-
 }
 
 bool device_memory_init(GraficCommon* device_object,  int64_t size_a_array, int64_t size_b_array){
@@ -115,8 +114,7 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
     kernel_add.setArg(4,position);
 
     
-    deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global_reverse,local_reverse, NULL, deviceObj->evt);
-
+    deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global_reverse,local_reverse, NULL, NULL);
     deviceObj->queue->finish();
 
     // FFT calculation
@@ -155,7 +153,7 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
             kernel_fft.setArg(4,wi);
             kernel_fft.setArg(5,size);
             kernel_fft.setArg(6,position);
-            deviceObj->queue->enqueueNDRangeKernel(kernel_fft,cl::NullRange,global,local, NULL, deviceObj->evt);
+            deviceObj->queue->enqueueNDRangeKernel(kernel_fft,cl::NullRange,global,local, NULL, NULL);
             // update WR, WI
             wtemp=wr;
             wr += wr*wpr - wi*wpi;
@@ -186,14 +184,25 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(deviceObj->default_device)<<"\n";
         exit(1);
     }
-    kernelCLK.start();
+
+    #ifdef PROFILING_CLOCK
+        kernelCLK.start();
+    #endif
+
+    //FIX : GPU profiling use opencl marker
+    deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt);
 
     for (unsigned int i = 0; i < (size * 2 - window + 1); i+=2){
         aux_execute_kernel(device_object, window, i, program);
     }
     
-    deviceObj->queue->finish();
-    kernelCLK.end();
+    //FIX : GPU profiling use opencl marker
+    deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt_end);
+
+    #ifdef PROFILING_CLOCK
+        deviceObj->queue->finish();
+        kernelCLK.end();
+    #endif
 }
 
 
@@ -216,7 +225,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     float elapsed_h_d = 0, elapsed = 0, elapsed_d_h = 0;
     elapsed_h_d = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
-    elapsed = kernelCLK.getElapsedNS();
+    elapsed = deviceObj->evt_end->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
     elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Device->Host: %.10f \n", );
@@ -226,6 +235,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
         elapsed_h_d  = h2dCLK.getElapsedNS();
         elapsed_d_h  = d2hCLK.getElapsedNS();
+        elapsed      = kernelCLK.getElapsedNS();
         // --- select the profiling message ---
         const char* profilingMode = "CLOCK";
     #else
@@ -255,6 +265,7 @@ void clean(GraficCommon* device_object){
     delete deviceObj->d_A;
     delete deviceObj->d_B;
     delete deviceObj->evt;
+    delete deviceObj->evt_end;
     delete deviceObj->evt_copyB;
     delete deviceObj->evt_copyBr;
 }

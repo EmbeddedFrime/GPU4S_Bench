@@ -4,9 +4,10 @@
 #include "GEN_kernel.hcl"
 #include <chrono>
 
-// kernel time execution
-Clock kernelCLK;
+
 #ifdef PROFILING_CLOCK
+    // kernel time execution
+    Clock kernelCLK;
     // host <-> device 
     Clock h2dCLK;
     Clock d2hCLK;
@@ -44,6 +45,7 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     
     // events
     deviceObj->evt = new cl::Event; 
+    deviceObj->evt_end = new cl::Event; 
     deviceObj->evt_copyB = new cl::Event;
     deviceObj->evt_copyBr = new cl::Event;
     
@@ -116,8 +118,14 @@ void execute_kernel(GraficCommon* device_object, int64_t size){
         exit(1);
     }
 
+
     deviceObj->queue->finish(); // Clear queue to ensure accurate start
-    kernelCLK.start();
+    #ifdef PROFILING_CLOCK
+        kernelCLK.start();
+    #endif
+
+    //FIX : GPU profiling use opencl marker
+    deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt);
 
     // reverse bit operation 
     cl::Kernel kernel_add=cl::Kernel(program,"binary_reverse_kernel");
@@ -127,9 +135,9 @@ void execute_kernel(GraficCommon* device_object, int64_t size){
     kernel_add.setArg(3,mode);
 
     
-    deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global_reverse,local_reverse, NULL, deviceObj->evt);
-
+    deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global_reverse,local_reverse, NULL, NULL);
     deviceObj->queue->finish();
+
     // FFT calculation
     bench_t wtemp, wr, wpr, wpi, wi, theta;
     unsigned int theads = size/2;
@@ -164,7 +172,7 @@ void execute_kernel(GraficCommon* device_object, int64_t size){
             kernel_fft.setArg(2,i);
             kernel_fft.setArg(3,wr);
             kernel_fft.setArg(4,wi);
-            deviceObj->queue->enqueueNDRangeKernel(kernel_fft,cl::NullRange,global,local, NULL, deviceObj->evt);
+            deviceObj->queue->enqueueNDRangeKernel(kernel_fft,cl::NullRange,global,local, NULL, NULL);
             // update WR, WI
             wtemp=wr;
             wr += wr*wpr - wi*wpi;
@@ -176,10 +184,13 @@ void execute_kernel(GraficCommon* device_object, int64_t size){
         theads = theads / 2;
        
     }
+    //FIX : GPU profiling use opencl marker
+    deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt_end);
 
-    
-    deviceObj->queue->finish();
-    kernelCLK.end();
+    #ifdef PROFILING_CLOCK
+        deviceObj->queue->finish();
+        kernelCLK.end();
+    #endif
 }
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size){
@@ -203,7 +214,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     elapsed_h_d = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
 
-    elapsed = kernelCLK.getElapsedNS();
+    elapsed = deviceObj->evt_end->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
     //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
 
     elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
@@ -213,6 +224,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
         elapsed_h_d  = h2dCLK.getElapsedNS();
         elapsed_d_h  = d2hCLK.getElapsedNS();
+        elapsed      = kernelCLK.getElapsedNS();
         const char* profilingMode = "CLOCK";
     #else
         const char* profilingMode = "GPU";
@@ -242,6 +254,7 @@ void clean(GraficCommon* device_object){
     delete deviceObj->d_B;
     delete deviceObj->d_Br;
     delete deviceObj->evt;
+    delete deviceObj->evt_end;
     delete deviceObj->evt_copyB;
     delete deviceObj->evt_copyBr;
 }

@@ -34,6 +34,7 @@ struct GraficObject : public GraficCommon {
 		cl::Event *evt_copyB;
 		cl::Event *evt_copyBr;
 		cl::Event *evt;
+		cl::Event *evt_end;
 		cl::Buffer *d_B;
 		cl::Buffer *d_Br;
 	#elif HIP
