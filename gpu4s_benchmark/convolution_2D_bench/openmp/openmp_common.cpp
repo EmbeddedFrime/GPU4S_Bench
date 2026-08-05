@@ -1,8 +1,0 @@
-/** * ====================================================================
- * @file        openmp_common.cpp (./convolution_2D_bench)
- * @brief       Common OpenMP platform initialization, device setup, 
- *              profiling timer evaluation, and generic cleanup routines.
- * @paragraph   License
- * ESA-PL Strong Copyleft – v2.5
- * ======================================================================= */
-#include "../benchmark_library.h"

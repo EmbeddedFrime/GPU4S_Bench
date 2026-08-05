@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        openmp_common.h (./convolution_2D_bench)
+ * @file        omp_common.h (./convolution_2D_bench)
  * @brief       Shared declarations, data structures, and timing utilities
  *              for OpenMP benchmark backends.
  * @paragraph   License
