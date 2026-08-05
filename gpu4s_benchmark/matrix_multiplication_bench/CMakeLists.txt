@@ -280,6 +280,8 @@ if(NOT ANDROID)
                                 hip/hip_common.cpp
 
             SET_HIP_FILES       hip/lib_hip.cpp 
+                                hip/hip_common.cpp
+
             COMPILE_DEFS        HIP
             LIBRARIES           hip::host
             SHORTCUTS_NAMES     hip- HIP
@@ -292,6 +294,8 @@ if(NOT ANDROID)
                                 hip/hip_common.cpp
 
             SET_HIP_FILES       hip/lib_hip_opt.cpp 
+                                hip/hip_common.cpp
+
             COMPILE_DEFS        HIP
             LIBRARIES           hip::host
             SHORTCUTS_NAMES     hip-opt HIP-opt
