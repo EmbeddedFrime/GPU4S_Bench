@@ -85,47 +85,53 @@ if(ANDROID)
 
     # --- OpenMP---
     compile_target(${PROJECT_NAME}_openmp
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      openmp/lib_omp.cpp
-        COMPILE_DEFS       OPENMP 
-        COMPILE_OPTIONS    -fopenmp  
-        LIBRARIES          -static-openmp   #openmp flags
-                           -fopenmp  
-                           -lm              # add math lib
+        BENCH_DIR           ${CMAKE_SOURCE_DIR}
+        SOURCES_FILES       openmp/lib_omp.cpp
+                            openmp/openmp_common.cpp
 
-        SHORTCUTS_NAMES    openmp OpenMP
+        COMPILE_DEFS        OPENMP 
+        COMPILE_OPTIONS     -fopenmp  
+        LIBRARIES           -static-openmp   #openmp flags
+                            -fopenmp  
+                            -lm              # add math lib
+
+        SHORTCUTS_NAMES     openmp OpenMP
     )
 
     # --- OpenMP-opt ---
     compile_target(${PROJECT_NAME}_openmp_opt
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      openmp/lib_omp_opt.cpp
-        COMPILE_DEFS       OPENMP 
-        COMPILE_OPTIONS    -fopenmp  
-        LIBRARIES          -static-openmp   #openmp flags
-                           -fopenmp  
-                           -lm              # add math lib
+        BENCH_DIR           ${CMAKE_SOURCE_DIR}
+        SOURCES_FILES       openmp/lib_omp_opt.cpp
+                            openmp/openmp_common.cpp
 
-        SHORTCUTS_NAMES    openmp-opt OpenMP-opt
+        COMPILE_DEFS        OPENMP 
+        COMPILE_OPTIONS     -fopenmp  
+        LIBRARIES           -static-openmp   #openmp flags
+                            -fopenmp  
+                            -lm              # add math lib
+
+        SHORTCUTS_NAMES     openmp-opt OpenMP-opt
     )
 
     if(ANDROID_OPENBLAS_LIB_INC)
         # --- OpenMP-lib ---
         compile_target(${PROJECT_NAME}_openmp_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      openmp/lib_omp_lib.cpp
-            COMPILE_DEFS       OPENMP 
-                               "$<UPPER_CASE:${BLA_VENDOR}>"
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       openmp/lib_omp_lib.cpp
+                                openmp/openmp_common.cpp
 
-            INCLUDES           ${ANDROID_INC}
-                               ${ANDROID_INC}${ANDROID_ABI}
+            COMPILE_DEFS        OPENMP 
+                                "$<UPPER_CASE:${BLA_VENDOR}>"
 
-            LIBRARIES          ${ANDROID_LIB}${ANDROID_ABI}/libopenblas.a #static openblas         
-                               -static-openmp   #openmp flags
-                               -fopenmp
-                               -lm              # add math lib
+            INCLUDES            ${ANDROID_INC}
+                                ${ANDROID_INC}${ANDROID_ABI}
 
-            SHORTCUTS_NAMES    openmp-lib OpenMP-lib
+            LIBRARIES           ${ANDROID_LIB}${ANDROID_ABI}/libopenblas.a #static openblas         
+                                -static-openmp   #openmp flags
+                                -fopenmp
+                                -lm              # add math lib
+
+            SHORTCUTS_NAMES     openmp-lib OpenMP-lib
         )
     endif()
 endif(ANDROID)
@@ -180,41 +186,47 @@ if(NOT ANDROID)
     if(OpenMP_CXX_FOUND)
         # --- OpenMP ---
         compile_target(${PROJECT_NAME}_openmp
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      openmp/lib_omp.cpp
-            COMPILE_DEFS       OPENMP
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       openmp/lib_omp.cpp
+                                openmp/openmp_common.cpp
 
-            LIBRARIES          OpenMP::OpenMP_CXX # openmp flags
-                               m   # equivalent to -lm
+            COMPILE_DEFS        OPENMP
 
-            SHORTCUTS_NAMES    openmp OpenMP 
+            LIBRARIES           OpenMP::OpenMP_CXX # openmp flags
+                                m   # equivalent to -lm
+
+            SHORTCUTS_NAMES     openmp OpenMP 
         )
 
         # --- OpenMP-opt ---
         compile_target(${PROJECT_NAME}_openmp_opt   
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      openmp/lib_omp_opt.cpp
-            COMPILE_DEFS       OPENMP
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       openmp/lib_omp_opt.cpp
+                                openmp/openmp_common.cpp
 
-            LIBRARIES          OpenMP::OpenMP_CXX #  openmp flags
-                               m   # equivalent to -lm 
+            COMPILE_DEFS        OPENMP
 
-            SHORTCUTS_NAMES    openmp-opt OpenMP-opt 
+            LIBRARIES           OpenMP::OpenMP_CXX #  openmp flags
+                                m   # equivalent to -lm 
+
+            SHORTCUTS_NAMES     openmp-opt OpenMP-opt 
         )
 
         if(BLAS_INCLUDE_DIRS)
             compile_target(${PROJECT_NAME}_openmp_lib
-                BENCH_DIR          ${CMAKE_SOURCE_DIR}
-                SOURCES_FILES      openmp/lib_omp_lib.cpp
-                COMPILE_DEFS       OPENMP
-                                   "$<UPPER_CASE:${BLA_VENDOR}>"
+                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES       openmp/lib_omp_lib.cpp
+                                    openmp/openmp_common.cpp
 
-                INCLUDES           ${BLAS_INCLUDE_DIRS} 
-                LIBRARIES          BLAS::BLAS  # handle ATLAS and OpenBLAS  
-                                   OpenMP::OpenMP_CXX #auto openmp flags
-                                   m   # equivalent to -lm 
+                COMPILE_DEFS        OPENMP
+                                    "$<UPPER_CASE:${BLA_VENDOR}>"
 
-                SHORTCUTS_NAMES    openmp-lib OpenMP-lib 
+                INCLUDES            ${BLAS_INCLUDE_DIRS} 
+                LIBRARIES           BLAS::BLAS  # handle ATLAS and OpenBLAS  
+                                    OpenMP::OpenMP_CXX #auto openmp flags
+                                    m   # equivalent to -lm 
+
+                SHORTCUTS_NAMES     openmp-lib OpenMP-lib 
             ) 
         endif()        
     endif()
