@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        openmp_common.h (./cifar_10)
+ * @file        omp_common.h (./cifar_10)
  * @brief       Shared declarations, data structures, and timing utilities
  *              for OpenMP benchmark backends.
  * @paragraph   License
