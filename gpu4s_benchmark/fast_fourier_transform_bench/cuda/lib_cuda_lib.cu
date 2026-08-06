@@ -21,10 +21,10 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     
     #ifdef FLOAT
     cufftPlan1d(&plan, size, CUFFT_C2C, 1);
-    cufftExecC2C(plan, (cufftComplex *)deviceObj->d_B, (cufftComplex *)deviceObj->d_B, CUFFT_FORWARD);
+    cufftExecC2C(plan, (cufftComplex *)deviceObj->d_B, (cufftComplex *)deviceObj->d_Br, CUFFT_FORWARD);
     #else 
     cufftPlan1d(&plan, size, CUFFT_Z2Z, 1);
-    cufftExecZ2Z(plan, (cufftDoubleComplex *)deviceObj->d_B, (cufftDoubleComplex *)deviceObj->d_B, CUFFT_FORWARD);
+    cufftExecZ2Z(plan, (cufftDoubleComplex *)deviceObj->d_B, (cufftDoubleComplex *)deviceObj->d_Br, CUFFT_FORWARD);
     #endif
     
     cudaEventRecord(*deviceObj->stop);
