@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        cuda_common.cpp (./LRN_bench)
+ * @file        cuda_common.cu (./LRN_bench)
  * @brief       Common CUDA platform initialization, device setup, 
  *              profiling timer evaluation, and generic cleanup routines.
  * @paragraph   License

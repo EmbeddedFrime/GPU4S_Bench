@@ -118,6 +118,7 @@ if(NOT ANDROID)
                                 opencl/opencl_common.cpp
 
             COMPILE_DEFS        OPENCL
+                                NUMBER_OF_STREAMS=${NSTREAMS}
                                 CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
 
             LIBRARIES           OpenCL::OpenCL

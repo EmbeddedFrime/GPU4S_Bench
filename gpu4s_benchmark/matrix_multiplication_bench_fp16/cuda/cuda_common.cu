@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        cuda_common.cpp (./matrix_multiplication_bench_fp16)
+ * @file        cuda_common.cu (./matrix_multiplication_bench_fp16)
  * @brief       Common CUDA platform initialization, device setup, 
  *              profiling timer evaluation, and generic cleanup routines.
  * @paragraph   License

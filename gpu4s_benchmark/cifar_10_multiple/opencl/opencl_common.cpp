@@ -70,6 +70,7 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
 bool device_memory_init(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2, unsigned int number_of_images){
    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
    cl_int err;
+
    unsigned int size_pooling_1 = input_data / stride_1;
    unsigned int size_pooling_2 = size_pooling_1 / stride_2;
    unsigned int weights_layer_1 = size_pooling_2 * size_pooling_2 * neurons_dense_1;
@@ -79,48 +80,53 @@ bool device_memory_init(GraficCommon* device_object, unsigned int input_data, un
    deviceObj->input_data = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,number_of_images * input_data * input_data * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
    
-   // convolution 1
+   // kernel 1
    deviceObj->kernel_1 = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,kernel_1 * kernel_1 * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
 
-   deviceObj->conv_1_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,input_data * input_data * sizeof(bench_t), nullptr, &err);
+   // convolution 1
+   deviceObj->conv_1_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE , NUMBER_OF_STREAMS * input_data * input_data * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
    
-   // pooling 1
-   deviceObj->pooling_1_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,size_pooling_1 * size_pooling_1 * sizeof(bench_t), nullptr, &err);
+   // pooling 1 
+   deviceObj->pooling_1_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE , NUMBER_OF_STREAMS * size_pooling_1 * size_pooling_1 * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
   
-   // convolution 1
+   // convolution 2
    deviceObj->kernel_2 = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,kernel_2 * kernel_2 * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
 
-   deviceObj->conv_2_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,size_pooling_1 * size_pooling_1 * sizeof(bench_t), nullptr, &err);
+   // conv 2 output
+   deviceObj->conv_2_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE , NUMBER_OF_STREAMS * size_pooling_1 * size_pooling_1 * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
    
    // pooling 2 
-   deviceObj->pooling_2_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,size_pooling_2 * size_pooling_2 * sizeof(bench_t), nullptr, &err);
+   deviceObj->pooling_2_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE , NUMBER_OF_STREAMS * size_pooling_2 * size_pooling_2 * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
    
-   // dense 1
+   // dense 1 weights
    deviceObj->dense_layer_1_weights = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,weights_layer_1 * sizeof(bench_t));
    if (err != CL_SUCCESS) return false;
 
-   deviceObj->dense_layer_1_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,neurons_dense_1 * sizeof(bench_t), nullptr, &err);
+   // dense 1 output 
+   deviceObj->dense_layer_1_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE , NUMBER_OF_STREAMS * neurons_dense_1 * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
    
-   // dense 2
+   // dense 2 weights
    deviceObj->dense_layer_2_weights = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,weights_layer_2 * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
 
-   deviceObj->dense_layer_2_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,neurons_dense_2 * sizeof(bench_t), nullptr, &err);
+   // dense 2 output 
+   deviceObj->dense_layer_2_output = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE , NUMBER_OF_STREAMS * neurons_dense_2 * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
    
    // out
-   deviceObj->sum_ouput = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,sizeof(bench_t), nullptr, &err);
+   deviceObj->sum_ouput = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE , NUMBER_OF_STREAMS * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
 
    deviceObj->output_data = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,number_of_images * neurons_dense_2 * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
+   
    return true;
 }
 

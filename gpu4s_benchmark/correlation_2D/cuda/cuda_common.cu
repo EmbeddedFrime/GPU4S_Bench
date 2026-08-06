@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        cuda_common.cpp (./correlation_2D)
+ * @file        cuda_common.cu (./correlation_2D)
  * @brief       Common CUDA platform initialization, device setup, 
  *              profiling timer evaluation, and generic cleanup routines.
  * @paragraph   License

@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        cuda_common.cpp (./convolution_2D_bench)
+ * @file        cuda_common.cu (./convolution_2D_bench)
  * @brief       Common CUDA platform initialization, device setup, 
  *              profiling timer evaluation, and generic cleanup routines.
  * @paragraph   License

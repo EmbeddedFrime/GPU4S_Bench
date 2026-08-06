@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        cuda_common.cpp (./cifar_10_multiple)
+ * @file        cuda_common.cu (./cifar_10_multiple)
  * @brief       Common CUDA platform initialization, device setup, 
  *              profiling timer evaluation, and generic cleanup routines.
  * @paragraph   License
