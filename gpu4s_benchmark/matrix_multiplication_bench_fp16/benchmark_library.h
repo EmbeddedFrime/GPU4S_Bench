@@ -6,8 +6,6 @@
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
 #pragma once
-// Include all the benchmark common variable, struct, prototype, lib
-#include "benchmark_common.h"
 
 // ======= Benchmark local variable =======
 // --- Core Data Types ---
@@ -21,6 +19,9 @@
 	typedef double bench_t_gpu;
 #endif
 
+// Include all the benchmark common variable, struct, prototype, lib
+#include "benchmark_common.h"
+
 
 // --- OpenCL Runtime Kernel Code  ---
 #ifdef OPENCL
@@ -28,7 +29,7 @@
 		// OpenCL float16 lib
 		static const std::string type_kernel = 
 			"#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n"
-			"typedef half bench_t_gpu;\n";
+			"typedef half bench_t;\n";
 	#else 
 		// Fallback for the other data type
 		static const std::string type_kernel = type_kernel_common;
@@ -49,9 +50,11 @@ struct GraficObject : public GraficCommon {
 		// CUDA PART
 		bench_t* d_A;
 		bench_t* d_B;
-		bench_t_gpu* d_half_A;
-		bench_t_gpu* d_half_B;
-		bench_t_gpu* d_half_C;
+		#ifdef FLOAT16
+			bench_t_gpu* d_half_A;
+			bench_t_gpu* d_half_B;
+			bench_t_gpu* d_half_C;
+		#endif
 		bench_t* d_C;
 	#elif OPENCL
 		// OpenCL PART
@@ -62,6 +65,11 @@ struct GraficObject : public GraficCommon {
 		cl::Buffer *d_A;
 		cl::Buffer *d_B;
 		cl::Buffer *d_C;
+		#ifdef FLOAT16
+			cl::Buffer *d_half_A;
+			cl::Buffer *d_half_B;
+			cl::Buffer *d_half_C;
+		#endif
 	#else
 		//CPU PART
 	#endif
