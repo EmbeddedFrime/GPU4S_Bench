@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        openmp_common.h (./matrix_multiplication_bench)
+ * @file        omp_common.h (./LRN_bench)
  * @brief       Shared declarations, data structures, and timing utilities
  *              for OpenMP benchmark backends.
  * @paragraph   License

@@ -87,7 +87,7 @@ if(ANDROID)
     compile_target(${PROJECT_NAME}_openmp
         BENCH_DIR           ${CMAKE_SOURCE_DIR}
         SOURCES_FILES       openmp/lib_omp.cpp
-                            openmp/openmp_common.cpp
+                            openmp/omp_common.cpp
 
         COMPILE_DEFS        OPENMP 
         COMPILE_OPTIONS     -fopenmp  
@@ -102,7 +102,7 @@ if(ANDROID)
     compile_target(${PROJECT_NAME}_openmp_opt
         BENCH_DIR           ${CMAKE_SOURCE_DIR}
         SOURCES_FILES       openmp/lib_omp_opt.cpp
-                            openmp/openmp_common.cpp
+                            openmp/omp_common.cpp
 
         COMPILE_DEFS        OPENMP 
         COMPILE_OPTIONS     -fopenmp  
@@ -118,7 +118,7 @@ if(ANDROID)
         compile_target(${PROJECT_NAME}_openmp_lib
             BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       openmp/lib_omp_lib.cpp
-                                openmp/openmp_common.cpp
+                                openmp/omp_common.cpp
 
             COMPILE_DEFS        OPENMP 
                                 "$<UPPER_CASE:${BLA_VENDOR}>"
@@ -188,7 +188,7 @@ if(NOT ANDROID)
         compile_target(${PROJECT_NAME}_openmp
             BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       openmp/lib_omp.cpp
-                                openmp/openmp_common.cpp
+                                openmp/omp_common.cpp
 
             COMPILE_DEFS        OPENMP
 
@@ -202,7 +202,7 @@ if(NOT ANDROID)
         compile_target(${PROJECT_NAME}_openmp_opt   
             BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       openmp/lib_omp_opt.cpp
-                                openmp/openmp_common.cpp
+                                openmp/omp_common.cpp
 
             COMPILE_DEFS        OPENMP
 
@@ -216,7 +216,7 @@ if(NOT ANDROID)
             compile_target(${PROJECT_NAME}_openmp_lib
                 BENCH_DIR           ${CMAKE_SOURCE_DIR}
                 SOURCES_FILES       openmp/lib_omp_lib.cpp
-                                    openmp/openmp_common.cpp
+                                    openmp/omp_common.cpp
 
                 COMPILE_DEFS        OPENMP
                                     "$<UPPER_CASE:${BLA_VENDOR}>"
