@@ -5,19 +5,6 @@
 #include <fftw3.h>
 #include <unistd.h>
 
-void init(GraficCommon* device_object, char* device_name)
-{
-	init(device_object, 0,0, device_name);
-}
-
-
-void init(GraficCommon* device_object, int platform ,int device, char* device_name)
-{
-	// TBD Feature: device name. -- Bulky generic platform implementation
-	strcpy(device_name,"Generic device");
-}
-
-
 bool device_memory_init(GraficCommon* device_object,  int64_t size_a_array, int64_t size_b_array)
 {
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -89,25 +76,6 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size
 	memcpy(h_B, &deviceObj->d_Br[0], sizeof(bench_t)*size);
 }
 
-
-float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time)
-{
-	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-	if (csv_format_timestamp){
-        printf("%.10f;%.10f;%.10f;%ld;\n", (bench_t) 0, deviceObj->elapsed_time * 1000.f, (bench_t) 0, current_time);
-    }
-    else if (csv_format)
-	{
-        printf("%.10f;%.10f;%.10f;\n", (bench_t) 0, deviceObj->elapsed_time * 1000.f, (bench_t) 0);
-    } 
-	else
-	{
-		printf("Elapsed time Host->Device: %.10f milliseconds\n", (bench_t) 0);
-		printf("Elapsed time kernel: %.10f milliseconds\n", deviceObj->elapsed_time * 1000.f);
-		printf("Elapsed time Device->Host: %.10f milliseconds\n", (bench_t) 0);
-    }
-	return deviceObj->elapsed_time * 1000.f;
-}
 
 
 void clean(GraficCommon* device_object)

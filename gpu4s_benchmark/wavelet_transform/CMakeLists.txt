@@ -53,28 +53,32 @@ if(ANDROID)
 
     # --- OpenMP---
     compile_target(${PROJECT_NAME}_openmp
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      openmp/lib_omp.cpp
-        COMPILE_DEFS       OPENMP 
-        COMPILE_OPTIONS    -fopenmp  
-        LIBRARIES          -static-openmp   #openmp flags
-                           -fopenmp  
-                           -lm              # add math lib
+        BENCH_DIR           ${CMAKE_SOURCE_DIR}
+        SOURCES_FILES       openmp/lib_omp.cpp
+                            openmp/omp_common.cpp
 
-        SHORTCUTS_NAMES    openmp OpenMP
+        COMPILE_DEFS        OPENMP 
+        COMPILE_OPTIONS     -fopenmp  
+        LIBRARIES           -static-openmp   #openmp flags
+                            -fopenmp  
+                            -lm              # add math lib
+
+        SHORTCUTS_NAMES     openmp OpenMP
     )
 
     # --- OpenMP-opt ---
     compile_target(${PROJECT_NAME}_openmp_opt
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      openmp/lib_omp_opt.cpp
-        COMPILE_DEFS       OPENMP 
-        COMPILE_OPTIONS    -fopenmp  
-        LIBRARIES          -static-openmp   #openmp flags
-                           -fopenmp  
-                           -lm              # add math lib
+        BENCH_DIR           ${CMAKE_SOURCE_DIR}
+        SOURCES_FILES       openmp/lib_omp_opt.cpp
+                            openmp/omp_common.cpp
+                            
+        COMPILE_DEFS        OPENMP 
+        COMPILE_OPTIONS     -fopenmp  
+        LIBRARIES           -static-openmp   #openmp flags
+                            -fopenmp  
+                            -lm              # add math lib
 
-        SHORTCUTS_NAMES    openmp-opt OpenMP-opt
+        SHORTCUTS_NAMES     openmp-opt OpenMP-opt
     )
 
 endif(ANDROID)
@@ -101,26 +105,30 @@ if(NOT ANDROID)
     if(OpenMP_CXX_FOUND)
         # --- OpenMP ---
         compile_target(${PROJECT_NAME}_openmp
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      openmp/lib_omp.cpp
-            COMPILE_DEFS       OPENMP
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       openmp/lib_omp.cpp
+                                openmp/omp_common.cpp
 
-            LIBRARIES          OpenMP::OpenMP_CXX # openmp flags
-                               m   # equivalent to -lm
+            COMPILE_DEFS        OPENMP
 
-            SHORTCUTS_NAMES    openmp OpenMP 
+            LIBRARIES           OpenMP::OpenMP_CXX # openmp flags
+                                m   # equivalent to -lm
+
+            SHORTCUTS_NAMES     openmp OpenMP 
         )
 
         # --- OpenMP-opt ---
         compile_target(${PROJECT_NAME}_openmp_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      openmp/lib_omp_opt.cpp
-            COMPILE_DEFS       OPENMP
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       openmp/lib_omp_opt.cpp
+                                openmp/omp_common.cpp
 
-            LIBRARIES          OpenMP::OpenMP_CXX #  openmp flags
-                               m   # equivalent to -lm 
+            COMPILE_DEFS        OPENMP
 
-            SHORTCUTS_NAMES    openmp-opt OpenMP-opt 
+            LIBRARIES           OpenMP::OpenMP_CXX #  openmp flags
+                                m   # equivalent to -lm 
+
+            SHORTCUTS_NAMES     openmp-opt OpenMP-opt 
         )
 
       
@@ -131,22 +139,26 @@ if(NOT ANDROID)
     if(CUDAToolkit_FOUND)
         # --- CUDA ---
         compile_target(${PROJECT_NAME}_cuda
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda.cu
-            COMPILE_DEFS       CUDA
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart 
-            SHORTCUTS_NAMES    cuda CUDA
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       cuda/lib_cuda.cu
+                                cuda/cuda_common.cu
+
+            COMPILE_DEFS        CUDA
+            SET_CUDA            1
+            LIBRARIES           CUDA::cudart 
+            SHORTCUTS_NAMES     cuda CUDA
         )
 
         # --- CUDA-opt ---
         compile_target(${PROJECT_NAME}_cuda_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda_opt.cu
-            COMPILE_DEFS       CUDA
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart 
-            SHORTCUTS_NAMES    cuda-opt CUDA-opt
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       cuda/lib_cuda_opt.cu
+                                cuda/cuda_common.cu
+
+            COMPILE_DEFS        CUDA
+            SET_CUDA            1
+            LIBRARIES           CUDA::cudart 
+            SHORTCUTS_NAMES     cuda-opt CUDA-opt
         )
 
 
@@ -156,9 +168,13 @@ if(NOT ANDROID)
     if(hip_FOUND)
         # --- HIP ---
         compile_target(${PROJECT_NAME}_hip
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       hip/lib_hip.cpp 
+                                hip/hip_common.cpp
+
             SET_HIP_FILES       hip/lib_hip.cpp 
+                                hip/hip_common.cpp
+
             COMPILE_DEFS        HIP
             LIBRARIES           hip::host
             SHORTCUTS_NAMES     hip- HIP
@@ -166,9 +182,13 @@ if(NOT ANDROID)
 
         # --- HIP-opt ---
         compile_target(${PROJECT_NAME}_hip_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       hip/lib_hip_opt.cpp 
+                                hip/hip_common.cpp
+
             SET_HIP_FILES       hip/lib_hip_opt.cpp 
+                                hip/hip_common.cpp
+
             COMPILE_DEFS        HIP
             LIBRARIES           hip::host
             SHORTCUTS_NAMES     hip-opt HIP-opt

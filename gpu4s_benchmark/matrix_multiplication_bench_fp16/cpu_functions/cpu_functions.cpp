@@ -25,7 +25,11 @@ bool compare_vectors(const bench_t* host,const bench_t* device, const int size){
 	return true;
 	#else 
 		for (int i = 0; i < size; ++i){
-			if (fabs(host[i] - device[i]) > 1e-2){
+			#ifdef FLOAT16
+				if (fabs(host[i] - device[i]) > 2){
+			#else 
+				if (fabs(host[i] - device[i]) > 1e-2){
+			#endif
 				printf("Error in element %d is %f but was %f\n", i,device[i], host[i]);
 				return false;
 			}

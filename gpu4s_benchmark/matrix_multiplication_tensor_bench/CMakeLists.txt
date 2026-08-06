@@ -31,41 +31,47 @@ if(ANDROID)
     if(ANDROID_OPENCL_LIB_INC)
     # --- OpenCL ---
     compile_target(${PROJECT_NAME}_opencl
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      opencl/lib_opencl.cpp
-        COMPILE_DEFS       OPENCL
-                           CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+        BENCH_DIR           ${CMAKE_SOURCE_DIR}
+        SOURCES_FILES       opencl/lib_opencl.cpp
+                            opencl/opencl_common.cpp
+
+        COMPILE_DEFS        OPENCL
+                            CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
                              
-        INCLUDES           ${ANDROID_INC}
-        LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-        SHORTCUTS_NAMES    cl OpenCL
+        INCLUDES            ${ANDROID_INC}
+        LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+        SHORTCUTS_NAMES     cl OpenCL
     )
     # --- OpenCL-opt ---
     compile_target(${PROJECT_NAME}_opencl_opt
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      opencl/lib_opencl_opt.cpp
-        COMPILE_DEFS       OPENCL   
-                           CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+        BENCH_DIR           ${CMAKE_SOURCE_DIR}
+        SOURCES_FILES       opencl/lib_opencl_opt.cpp
+                            opencl/opencl_common.cpp
 
-        INCLUDES           ${ANDROID_INC}
-        LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-        SHORTCUTS_NAMES    opencl-opt OpenCL-opt
+        COMPILE_DEFS        OPENCL   
+                            CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+
+        INCLUDES            ${ANDROID_INC}
+        LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+        SHORTCUTS_NAMES     opencl-opt OpenCL-opt
     )
     endif()
 
     if(ANDROID_OPENCL_LIB_INC AND ANDROID_CLBLAST_LIB_INC)
     # --- OpenCL-lib ---
     compile_target(${PROJECT_NAME}_opencl_lib   
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
-        SOURCES_FILES      opencl/lib_opencl_lib.cpp
-        COMPILE_DEFS       OPENCL   
-                           CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
+        BENCH_DIR           ${CMAKE_SOURCE_DIR}
+        SOURCES_FILES       opencl/lib_opencl_lib.cpp
+                            opencl/opencl_common.cpp
 
-        INCLUDES           ${ANDROID_INC}
-        LIBRARIES          ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-                           ${ANDROID_LIB}/${ANDROID_ABI}/libclblast.a
+        COMPILE_DEFS        OPENCL   
+                            CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
 
-        SHORTCUTS_NAMES    opencl-lib OpenCL-lib
+        INCLUDES            ${ANDROID_INC}
+        LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
+                            ${ANDROID_LIB}/${ANDROID_ABI}/libclblast.a
+
+        SHORTCUTS_NAMES     opencl-lib OpenCL-lib
     )
     endif()
 
@@ -77,36 +83,42 @@ if(NOT ANDROID)
     if(OpenCL_FOUND)
         # --- OpenCL ---
         compile_target(${PROJECT_NAME}_opencl
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl.cpp
-            COMPILE_DEFS       OPENCL
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl.cpp
+                                opencl/opencl_common.cpp
 
-            LIBRARIES          OpenCL::OpenCL
-            SHORTCUTS_NAMES    cl OpenCL
+            COMPILE_DEFS        OPENCL
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+
+            LIBRARIES           OpenCL::OpenCL
+            SHORTCUTS_NAMES     cl OpenCL
         )
 
         # --- OpenCL-opt ---
         compile_target(${PROJECT_NAME}_opencl_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      opencl/lib_opencl_opt.cpp
-            COMPILE_DEFS       OPENCL
-                               CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       opencl/lib_opencl_opt.cpp
+                                opencl/opencl_common.cpp
 
-            LIBRARIES          OpenCL::OpenCL
-            SHORTCUTS_NAMES    opencl-opt OpenCL-opt
+            COMPILE_DEFS        OPENCL
+                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+
+            LIBRARIES           OpenCL::OpenCL
+            SHORTCUTS_NAMES     opencl-opt OpenCL-opt
         )
 
         # --- OpenCL-lib ---
         if(CLBlast_FOUND)
             compile_target(${PROJECT_NAME}_opencl_lib
-                BENCH_DIR          ${CMAKE_SOURCE_DIR}
-                SOURCES_FILES      opencl/lib_opencl_lib.cpp
-                COMPILE_DEFS       OPENCL
-                                   CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                SOURCES_FILES       opencl/lib_opencl_lib.cpp
+                                    opencl/opencl_common.cpp
 
-                LIBRARIES          OpenCL::OpenCL clblast
-                SHORTCUTS_NAMES    opencl-lib OpenCL-lib
+                COMPILE_DEFS        OPENCL
+                                    CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
+
+                LIBRARIES           OpenCL::OpenCL clblast
+                SHORTCUTS_NAMES     opencl-lib OpenCL-lib
             )
         endif()        
     endif()
@@ -116,32 +128,38 @@ if(NOT ANDROID)
     if(CUDAToolkit_FOUND)
         # --- CUDA ---
         compile_target(${PROJECT_NAME}_cuda
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda.cu
-            COMPILE_DEFS       CUDA 
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart 
-            SHORTCUTS_NAMES    cuda CUDA
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       cuda/lib_cuda.cu
+                                cuda/cuda_common.cu
+
+            COMPILE_DEFS        CUDA 
+            SET_CUDA            1
+            LIBRARIES           CUDA::cudart 
+            SHORTCUTS_NAMES     cuda CUDA
         )
 
         # --- CUDA-opt ---
         compile_target(${PROJECT_NAME}_cuda_opt
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda_opt.cu
-            COMPILE_DEFS       CUDA ${DATATYPEGPU}
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart 
-            SHORTCUTS_NAMES    cuda-opt CUDA-opt
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       cuda/lib_cuda_opt.cu
+                                cuda/cuda_common.cu
+
+            COMPILE_DEFS        CUDA ${DATATYPEGPU}
+            SET_CUDA            1
+            LIBRARIES           CUDA::cudart 
+            SHORTCUTS_NAMES     cuda-opt CUDA-opt
         )
 
         # --- CUDA-lib ---
         compile_target(${PROJECT_NAME}_cuda_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      cuda/lib_cuda_lib.cu
-            COMPILE_DEFS       CUDA ${DATATYPEGPU}
-            SET_CUDA           1
-            LIBRARIES          CUDA::cudart CUDA::cublas
-            SHORTCUTS_NAMES    cuda-lib CUDA-lib
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       cuda/lib_cuda_lib.cu
+                                cuda/cuda_common.cu
+
+            COMPILE_DEFS        CUDA ${DATATYPEGPU}
+            SET_CUDA            1
+            LIBRARIES           CUDA::cudart CUDA::cublas
+            SHORTCUTS_NAMES     cuda-lib CUDA-lib
         )
     endif()
 
