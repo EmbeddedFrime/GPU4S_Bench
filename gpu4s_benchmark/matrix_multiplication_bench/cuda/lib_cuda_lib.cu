@@ -16,7 +16,6 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     cublasHandle_t handle;
     cublasCreate(&handle);
 
-
     // Clock profilling start 
     kernelCLK.start();
     // GPU profilling start 

@@ -107,8 +107,8 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    // wait
-    cudaEventSynchronize(*deviceObj->stop_memory_copy_host);
+    cudaEventSynchronize(*deviceObj->stop_memory_copy_host); // wait
+
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
     const char* profilingMode;
     
