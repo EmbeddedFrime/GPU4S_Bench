@@ -105,6 +105,7 @@ struct BenchmarkParameters{
 	char input_file_A[100] = "";
 	char input_file_B[100] = "";
 	char output_file[100] = "";
+	bool profiling_clock = false;
 };
 
 void matrix_multiplication(const bench_t* A, const bench_t* B, bench_t* C,const unsigned int n, const unsigned int m, const unsigned int w );
