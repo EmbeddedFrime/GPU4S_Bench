@@ -115,12 +115,13 @@ void execute_kernel(GraficCommon* device_object, unsigned int n){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     dim3 dimBlock(BLOCK_SIZE*BLOCK_SIZE);
     dim3 dimGrid(ceil(float(n)/dimBlock.x));
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
+
     #ifdef INT
     wavelet_transform<<<dimGrid,dimBlock>>>(deviceObj->d_A, deviceObj->d_B, n);
     wavelet_transform_low<<<dimGrid,dimBlock>>>(deviceObj->d_A, deviceObj->d_B, n);
@@ -128,10 +129,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int n){
     wavelet_transform<<<dimGrid,dimBlock>>>(deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
     #endif
 
+    // profilling end 
     cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

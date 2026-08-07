@@ -705,20 +705,20 @@ void clean_cudnn(){
 ///////////////////////////////////////////////////////////////////////////////////
 
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2, unsigned int number_of_images){
-     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-     // cublas settings
-
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // cublas settings
     cudnnHandle_t cudnn;
-
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
-    cudaEventRecord(*deviceObj->start);
-
     checkCUDNN(cudnnCreate(&cudnn));
     // init structures
     cuddObject *cudd_object = (cuddObject *)malloc(sizeof(cuddObject));
+
+    // kernel time execution
+    Clock kernelCLK;
+
+    // profilling start 
+    kernelCLK.start();
+    cudaEventRecord(*deviceObj->start);
+
     // init comvolution
     convolution_1_1_init(cudd_object, input_data, kernel_1);
     for(unsigned int position = 0; position < number_of_images; ++position)
@@ -757,16 +757,18 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
       softmax(device_object,cudnn, neurons_dense_2, position * output_data);
 
     }
+   
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
+
     convolution_1_1_clear(cudd_object);
     clean_cudnn();
     // delete struct
     free(cudd_object);
     cudnnDestroy(cudnn);
-    cudaEventRecord(*deviceObj->stop);
-
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
-
 }

@@ -133,6 +133,9 @@ int main(int argc, char *argv[]){
 		printf("Using device: %s\n", device);
 	}
 	
+	// Update profiling clock mode
+	conv_bench->profiling_clock = arguments_parameters->profiling_clock;
+	
 	// init memory
 	device_memory_init(conv_bench, arguments_parameters->size * arguments_parameters->size, arguments_parameters->size * arguments_parameters->size, size_k);
 	// copy memory to device
@@ -265,6 +268,7 @@ void init_arguments(BenchmarkParameters* arguments_parameters){
 	arguments_parameters->csv_format = false;
 	arguments_parameters->mute_messages = false;
 	arguments_parameters->csv_format_timestamp = false;
+	arguments_parameters->profiling_clock = false;
 }
 
 int arguments_handler(int argc, char ** argv, BenchmarkParameters* arguments_parameters){
@@ -295,6 +299,7 @@ int arguments_handler(int argc, char ** argv, BenchmarkParameters* arguments_par
 					   strcpy(arguments_parameters->input_file_B,argv[args]);
 					   break;
 			case 's' : args +=1; arguments_parameters->size = atoi(argv[args]);break;
+			case 'p' : arguments_parameters->profiling_clock = true;break;
 			case 'k' : args +=1; arguments_parameters->kernel_size = atoi(argv[args]);break;
 			default: print_usage(argv[0]); return ERROR_ARGUMENTS;
 		}

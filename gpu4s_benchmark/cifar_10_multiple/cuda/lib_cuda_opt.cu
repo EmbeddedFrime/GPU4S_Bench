@@ -6,8 +6,8 @@
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-//#define BLOCK_SIZE 32
-#define BLOCK_SIZE_PLANE (BLOCK_SIZE * BLOCK_SIZE)
+
+ #define BLOCK_SIZE_PLANE (BLOCK_SIZE * BLOCK_SIZE)
 #ifndef NUMBER_OF_STREAMS
     #define NUMBER_OF_STREAMS 8
 #endif
@@ -338,14 +338,9 @@ softmax_finish_kernel(bench_t *B, bench_t *sum_d_B,const int size)
 
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2, unsigned int number_of_images){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    // execute net 
-    // 1-1 step convolution
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
-    cudaEventRecord(*deviceObj->start);
     bench_t* aux_output_data;
     bench_t* aux_input_data;
     bench_t* aux_convolution_1_output;
@@ -358,14 +353,19 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 
     unsigned int size_lateral_1 = input_data / stride_1;
     unsigned int size_lateral_2 = size_lateral_1 / stride_2;
+
     // create streams
     cudaStream_t cuda_streams[NUMBER_OF_STREAMS];
     for (unsigned int streams = 0; streams < NUMBER_OF_STREAMS; ++streams)
     {
         cudaStreamCreate(&cuda_streams[streams]);
     }
-    
 
+    // profilling start 
+    kernelCLK.start();
+    cudaEventRecord(*deviceObj->start);
+    
+    // 1-1 step convolution
     for(unsigned int position = 0; position < number_of_images; ++position)
     {   
 
@@ -485,10 +485,12 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         
         cudaMemsetAsync(aux_sum, 0, sizeof(bench_t),cuda_streams[stream]);
     }
-    cudaEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // profilling end
+    cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

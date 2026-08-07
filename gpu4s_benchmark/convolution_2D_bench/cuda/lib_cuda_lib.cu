@@ -1,8 +1,6 @@
 #include <cudnn.h>
 #include "../benchmark_library.h"
 
-
-
 #define checkCUDNN(expression)                               \
   {                                                          \
     cudnnStatus_t status = (expression);                     \
@@ -32,13 +30,15 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     const bench_t alf = 1;
     const bench_t bet = 0;
     cudnnHandle_t cudnn;
-
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
-    cudaEventRecord(*deviceObj->start);
     checkCUDNN(cudnnCreate(&cudnn));
+
+    // kernel time execution
+    Clock kernelCLK;
+
+    // profilling start 
+    kernelCLK.start();
+    cudaEventRecord(*deviceObj->start);
+
     // create input tensor
     cudnnTensorDescriptor_t input_descriptor;
     checkCUDNN(cudnnCreateTensorDescriptor(&input_descriptor));
@@ -125,13 +125,13 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
                                    deviceObj->d_B));
     
    
-    
+    // profilling end 
     cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 
     // destroy cuDNN
     cudaFree(d_workspace);

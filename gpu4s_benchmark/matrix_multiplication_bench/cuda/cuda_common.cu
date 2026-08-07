@@ -86,7 +86,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    // device ->  host
+    // device -> host
     Clock d2hCLK;
 
     // profilling start 

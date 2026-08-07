@@ -1,13 +1,5 @@
 #include "../benchmark_library.h"
 
-#ifdef PROFILING_CLOCK
-    // kernel time execution
-    Clock kernelCLK;
-    // host <-> device 
-    Clock h2dCLK;
-    Clock d2hCLK;
-#endif
-
 /**
  * CUDA Kernel Device code
  *
@@ -44,26 +36,21 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
 
 bool device_memory_init(GraficCommon* device_object, int64_t size_b_matrix){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cudaError_t err = cudaSuccess;
+    
     // Allocate the device input vector A
-    err = cudaMalloc((void **)&deviceObj->d_A, (size_b_matrix * size_b_matrix) * sizeof(bench_cuda_complex));
+    cudaError_t err = cudaMalloc((void **)&deviceObj->d_A, (size_b_matrix * size_b_matrix) * sizeof(bench_cuda_complex));
+    if (err != cudaSuccess) return false;
 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    // Allocate the device input vector B
     err = cudaMalloc((void **)&deviceObj->d_B, (size_b_matrix * size_b_matrix) * sizeof(bench_cuda_complex));
+    if (err != cudaSuccess) return false;
 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
     return true;
 }
 
 void copy_memory_to_device(GraficCommon* device_object, COMPLEX **h_B,int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cudaError_t err = cudaSuccess;
+    // flat the complex buffer
     bench_cuda_complex *h_signal = (bench_cuda_complex *)malloc(sizeof(bench_cuda_complex) * (size * size));
     for (unsigned int i = 0; i < (size); ++i){
          for (unsigned int j = 0; j < (size); ++j){
@@ -72,34 +59,37 @@ void copy_memory_to_device(GraficCommon* device_object, COMPLEX **h_B,int64_t si
         }
     }
 
-    #ifdef PROFILING_CLOCK
-        h2dCLK.start();
-    #endif
+    // host -> device 
+    Clock h2dCLK;
 
+    // profilling start 
+    h2dCLK.start();
     cudaEventRecord(*deviceObj->start_memory_copy_device);
-    err = cudaMemcpy(deviceObj->d_A, h_signal, sizeof(bench_cuda_complex) * (size * size), cudaMemcpyHostToDevice);
+
+    cudaError_t err = cudaMemcpy(deviceObj->d_A, h_signal, sizeof(bench_cuda_complex) * (size * size), cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to copy vector B from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    cudaEventRecord(*deviceObj->stop_memory_copy_device);
 
-    #ifdef PROFILING_CLOCK
-        h2dCLK.end();
-    #endif
+    // profilling end
+    cudaEventRecord(*deviceObj->stop_memory_copy_device);
+    h2dCLK.end();
+    
+    // store the h2d time
+    deviceObj->h2d_elapsed_time = h2dCLK.getElapsedMS();
     
 }
+
 void execute_kernel(GraficCommon* device_object, int64_t size){
-
-GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cufftHandle plan;
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
     
     #ifdef FLOAT
@@ -110,32 +100,35 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cufftExecZ2Z(plan, (cufftDoubleComplex *)deviceObj->d_A, (cufftDoubleComplex *)deviceObj->d_B, CUFFT_FORWARD);
     #endif
     
+    // profilling end
     cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 
     cufftDestroy(plan);
-    
 }
 
 void copy_memory_to_host(GraficCommon* device_object, COMPLEX **h_B, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     bench_cuda_complex *h_signal = (bench_cuda_complex *)malloc(sizeof(bench_cuda_complex) * (size*size));
+    // device -> host
+    Clock d2hCLK;
 
-    #ifdef PROFILING_CLOCK
-        d2hCLK.start();
-    #endif
-
+    // profilling start 
+    d2hCLK.start();
     cudaEventRecord(*deviceObj->start_memory_copy_host);
-    cudaMemcpy(h_signal, deviceObj->d_B, (size*size) * sizeof(bench_cuda_complex), cudaMemcpyDeviceToHost);
-    cudaEventRecord(*deviceObj->stop_memory_copy_host);
 
-    #ifdef PROFILING_CLOCK
-        d2hCLK.end();
-    #endif
+    cudaMemcpy(h_signal, deviceObj->d_B, (size*size) * sizeof(bench_cuda_complex), cudaMemcpyDeviceToHost);
+    
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop_memory_copy_host);
+    d2hCLK.end();
+
+    // store the hd2h time
+    deviceObj->d2h_elapsed_time = d2hCLK.getElapsedMS();
 
     for (unsigned int i = 0; i < (size); ++i){
          for (unsigned int j = 0; j < (size); ++j){
@@ -147,24 +140,27 @@ void copy_memory_to_host(GraficCommon* device_object, COMPLEX **h_B, int64_t siz
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cudaEventSynchronize(*deviceObj->stop_memory_copy_host);
+    cudaEventSynchronize(*deviceObj->stop_memory_copy_host); // wait
+    
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
-    // memory transfer time host-device
-    cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
-    // kernel time
-    cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
-    //  memory transfer time device-host
-    cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
-
-    #ifdef PROFILING_CLOCK
+    const char* profilingMode;
+    
+    if (deviceObj->profiling_clock)
+    {
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
-        milliseconds_h_d  = h2dCLK.getElapsedMS();
-        milliseconds      = kernelCLK.getElapsedMS();
-        milliseconds_d_h  = d2hCLK.getElapsedMS();
-        const char* profilingMode = "CLOCK";
-    #else
-        const char* profilingMode = "GPU";
-    #endif
+        milliseconds_h_d  = deviceObj->h2d_elapsed_time;
+        milliseconds      = deviceObj->elapsed_time;
+        milliseconds_d_h  = deviceObj->d2h_elapsed_time;
+        profilingMode = "CLOCK";
+    }else{
+        // memory transfer time host-device
+        cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
+        // kernel time
+        cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
+        //  memory transfer time device-host
+        cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
+        profilingMode = "GPU";
+    }
     
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", milliseconds_h_d,milliseconds,milliseconds_d_h, current_time);

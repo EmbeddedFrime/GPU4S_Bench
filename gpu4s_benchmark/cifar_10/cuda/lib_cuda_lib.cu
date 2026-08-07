@@ -695,10 +695,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     
     cudnnHandle_t cudnn;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
 
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
     checkCUDNN(cudnnCreate(&cudnn));
     
@@ -734,12 +735,14 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     activation_d_2(device_object,cudnn, neurons_dense_2);
     //softmax
     softmax(device_object,cudnn, neurons_dense_2);
-    cudaEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // profilling end
+    cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 
     cudnnDestroy(cudnn);
 }

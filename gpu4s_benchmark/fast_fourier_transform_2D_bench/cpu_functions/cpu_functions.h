@@ -44,7 +44,8 @@ struct BenchmarkParameters{
 	bool csv_format_timestamp = false;
 	char input_file[100] = "";
 	char output_file[100] = "";
-};
+
+	bool profiling_clock = false;};
 
 bool FFT2D(COMPLEX **c,int n,int dir, COMPLEX **exit);
 bool compare_vectors(COMPLEX **host, COMPLEX **device,  int64_t size);

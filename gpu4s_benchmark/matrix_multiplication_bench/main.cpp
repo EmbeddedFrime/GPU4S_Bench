@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 	matrix_bench->profiling_clock = arguments_parameters->profiling_clock;
 	
 	// init memory
-	device_memory_init(matrix_bench, arguments_parameters->size * arguments_parameters->size, arguments_parameters->size * arguments_parameters->size, size_matrix);
+	device_memory_init(matrix_bench, size_matrix, size_matrix, size_matrix);
 
 	#ifdef UNIFIED_MEMORY
 		bench_t *A, *B, *C;
@@ -240,7 +240,6 @@ return 0;
 
 
 // Arguments part
-
 void print_usage(const char * appName)
 {
 	printf("Usage: %s -s Size [-v] [-e] [-o] [-t] [-d] [-i input_file_A_MATRIX input_file_B_MATRIX] \n", appName);

@@ -8,7 +8,6 @@
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-//#define BLOCK_SIZE 32
 __global__ void
 covolution_kernel(const bench_t *A, bench_t *B, const bench_t *kernel,const int n, const int m, const int w, const int kernel_size)
 {
@@ -171,17 +170,18 @@ softmax_finish_kernel(bench_t *B, bench_t *sum_d_B,const int size)
 
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    // execute net 
-    // 1-1 step convolution
-
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
-    cudaEventRecord(*deviceObj->start);
     dim3 dimBlock, dimGrid;
     dimBlock = dim3(BLOCK_SIZE, BLOCK_SIZE);
     dimGrid = dim3(ceil(float(input_data)/dimBlock.x), ceil(float(input_data)/dimBlock.y));
+    
+    // kernel time execution
+    Clock kernelCLK;
+
+    // profilling start 
+    kernelCLK.start();
+    cudaEventRecord(*deviceObj->start);
+
+    // 1-1 step convolution
     covolution_kernel<<<dimGrid, dimBlock>>>(deviceObj->input_data, deviceObj->conv_1_output, deviceObj->kernel_1, input_data, input_data, input_data, kernel_1);
     
     // 1-2 step activation
@@ -248,11 +248,13 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 
     softmax_kernel<<<dimGrid, dimBlock>>>(deviceObj->dense_layer_2_output, deviceObj->output_data, deviceObj->sum_ouput, neurons_dense_2);
     softmax_finish_kernel<<<dimGrid, dimBlock>>>(deviceObj->output_data, deviceObj->sum_ouput, neurons_dense_2);
+    
+    // profilling end
     cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
