@@ -93,7 +93,10 @@ struct GraficCommon{
 	#else
 		// --- CPU variable ---
 	#endif
+	float h2d_elapsed_time;
 	float elapsed_time;
+	float d2h_elapsed_time;
+	bool  profiling_clock = false;
 };
 
 
