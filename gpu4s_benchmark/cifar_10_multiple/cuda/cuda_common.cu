@@ -155,7 +155,12 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size, un
     d2hCLK.start();
     cudaEventRecord(*deviceObj->start_memory_copy_host);
 
-    cudaMemcpy(h_C, deviceObj->output_data, number_of_images * size * sizeof(bench_t), cudaMemcpyDeviceToHost);
+    cudaError_t err = cudaMemcpy(h_C, deviceObj->output_data, number_of_images * size * sizeof(bench_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy vector output_data from device to host (error code %s)!\n", cudaGetErrorString(err));
+        return;
+    }
     //cudaMemcpy(h_C, deviceObj->dense_layer_2_output, 10 * sizeof(bench_t), cudaMemcpyDeviceToHost);
    
     // profilling end
