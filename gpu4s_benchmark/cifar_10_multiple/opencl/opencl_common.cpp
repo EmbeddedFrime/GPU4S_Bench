@@ -191,7 +191,12 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size, un
     // Clock profilling start 
     d2hCLK.start();
 
-    deviceObj->queue->enqueueReadBuffer(*deviceObj->output_data,CL_TRUE,0,sizeof(bench_t)*size*number_of_images,h_C, NULL, deviceObj->evt_copyOut);
+    cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->output_data, CL_TRUE, 0, sizeof(bench_t)*size*number_of_images, h_C, NULL, deviceObj->evt_copyOut);
+    if (err != CL_SUCCESS)
+    {
+        fprintf(stderr, "Failed to copy vector output_data from device to host (OpenCL error code %d)!\n", err);
+        return;
+    }
     //deviceObj->queue->enqueueReadBuffer(*deviceObj->conv_2_output,CL_TRUE,0,sizeof(bench_t)*16*16,h_C, NULL, deviceObj->evt_copyOut);
     
     // Clock profilling end 

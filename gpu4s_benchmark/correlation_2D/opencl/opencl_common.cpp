@@ -120,9 +120,24 @@ void copy_memory_to_host(GraficCommon* device_object, result_bench_t* h_R){
     result_bench_t acumulate_value_a_a;
     result_bench_t acumulate_value_a_b;
     result_bench_t acumulate_value_b_b;
-    deviceObj->queue->enqueueReadBuffer(*deviceObj->acumulate_value_a_a,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_a_a, NULL, deviceObj->evt_copyAA);
-    deviceObj->queue->enqueueReadBuffer(*deviceObj->acumulate_value_a_b,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_a_b, NULL, deviceObj->evt_copyAB);
-    deviceObj->queue->enqueueReadBuffer(*deviceObj->acumulate_value_b_b,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_b_b, NULL, deviceObj->evt_copyBB);
+    cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->acumulate_value_a_a,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_a_a, NULL, deviceObj->evt_copyAA);
+    if (err != CL_SUCCESS)
+    {
+        fprintf(stderr, "Failed to copy vector acumulate_value_a_a from device to host (OpenCL error code %d)!\n", err);
+        return;
+    }
+    err = deviceObj->queue->enqueueReadBuffer(*deviceObj->acumulate_value_a_b,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_a_b, NULL, deviceObj->evt_copyAB);
+    if (err != CL_SUCCESS)
+    {
+        fprintf(stderr, "Failed to copy vector acumulate_value_a_b from device to host (OpenCL error code %d)!\n", err);
+        return;
+    }
+    err = deviceObj->queue->enqueueReadBuffer(*deviceObj->acumulate_value_b_b,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_b_b, NULL, deviceObj->evt_copyBB);
+    if (err != CL_SUCCESS)
+    {
+        fprintf(stderr, "Failed to copy vector acumulate_value_b_b from device to host (OpenCL error code %d)!\n", err);
+        return;
+    }
     deviceObj->evt_copyBB->wait();
     *h_R = (result_bench_t)(acumulate_value_a_b / (result_bench_t)(sqrt(acumulate_value_a_a * acumulate_value_b_b)));
 
