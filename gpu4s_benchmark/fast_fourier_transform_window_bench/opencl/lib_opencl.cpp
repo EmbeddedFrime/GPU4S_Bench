@@ -3,7 +3,6 @@
 #include "../benchmark_library.h"
 #include "GEN_kernel.hcl"
 
-
 void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t position, cl::Program program){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     size = size / 2;
@@ -106,9 +105,11 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
         exit(1);
     }
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
+
+    // Clock profilling start 
+    kernelCLK.start();
 
     //FIX : GPU profiling use opencl marker
     deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt);
@@ -120,8 +121,11 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
     //FIX : GPU profiling use opencl marker
     deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt_end);
 
-    #ifdef PROFILING_CLOCK
-        deviceObj->queue->finish();
-        kernelCLK.end();
-    #endif
+    // Wait for completion before stopping the clock
+    deviceObj->queue->finish();
+    // Clock profilling end 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedNS();
 }

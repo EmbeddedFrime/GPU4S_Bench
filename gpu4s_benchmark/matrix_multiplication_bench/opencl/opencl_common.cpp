@@ -9,8 +9,6 @@
 #include "../cpu_functions/cpu_functions.h"
 #include <cstring>
 
-
-
 void init(GraficCommon* device_object, char* device_name){
 	init(device_object, 0,0, device_name);
 }

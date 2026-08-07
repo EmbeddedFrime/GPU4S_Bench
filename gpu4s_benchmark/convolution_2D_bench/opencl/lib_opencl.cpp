@@ -4,7 +4,6 @@
 #include <cstring>
 #include "GEN_kernel.hcl"
 
-
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,unsigned int w, unsigned int kernel_size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     const unsigned int x_local= BLOCK_SIZE;
@@ -35,10 +34,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         exit(1);
     }
 
-    #ifdef PROFILING_CLOCK
-        deviceObj->queue->finish(); // Clear queue to ensure accurate start
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
+
+    // Clock profilling start 
+    kernelCLK.start();
 
     cl::Kernel kernel_conv=cl::Kernel(program,"kernel_matrix_convolution");
     kernel_conv.setArg(0,*deviceObj->d_A);
@@ -50,11 +50,13 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     kernel_conv.setArg(6,kernel_size);
 
     deviceObj->queue->enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, deviceObj->evt);
+    
+    // Wait for completion before stopping the clock
     deviceObj->queue->finish();
+    // Clock profilling end 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.end();
-    #endif
-
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedNS();
 }
 

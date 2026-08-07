@@ -21,6 +21,13 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(deviceObj->default_device)<<"\n";
         exit(1);
     }
+
+    // kernel time execution
+    Clock kernelCLK;
+
+    // Clock profilling start 
+    kernelCLK.start();
+
     cl::Kernel kernel_add=cl::Kernel(program,"kernel_matrix_multiplication");
     kernel_add.setArg(0,*deviceObj->d_A);
     kernel_add.setArg(1,*deviceObj->d_B);
@@ -30,15 +37,13 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     kernel_add.setArg(5,w);
     kernel_add.setArg(6,BLOCK_SIZE);
 
-    #ifdef PROFILING_CLOCK
-        deviceObj->queue->finish();
-        kernelCLK.start();
-    #endif
-
     deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evt);
 
+    // Wait for completion before stopping the clock
     deviceObj->queue->finish();
-    #ifdef PROFILING_CLOCK
-        kernelCLK.end();
-    #endif
+    // Clock profilling end 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedNS();
 }

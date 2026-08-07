@@ -3,7 +3,6 @@
 #include "../benchmark_library.h"
 #include <cstring>
 #include "GEN_kernel_opt.hcl"
-#include "../cpu_functions/cpu_functions.h"
 
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m, unsigned int w){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -33,20 +32,26 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         std::cout<<" Error building: "<<program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(deviceObj->default_device)<<"\n";
         exit(1);
     }
+
+    // kernel time execution
+    Clock kernelCLK;
+
+    // Clock profilling start 
+    kernelCLK.start();
+
+
     cl::Kernel kernel_add=cl::Kernel(program,"kernel_relu");
     kernel_add.setArg(0,*deviceObj->d_A);
     kernel_add.setArg(1,*deviceObj->d_B);
     kernel_add.setArg(2,n);
 
-    #ifdef PROFILING_CLOCK
-        deviceObj->queue->finish();
-        kernelCLK.start();
-    #endif
-
     deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evt);
+    
+    // Wait for completion before stopping the clock
     deviceObj->queue->finish();
+    // Clock profilling end 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedNS();
 }
