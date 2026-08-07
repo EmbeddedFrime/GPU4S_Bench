@@ -36,74 +36,55 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
 }
 
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
-   GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-   // Allocate the device input vector A
-	hipError_t err = hipSuccess;
-    err = hipMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 
-    if (err != hipSuccess)
+    // FIX: create a dumb obj to sync the profling clock
+    if (deviceObj->profiling_clock)
     {
-        return false;
+       hipDumbSync();
     }
+    
+    // Allocate the device input vector A
+    hipError_t err = hipMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
+    if (err != hipSuccess) return false;
 
     // Allocate the device input vector B
     err = hipMalloc((void **)&deviceObj->d_B, size_b_matrix * sizeof(bench_t));
-
-    if (err != hipSuccess)
-    {
-        return false;
-    }
+    if (err != hipSuccess) return false;
 
     // Allocate the device output R value
     err = hipMalloc((void **)&deviceObj->d_R, sizeof(result_bench_t));
 
-    if (err != hipSuccess)
-    {
-        return false;
-    }
+    if (err != hipSuccess) return false;
 
     // Allocate the auxiliar values for matrix A and B
-
     err =  hipMalloc((void **)&deviceObj->mean_A, sizeof(result_bench_t)); 
-    if (err != hipSuccess)
-    {
-        return false;
-    }
+    if (err != hipSuccess) return false;
 
     err =  hipMalloc((void **)&deviceObj->mean_B, sizeof(result_bench_t)); 
-    if (err != hipSuccess)
-    {
-        return false;
-    }
+    if (err != hipSuccess) return false;
 
     err =  hipMalloc((void **)&deviceObj->acumulate_value_a_b, sizeof(result_bench_t)); 
-    if (err != hipSuccess)
-    {
-        return false;
-    }
+    if (err != hipSuccess) return false;
 
     err =  hipMalloc((void **)&deviceObj->acumulate_value_a_a, sizeof(result_bench_t)); 
-    if (err != hipSuccess)
-    {
-        return false;
-    }
+    if (err != hipSuccess) return false;
+
     err =  hipMalloc((void **)&deviceObj->acumulate_value_b_b, sizeof(result_bench_t)); 
-    if (err != hipSuccess)
-    {
-        return false;
-    }
+    if (err != hipSuccess) return false;
 
     return true;
 }
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // host -> device 
+    Clock h2dCLK;
 
-    #ifdef PROFILING_CLOCK
-        h2dCLK.start();
-    #endif
-
+    // profilling start 
+    h2dCLK.start();
     (void)hipEventRecord(*deviceObj->start_memory_copy_device);
+
 	hipError_t err = hipMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, hipMemcpyHostToDevice);
     if (err != hipSuccess)
     {
@@ -118,57 +99,63 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
         return;
     }
     
+    // profilling end
     (void)hipEventRecord(*deviceObj->stop_memory_copy_device);
+    h2dCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        h2dCLK.end();
-    #endif
-    
+    // store the h2d time
+    deviceObj->h2d_elapsed_time = h2dCLK.getElapsedMS();
 }
 
 void copy_memory_to_host(GraficCommon* device_object, result_bench_t* h_R){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-
-    #ifdef PROFILING_CLOCK
-        d2hCLK.start();
-    #endif
-
-    (void)hipEventRecord(*deviceObj->start_memory_copy_host);
     result_bench_t acumulate_value_a_a;
     result_bench_t acumulate_value_a_b;
     result_bench_t acumulate_value_b_b;
+    // device ->  host
+    Clock d2hCLK;
+
+    // profilling start 
+    d2hCLK.start();
+    (void)hipEventRecord(*deviceObj->start_memory_copy_host);
+    
     hipMemcpy(&acumulate_value_a_a, deviceObj->acumulate_value_a_a, sizeof(result_bench_t), hipMemcpyDeviceToHost);
     hipMemcpy(&acumulate_value_a_b, deviceObj->acumulate_value_a_b, sizeof(result_bench_t), hipMemcpyDeviceToHost);
     hipMemcpy(&acumulate_value_b_b, deviceObj->acumulate_value_b_b, sizeof(result_bench_t), hipMemcpyDeviceToHost);
     *h_R = (result_bench_t)(acumulate_value_a_b / (result_bench_t)(sqrt(acumulate_value_a_a * acumulate_value_b_b)));
     //hipMemcpy(h_R, deviceObj->d_R, sizeof(result_bench_t), hipMemcpyDeviceToHost);
+    
+    // profilling end 
     (void)hipEventRecord(*deviceObj->stop_memory_copy_host);
-
-    #ifdef PROFILING_CLOCK
-        d2hCLK.end();
-    #endif
+    d2hCLK.end();
+    
+    // store the hd2h time
+    deviceObj->d2h_elapsed_time = d2hCLK.getElapsedMS();
 }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    (void)hipEventSynchronize(*deviceObj->stop_memory_copy_host);
+    (void)hipEventSynchronize(*deviceObj->stop_memory_copy_host); // wait
+    
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
-    // memory transfer time host-device
-    (void)hipEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
-    // kernel time
-    (void)hipEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
-    //  memory transfer time device-host
-    (void)hipEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
-
-    #ifdef PROFILING_CLOCK
+    const char* profilingMode;
+    
+    if (deviceObj->profiling_clock)
+    {
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
-        milliseconds_h_d  = h2dCLK.getElapsedMS();
-        milliseconds      = kernelCLK.getElapsedMS();
-        milliseconds_d_h  = d2hCLK.getElapsedMS();
-        const char* profilingMode = "CLOCK";
-    #else
-        const char* profilingMode = "GPU";
-    #endif
+        milliseconds_h_d  = deviceObj->h2d_elapsed_time;
+        milliseconds      = deviceObj->elapsed_time;
+        milliseconds_d_h  = deviceObj->d2h_elapsed_time;
+        profilingMode = "CLOCK";
+    }else{
+        // memory transfer time host-device
+        (void)hipEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
+        // kernel time
+        (void)hipEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
+        //  memory transfer time device-host
+        (void)hipEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
+        profilingMode = "GPU";
+    }
     
     
     if (csv_format_timestamp){

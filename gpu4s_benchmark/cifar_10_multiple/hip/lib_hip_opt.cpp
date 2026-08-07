@@ -1,4 +1,3 @@
-#include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
 
 /**
@@ -298,14 +297,6 @@ softmax_finish_kernel(bench_t *B, bench_t *sum_d_B,const int size)
 
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2, unsigned int number_of_images){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    // execute net 
-    // 1-1 step convolution
-
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
-    (void)hipEventRecord(*deviceObj->start);
     bench_t* aux_output_data;
     bench_t* aux_input_data;
     bench_t* aux_convolution_1_output;
@@ -323,9 +314,17 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     for (unsigned int streams = 0; streams < NUMBER_OF_STREAMS; ++streams)
     {
         (void)hipStreamCreate(&cuda_streams[streams]);
-    }
-    
+    }    
 
+    // kernel time execution
+    Clock kernelCLK;
+
+    // profilling start 
+    kernelCLK.start();
+    (void)hipEventRecord(*deviceObj->start);
+    
+    
+    // 1-1 step convolution
     for(unsigned int position = 0; position < number_of_images; ++position)
     {   
 
@@ -447,8 +446,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     }
     (void)hipEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        (void)hipDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // profilling end 
+    (void)hipEventRecord(*deviceObj->stop);
+    hipDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

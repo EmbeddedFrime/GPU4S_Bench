@@ -1,13 +1,4 @@
-#include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
-
-#ifdef PROFILING_CLOCK
-    // kernel time execution
-    Clock kernelCLK;
-    // host <-> device 
-    Clock h2dCLK;
-    Clock d2hCLK;
-#endif
 
 /**
  * CUDA Kernel Device code
@@ -15,8 +6,8 @@
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-//#define BLOCK_SIZE 1024
-void init(GraficCommon* device_object, char* device_name){
+
+ void init(GraficCommon* device_object, char* device_name){
 	init(device_object, 0,0, device_name);
 }
 
@@ -44,108 +35,116 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
 }
 
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
    
-GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-   
-   // Allocate the device input vector A
-	hipError_t err = hipSuccess;
-    err = hipMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
-
-    if (err != hipSuccess)
+    // FIX: create a dumb obj to sync the profling clock
+    if (deviceObj->profiling_clock)
     {
-        return false;
+       hipDumbSync();
     }
+    
+    // Allocate the device input vector A
+    hipError_t err = hipMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
+    if (err != hipSuccess) return false;
 
     // Allocate the device input vector B
     err = hipMalloc((void **)&deviceObj->d_B, size_b_matrix * sizeof(bench_t));
-
-    if (err != hipSuccess)
-    {
-        return false;
-    }
+    if (err != hipSuccess) return false;
 
     return true;
 }
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned int size_a){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // host -> device 
+    Clock h2dCLK;
 
-    #ifdef PROFILING_CLOCK
-        h2dCLK.start();
-    #endif
-
+    // profilling start 
+    h2dCLK.start();
     (void)hipEventRecord(*deviceObj->start_memory_copy_device);
+
 	hipError_t err = hipMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, hipMemcpyHostToDevice);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    (void)hipEventRecord(*deviceObj->stop_memory_copy_device);
 
-    #ifdef PROFILING_CLOCK
-        h2dCLK.end();
-    #endif
-    
+    // profilling end
+    (void)hipEventRecord(*deviceObj->stop_memory_copy_device);
+    h2dCLK.end();
+
+    // store the h2d time
+    deviceObj->h2d_elapsed_time = h2dCLK.getElapsedMS();
 }
+
 void execute_kernel(GraficCommon* device_object, unsigned int n){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     (void)hipEventRecord(*deviceObj->start);
+
     hipError_t err = hipMemcpy(deviceObj->d_B, deviceObj->d_A, sizeof(bench_t) * n, hipMemcpyDeviceToDevice);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    (void)hipEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        hipDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // profilling end 
+    (void)hipEventRecord(*deviceObj->stop);
+    hipDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // device ->  host
+    Clock d2hCLK;
 
-    #ifdef PROFILING_CLOCK
-        d2hCLK.start();
-    #endif
-
+    // profilling start 
+    d2hCLK.start();
     (void)hipEventRecord(*deviceObj->start_memory_copy_host);
-    hipMemcpy(h_C, deviceObj->d_B, size * sizeof(bench_t), hipMemcpyDeviceToHost);
-    (void)hipEventRecord(*deviceObj->stop_memory_copy_host);
 
-    #ifdef PROFILING_CLOCK
-        d2hCLK.end();
-    #endif
+    hipMemcpy(h_C, deviceObj->d_B, size * sizeof(bench_t), hipMemcpyDeviceToHost);
+    
+    // profilling end 
+    (void)hipEventRecord(*deviceObj->stop_memory_copy_host);
+    d2hCLK.end();
+    
+    // store the hd2h time
+    deviceObj->d2h_elapsed_time = d2hCLK.getElapsedMS();
 }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    (void)hipEventSynchronize(*deviceObj->stop_memory_copy_host);
-    float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
-    // memory transfer time host-device
-    (void)hipEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
-    // kernel time
-    (void)hipEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
-    //  memory transfer time device-host
-    (void)hipEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
+    (void)hipEventSynchronize(*deviceObj->stop_memory_copy_host); // wait
 
-    #ifdef PROFILING_CLOCK
+    float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
+    const char* profilingMode;
+    
+    if (deviceObj->profiling_clock)
+    {
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
-        milliseconds_h_d  = h2dCLK.getElapsedMS();
-        milliseconds      = kernelCLK.getElapsedMS();
-        milliseconds_d_h  = d2hCLK.getElapsedMS();
-        const char* profilingMode = "CLOCK";
-    #else
-        const char* profilingMode = "GPU";
-    #endif
+        milliseconds_h_d  = deviceObj->h2d_elapsed_time;
+        milliseconds      = deviceObj->elapsed_time;
+        milliseconds_d_h  = deviceObj->d2h_elapsed_time;
+        profilingMode = "CLOCK";
+    }else{
+        // memory transfer time host-device
+        (void)hipEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
+        // kernel time
+        (void)hipEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
+        //  memory transfer time device-host
+        (void)hipEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
+        profilingMode = "GPU";
+    }
     
     if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", milliseconds_h_d,milliseconds,milliseconds_d_h);
@@ -162,7 +161,6 @@ void clean(GraficCommon* device_object){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     hipError_t err = hipSuccess;
     err = hipFree(deviceObj->d_A);
-
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", hipGetErrorString(err));

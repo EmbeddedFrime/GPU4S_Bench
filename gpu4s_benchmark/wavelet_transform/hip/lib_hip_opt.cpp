@@ -1,4 +1,3 @@
-#include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
 
 
@@ -156,49 +155,46 @@ wavelet_transform(const bench_t *A, bench_t *B, const int n, const bench_t *lowp
 #endif
 
 void execute_kernel(GraficCommon* device_object, unsigned int n){
-    
-GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     (void)hipEventRecord(*deviceObj->start);
+
     #ifdef INT
-
-    dim3 dimBlock(BLOCK_SIZE*BLOCK_SIZE);
-    dim3 dimGrid(ceil(float(n/NUMBERSUBDIVISIONS)/dimBlock.x));
-    
-    hipStream_t cuda_streams[NUMBERSUBDIVISIONS];
-    for (unsigned int streams = 0; streams < NUMBERSUBDIVISIONS; ++streams)
-    {
-        hipStreamCreate(&cuda_streams[streams]);
-    }
-    
-    for (unsigned int iter = 0; iter < NUMBERSUBDIVISIONS; ++iter)
-    {   
-        hipLaunchKernelGGL((wavelet_transform), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[iter], deviceObj->d_A, deviceObj->d_B, n, iter,dimGrid.x);
-        hipLaunchKernelGGL((wavelet_transform_low), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[iter], deviceObj->d_A, deviceObj->d_B, n, iter,dimGrid.x);
-    }
-    
-
+        dim3 dimBlock(BLOCK_SIZE*BLOCK_SIZE);
+        dim3 dimGrid(ceil(float(n/NUMBERSUBDIVISIONS)/dimBlock.x));
+        
+        hipStream_t cuda_streams[NUMBERSUBDIVISIONS];
+        for (unsigned int streams = 0; streams < NUMBERSUBDIVISIONS; ++streams)
+        {
+            hipStreamCreate(&cuda_streams[streams]);
+        }
+        
+        for (unsigned int iter = 0; iter < NUMBERSUBDIVISIONS; ++iter)
+        {   
+            hipLaunchKernelGGL((wavelet_transform), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[iter], deviceObj->d_A, deviceObj->d_B, n, iter,dimGrid.x);
+            hipLaunchKernelGGL((wavelet_transform_low), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[iter], deviceObj->d_A, deviceObj->d_B, n, iter,dimGrid.x);
+        }
     #else
-    hipStream_t cuda_streams[2];
-    dim3 dimBlock(BLOCK_SIZE*BLOCK_SIZE);
-    dim3 dimGrid(ceil(float(n)/dimBlock.x));
-    for (unsigned int streams = 0; streams < 2; ++streams)
-    {
-        (void)hipStreamCreate(&cuda_streams[streams]);
-    }
-    hipLaunchKernelGGL((wavelet_transform), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[0], deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
-    hipLaunchKernelGGL((wavelet_transform_high), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[1], deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
+        hipStream_t cuda_streams[2];
+        dim3 dimBlock(BLOCK_SIZE*BLOCK_SIZE);
+        dim3 dimGrid(ceil(float(n)/dimBlock.x));
+        for (unsigned int streams = 0; streams < 2; ++streams)
+        {
+            (void)hipStreamCreate(&cuda_streams[streams]);
+        }
+        hipLaunchKernelGGL((wavelet_transform), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[0], deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
+        hipLaunchKernelGGL((wavelet_transform_high), dim3(dimGrid), dim3(dimBlock), 0, cuda_streams[1], deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
     #endif
 
+    // profilling end 
     (void)hipEventRecord(*deviceObj->stop);
+    hipDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        hipDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

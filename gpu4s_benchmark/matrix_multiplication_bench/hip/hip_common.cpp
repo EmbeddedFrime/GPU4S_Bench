@@ -6,7 +6,6 @@
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
 #include "../benchmark_library.h"
-#include "hip/hip_runtime.h"
 
 
 
@@ -41,6 +40,12 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
    
+    // FIX: create a dumb obj to sync the profling clock
+    if (deviceObj->profiling_clock)
+    {
+       hipDumbSync();
+    }
+    
     // Allocate the device input vector A
 	hipError_t err = hipMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
     if (err != hipSuccess) return false;

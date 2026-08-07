@@ -1,4 +1,3 @@
-#include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
 
 /**
@@ -67,7 +66,6 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
     dim3 dimGrid_reverse(ceil(float(size)/dimBlock_reverse.x));
     dim3 dimBlock(0);
     dim3 dimGrid(0);
-
     bench_t wtemp, wpr, wpi, theta;
 
     // reorder kernel
@@ -108,21 +106,23 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
 }
 void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     (void)hipEventRecord(*deviceObj->start);
+    
     for (unsigned int i = 0; i < (size * 2 - window + 1); i+=2){
         aux_execute_kernel(device_object, window, i);
     }
     
+    // profilling end 
     (void)hipEventRecord(*deviceObj->stop);
+    hipDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        hipDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
