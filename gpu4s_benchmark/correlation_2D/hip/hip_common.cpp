@@ -119,9 +119,24 @@ void copy_memory_to_host(GraficCommon* device_object, result_bench_t* h_R){
     d2hCLK.start();
     (void)hipEventRecord(*deviceObj->start_memory_copy_host);
     
-    hipMemcpy(&acumulate_value_a_a, deviceObj->acumulate_value_a_a, sizeof(result_bench_t), hipMemcpyDeviceToHost);
-    hipMemcpy(&acumulate_value_a_b, deviceObj->acumulate_value_a_b, sizeof(result_bench_t), hipMemcpyDeviceToHost);
-    hipMemcpy(&acumulate_value_b_b, deviceObj->acumulate_value_b_b, sizeof(result_bench_t), hipMemcpyDeviceToHost);
+    hipError_t err = hipMemcpy(&acumulate_value_a_a, deviceObj->acumulate_value_a_a, sizeof(result_bench_t), hipMemcpyDeviceToHost);
+    if (err != hipSuccess)
+    {
+        fprintf(stderr, "Failed to copy vector acumulate_value_a_a from device to host (error code %s)!\n", hipGetErrorString(err));
+        return;
+    }
+    err = hipMemcpy(&acumulate_value_a_b, deviceObj->acumulate_value_a_b, sizeof(result_bench_t), hipMemcpyDeviceToHost);
+    if (err != hipSuccess)
+    {
+        fprintf(stderr, "Failed to copy vector acumulate_value_a_b from device to host (error code %s)!\n", hipGetErrorString(err));
+        return;
+    }
+    err = hipMemcpy(&acumulate_value_b_b, deviceObj->acumulate_value_b_b, sizeof(result_bench_t), hipMemcpyDeviceToHost);
+    if (err != hipSuccess)
+    {
+        fprintf(stderr, "Failed to copy vector acumulate_value_b_b from device to host (error code %s)!\n", hipGetErrorString(err));
+        return;
+    }
     *h_R = (result_bench_t)(acumulate_value_a_b / (result_bench_t)(sqrt(acumulate_value_a_a * acumulate_value_b_b)));
     //hipMemcpy(h_R, deviceObj->d_R, sizeof(result_bench_t), hipMemcpyDeviceToHost);
     

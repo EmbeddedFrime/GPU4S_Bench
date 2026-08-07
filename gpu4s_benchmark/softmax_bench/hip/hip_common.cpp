@@ -92,7 +92,12 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     d2hCLK.start();
     (void)hipEventRecord(*deviceObj->start_memory_copy_host);
 
-    hipMemcpy(h_C, deviceObj->d_B, size * sizeof(bench_t), hipMemcpyDeviceToHost);
+    hipError_t err = hipMemcpy(h_C, deviceObj->d_B, size * sizeof(bench_t), hipMemcpyDeviceToHost);
+    if (err != hipSuccess)
+    {
+        fprintf(stderr, "Failed to copy vector B from device to host (error code %s)!\n", hipGetErrorString(err));
+        return;
+    }
     
     // profilling end 
     (void)hipEventRecord(*deviceObj->stop_memory_copy_host);
