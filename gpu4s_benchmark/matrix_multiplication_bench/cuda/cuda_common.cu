@@ -57,11 +57,10 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
     // host -> device 
     Clock h2dCLK;
 
-    // Clock profilling start 
+    // profilling start 
     h2dCLK.start();
-
-    // GPU profilling start
     cudaEventRecord(*deviceObj->start_memory_copy_device);
+
 	cudaError_t err = cudaMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
     {
@@ -74,11 +73,11 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
         fprintf(stderr, "Failed to copy vector B from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    // GPU profilling end
-    cudaEventRecord(*deviceObj->stop_memory_copy_device);   
 
-    // Clock profilling end 
+    // profilling end
+    cudaEventRecord(*deviceObj->stop_memory_copy_device);   
     h2dCLK.end();
+    
     // store the h2d time
     deviceObj->h2d_elapsed_time = h2dCLK.getElapsedMS();
 }
@@ -90,17 +89,16 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     // device ->  host
     Clock d2hCLK;
 
-    // Clock profilling start 
+    // profilling start 
     d2hCLK.start();
-
-    // GPU profilling start 
     cudaEventRecord(*deviceObj->start_memory_copy_host);
-    cudaMemcpy(h_C, deviceObj->d_C, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
-    // GPU profilling end 
-    cudaEventRecord(*deviceObj->stop_memory_copy_host);
 
-    // Clock profilling end 
+    cudaMemcpy(h_C, deviceObj->d_C, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
+    
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop_memory_copy_host);
     d2hCLK.end();
+
     // store the hd2h time
     deviceObj->d2h_elapsed_time = d2hCLK.getElapsedMS();
 }

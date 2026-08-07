@@ -29,17 +29,15 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     // kernel time execution
     Clock kernelCLK;
 
-    // Clock profilling start 
+    // profilling start 
     kernelCLK.start();
-    // GPU profilling start 
     cudaEventRecord(*deviceObj->start);
 
     matrix_multiplication_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_A, deviceObj->d_B, deviceObj->d_C, n, m, w);
     
-    // GPU profilling end 
+    // profilling end 
     cudaEventRecord(*deviceObj->stop);
     cudaDeviceSynchronize(); 
-    // Clock profilling end 
     kernelCLK.end();
 
     // store the kernel time

@@ -68,17 +68,15 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     // kernel time execution
     Clock kernelCLK;
 
-    // Clock profilling start 
+    //  profilling start 
     kernelCLK.start();
-
-    // GPU profilling start 
     (void)hipEventRecord(*deviceObj->start);
-    hipLaunchKernelGGL((matrix_multiplication_kernel), dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->d_A, deviceObj->d_B, deviceObj->d_C, n, m, w);
-    // GPU profilling end 
-    (void)hipEventRecord(*deviceObj->stop);
 
+    hipLaunchKernelGGL((matrix_multiplication_kernel), dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->d_A, deviceObj->d_B, deviceObj->d_C, n, m, w);
+    
+    // profilling end 
+    (void)hipEventRecord(*deviceObj->stop);
     hipDeviceSynchronize(); 
-    // Clock profilling end 
     kernelCLK.end();
 
     // store the kernel time

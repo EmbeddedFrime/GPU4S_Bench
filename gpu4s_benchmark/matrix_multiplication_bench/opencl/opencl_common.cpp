@@ -93,6 +93,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
     
     // Clock profilling end 
     h2dCLK.end();
+
     // store the hd2h time
     deviceObj->h2d_elapsed_time = h2dCLK.getElapsedNS();
 }
@@ -167,6 +168,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
 
     // Clock profilling end 
     d2hCLK.end();
+    
     // store the hd2h time
     deviceObj->d2h_elapsed_time = d2hCLK.getElapsedNS();
 }
