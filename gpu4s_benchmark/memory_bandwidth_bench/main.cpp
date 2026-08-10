@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 	// Update profiling clock mode
 	mem_bench->profiling_clock = arguments_parameters->profiling_clock;
 
-	/ If android and opencl force profiling clock
+	// If android and opencl force profiling clock
 	#ifdef PROFILING_CLOCK 
 		mem_bench->profiling_clock = true;
 	#endif
