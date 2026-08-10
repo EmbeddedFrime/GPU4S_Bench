@@ -146,8 +146,8 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
 
 void clean(GraficCommon* device_object){
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-	cudaError_t err = cudaSuccess;
-	err = cudaFree(deviceObj->d_A);
+
+    cudaError_t err = cudaFree(deviceObj->d_A);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));

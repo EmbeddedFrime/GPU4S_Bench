@@ -208,10 +208,8 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
 
 void clean(GraficCommon* device_object){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cudaError_t err = cudaSuccess;
 
-    err = cudaFree(deviceObj->input_data);
-
+    cudaError_t err = cudaFree(deviceObj->input_data);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector input_data (error code %s)!\n", cudaGetErrorString(err));
@@ -219,19 +217,19 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->kernel_1);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector kernel_1 (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->conv_1_output);
 
+    err = cudaFree(deviceObj->conv_1_output);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector conv_1_output (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
     err = cudaFree(deviceObj->pooling_1_output);
     if (err != cudaSuccess)
     {
@@ -240,21 +238,20 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->kernel_2);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector kernel_2 (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->conv_2_output);
 
+    err = cudaFree(deviceObj->conv_2_output);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector conv_2_output (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->pooling_2_output);
 
+    err = cudaFree(deviceObj->pooling_2_output);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector pooling_2_output (error code %s)!\n", cudaGetErrorString(err));
@@ -262,19 +259,19 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->dense_layer_1_weights);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector dense_layer_1_weights (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->dense_layer_2_weights);
 
+    err = cudaFree(deviceObj->dense_layer_2_weights);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector dense_layer_2_weights (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
     err = cudaFree(deviceObj->dense_layer_1_output);
     if (err != cudaSuccess)
     {
@@ -283,21 +280,20 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->dense_layer_2_output);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector dense_layer_2_output (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->output_data);
 
+    err = cudaFree(deviceObj->output_data);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector output_data (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+    
     err = cudaFree(deviceObj->sum_ouput);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector sum_ouput (error code %s)!\n", cudaGetErrorString(err));

@@ -250,8 +250,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
 }
 
 void clean(GraficCommon* device_object){
-
-GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 
     // pointers clean
     delete deviceObj->context;

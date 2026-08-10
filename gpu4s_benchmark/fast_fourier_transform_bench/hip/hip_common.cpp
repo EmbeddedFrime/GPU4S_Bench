@@ -141,17 +141,15 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
 
 void clean(GraficCommon* device_object){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    hipError_t err = hipSuccess;
 
-    err = hipFree(deviceObj->d_B);
-
+    hipError_t err = hipFree(deviceObj->d_B);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector B (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-     err = hipFree(deviceObj->d_Br);
 
+    err = hipFree(deviceObj->d_Br);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector Br (error code %s)!\n", hipGetErrorString(err));

@@ -217,10 +217,8 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
 
 void clean(GraficCommon* device_object){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    hipError_t err = hipSuccess;
 
-    err = hipFree(deviceObj->input_data);
-
+    hipError_t err = hipFree(deviceObj->input_data);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector input_data (error code %s)!\n", hipGetErrorString(err));
@@ -228,19 +226,19 @@ void clean(GraficCommon* device_object){
     }
 
     err = hipFree(deviceObj->kernel_1);
-
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector kernel_1 (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    err = hipFree(deviceObj->conv_1_output);
 
+    err = hipFree(deviceObj->conv_1_output);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector conv_1_output (error code %s)!\n", hipGetErrorString(err));
         return;
     }
+
     err = hipFree(deviceObj->pooling_1_output);
     if (err != hipSuccess)
     {
@@ -249,21 +247,20 @@ void clean(GraficCommon* device_object){
     }
 
     err = hipFree(deviceObj->kernel_2);
-
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector kernel_2 (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    err = hipFree(deviceObj->conv_2_output);
 
+    err = hipFree(deviceObj->conv_2_output);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector conv_2_output (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    err = hipFree(deviceObj->pooling_2_output);
 
+    err = hipFree(deviceObj->pooling_2_output);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector pooling_2_output (error code %s)!\n", hipGetErrorString(err));
@@ -271,26 +268,25 @@ void clean(GraficCommon* device_object){
     }
 
     err = hipFree(deviceObj->dense_layer_1_weights);
-
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector dense_layer_1_weights (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    err = hipFree(deviceObj->dense_layer_2_weights);
 
+    err = hipFree(deviceObj->dense_layer_2_weights);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector dense_layer_2_weights (error code %s)!\n", hipGetErrorString(err));
         return;
     }
+
     err = hipFree(deviceObj->dense_layer_1_output);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector dense_layer_1_output (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-
     err = hipFree(deviceObj->dense_layer_2_output);
 
     if (err != hipSuccess)
@@ -298,15 +294,15 @@ void clean(GraficCommon* device_object){
         fprintf(stderr, "Failed to free device vector dense_layer_2_output (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    err = hipFree(deviceObj->output_data);
 
+    err = hipFree(deviceObj->output_data);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector output_data (error code %s)!\n", hipGetErrorString(err));
         return;
     }
-    err = hipFree(deviceObj->sum_ouput);
 
+    err = hipFree(deviceObj->sum_ouput);
     if (err != hipSuccess)
     {
         fprintf(stderr, "Failed to free device vector sum_ouput (error code %s)!\n", hipGetErrorString(err));

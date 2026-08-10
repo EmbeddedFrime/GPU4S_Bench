@@ -180,9 +180,8 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
 
 void clean(GraficCommon* device_object){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cudaError_t err = cudaSuccess;
-    err = cudaFree(deviceObj->d_A);
 
+    cudaError_t err = cudaFree(deviceObj->d_A);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));
@@ -190,7 +189,6 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->d_B);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector B (error code %s)!\n", cudaGetErrorString(err));
@@ -198,7 +196,6 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->d_R);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device R (error code %s)!\n", cudaGetErrorString(err));
@@ -212,6 +209,7 @@ void clean(GraficCommon* device_object){
         fprintf(stderr, "Failed to free device  mean_A (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
     err = cudaFree( deviceObj->mean_B);
     if (err != cudaSuccess)
     {
@@ -225,12 +223,14 @@ void clean(GraficCommon* device_object){
         fprintf(stderr, "Failed to free device acumulate_value_a_b (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
     err = cudaFree(deviceObj->acumulate_value_a_a);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device acumulate_value_a_a (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+    
     err = cudaFree(deviceObj->acumulate_value_b_b);
     if (err != cudaSuccess)
     {
