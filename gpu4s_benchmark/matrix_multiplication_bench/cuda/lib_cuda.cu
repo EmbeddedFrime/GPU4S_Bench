@@ -26,17 +26,20 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
     dim3 dimGrid(ceil(float(n)/dimBlock.x), ceil(float(m)/dimBlock.y));
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
-    matrix_multiplication_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_A, deviceObj->d_B, deviceObj->d_C, n, m, w);
-    cudaEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    matrix_multiplication_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_A, deviceObj->d_B, deviceObj->d_C, n, m, w);
+    
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

@@ -37,8 +37,8 @@ max_pooling_kernel(const bench_t *A, bench_t *B, const int size, const unsigned 
 }
 
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,unsigned int w, unsigned int stride, unsigned int lateral_stride){
-     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-     dim3 dimBlock, dimGrid;
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    dim3 dimBlock, dimGrid;
     if(lateral_stride < BLOCK_SIZE)
     {
         dimBlock = dim3(lateral_stride, lateral_stride);
@@ -50,17 +50,20 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         dimGrid = dim3(ceil(((float(n) / stride ))/dimBlock.x), ceil(((float(m) / stride ))/dimBlock.y));
     }
     
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
-    max_pooling_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_A, deviceObj->d_B, n, stride, lateral_stride);
-    cudaEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    max_pooling_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_A, deviceObj->d_B, n, stride, lateral_stride);
+    
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

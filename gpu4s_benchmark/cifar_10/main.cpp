@@ -180,7 +180,15 @@ int main(int argc, char *argv[]){
 	if (!arguments_parameters->csv_format_timestamp && !arguments_parameters->csv_format && !arguments_parameters->mute_messages ){
 		printf("Using device: %s\n", device);
 	}
-	
+
+	// Update profiling clock mode
+	cifar10_bench->profiling_clock = arguments_parameters->profiling_clock;
+
+	// If android and opencl force profiling clock
+	#ifdef PROFILING_CLOCK 
+		cifar10_bench->profiling_clock = true;
+	#endif
+
 	// init memory
 	bool mem_result = true;
 	mem_result = device_memory_init(cifar10_bench, CIFAR_10_INPUT, CIFAR_10_OUTPUT, KERNEL_CON_1, KERNEL_CON_2, STRIDE_1, STRIDE_2, DENSE_1, DENSE_2);
@@ -302,6 +310,7 @@ void print_usage(const char * appName)
 	printf(" -d: selects GPU\n");
 	printf(" -f: mutes all print\n");
 	printf(" -h: print help information\n");
+	printf(" -p: clock profilling \n");
 }
 
 void init_arguments(BenchmarkParameters* arguments_parameters){
@@ -315,6 +324,7 @@ void init_arguments(BenchmarkParameters* arguments_parameters){
 	arguments_parameters->csv_format = false;
 	arguments_parameters->mute_messages = false;
 	arguments_parameters->csv_format_timestamp = false;
+	arguments_parameters->profiling_clock = false;
 }
 int arguments_handler(int argc, char ** argv, BenchmarkParameters* arguments_parameters){
 
@@ -336,6 +346,7 @@ int arguments_handler(int argc, char ** argv, BenchmarkParameters* arguments_par
 					   args +=1;
 					   strcpy(arguments_parameters->input_file_B,argv[args]);
 					   break;
+			case 'p' : arguments_parameters->profiling_clock = true;break;
 			// specific
 			case 'i' : args +=1;
 					   strcpy(arguments_parameters->input_file_A,argv[args]);

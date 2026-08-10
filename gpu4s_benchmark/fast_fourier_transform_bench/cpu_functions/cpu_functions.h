@@ -57,7 +57,8 @@ struct BenchmarkParameters{
 	bool csv_format_timestamp = false;
 	char input_file[100] = "";
 	char output_file[100] = "";
-};
+
+	bool profiling_clock = false;};
 
 void fft_function(bench_t* data,int64_t nn);
 bool compare_vectors(const bench_t* host,const bench_t* device, const int64_t size);

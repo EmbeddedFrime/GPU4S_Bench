@@ -39,9 +39,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     }
     // timing  
     deviceObj->queue->finish(); // Clear queue to ensure accurate start
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
+
+    // Clock profilling start 
+    kernelCLK.start();
 
 
     //FIX : GPU profiling use opencl marker
@@ -351,12 +353,13 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
    
      //FIX : GPU profiling use opencl marker
     deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt_softmax_fin);
-    deviceObj->queue->finish();
-
-    #ifdef PROFILING_CLOCK
-        kernelCLK.end();
-    #endif
-
     
+    // Wait for completion before stopping the clock
+    deviceObj->queue->finish();
+    // Clock profilling end 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedNS();  
 }
 

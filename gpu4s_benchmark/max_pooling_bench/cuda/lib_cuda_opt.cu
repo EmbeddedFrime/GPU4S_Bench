@@ -54,19 +54,20 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         dimGrid = dim3(ceil((lateral_stride*lateral_stride)/dimBlock.x));
     }
 
-    
-    
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
-    max_pooling_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_A, deviceObj->d_B, n, stride, lateral_stride);
-    cudaEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    max_pooling_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_A, deviceObj->d_B, n, stride, lateral_stride);
+    
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

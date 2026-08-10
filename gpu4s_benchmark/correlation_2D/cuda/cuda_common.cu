@@ -37,73 +37,47 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
 
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-   // Allocate the device input vector A
-	cudaError_t err = cudaSuccess;
-    err = cudaMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    // Allocate the device input vector A
+    cudaError_t err = cudaMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
+    if (err != cudaSuccess) return false;
 
     // Allocate the device input vector B
     err = cudaMalloc((void **)&deviceObj->d_B, size_b_matrix * sizeof(bench_t));
-
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    if (err != cudaSuccess) return false;
 
     // Allocate the device output R value
     err = cudaMalloc((void **)&deviceObj->d_R, sizeof(result_bench_t));
-
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    if (err != cudaSuccess) return false;
 
     // Allocate the auxiliar values for matrix A and B
-
     err =  cudaMalloc((void **)&deviceObj->mean_A, sizeof(result_bench_t)); 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    if (err != cudaSuccess) return false;
 
     err =  cudaMalloc((void **)&deviceObj->mean_B, sizeof(result_bench_t)); 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    if (err != cudaSuccess) return false;
 
     err =  cudaMalloc((void **)&deviceObj->acumulate_value_a_b, sizeof(result_bench_t)); 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    if (err != cudaSuccess) return false;
 
     err =  cudaMalloc((void **)&deviceObj->acumulate_value_a_a, sizeof(result_bench_t)); 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    if (err != cudaSuccess) return false;
+
     err =  cudaMalloc((void **)&deviceObj->acumulate_value_b_b, sizeof(result_bench_t)); 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    if (err != cudaSuccess) return false;
 
     return true;
 }
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned int size_a, bench_t* h_B, unsigned int size_b){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // host -> device 
+    Clock h2dCLK;
 
-    #ifdef PROFILING_CLOCK
-        h2dCLK.start();
-    #endif
-
+    // profilling start 
+    h2dCLK.start();
     cudaEventRecord(*deviceObj->start_memory_copy_device);
+
 	cudaError_t err = cudaMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
     {
@@ -118,58 +92,76 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
         return;
     }
     
+    // profilling end
     cudaEventRecord(*deviceObj->stop_memory_copy_device);
-
-    #ifdef PROFILING_CLOCK
-        h2dCLK.end();
-    #endif
+    h2dCLK.end();
     
+    // store the h2d time
+    deviceObj->h2d_elapsed_time = h2dCLK.getElapsedMS();
 }
 
 
 void copy_memory_to_host(GraficCommon* device_object, result_bench_t* h_R){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-
-    #ifdef PROFILING_CLOCK
-        d2hCLK.start();
-    #endif
-
-    cudaEventRecord(*deviceObj->start_memory_copy_host);
     result_bench_t acumulate_value_a_a;
     result_bench_t acumulate_value_a_b;
     result_bench_t acumulate_value_b_b;
-    cudaMemcpy(&acumulate_value_a_a, deviceObj->acumulate_value_a_a, sizeof(result_bench_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&acumulate_value_a_b, deviceObj->acumulate_value_a_b, sizeof(result_bench_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&acumulate_value_b_b, deviceObj->acumulate_value_b_b, sizeof(result_bench_t), cudaMemcpyDeviceToHost);
+    // device -> host
+    Clock d2hCLK;
+
+    // profilling start 
+    d2hCLK.start();
+    cudaEventRecord(*deviceObj->start_memory_copy_host);
+
+    cudaError_t err = cudaMemcpy(&acumulate_value_a_a, deviceObj->acumulate_value_a_a, sizeof(result_bench_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy vector acumulate_value_a_a from device to host (error code %s)!\n", cudaGetErrorString(err));
+        return;
+    }
+    err = cudaMemcpy(&acumulate_value_a_b, deviceObj->acumulate_value_a_b, sizeof(result_bench_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy vector acumulate_value_a_b from device to host (error code %s)!\n", cudaGetErrorString(err));
+        return;
+    }
+    err = cudaMemcpy(&acumulate_value_b_b, deviceObj->acumulate_value_b_b, sizeof(result_bench_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy vector acumulate_value_b_b from device to host (error code %s)!\n", cudaGetErrorString(err));
+        return;
+    }
     *h_R = (result_bench_t)(acumulate_value_a_b / (result_bench_t)(sqrt(acumulate_value_a_a * acumulate_value_b_b)));
     //cudaMemcpy(h_R, deviceObj->d_R, sizeof(result_bench_t), cudaMemcpyDeviceToHost);
+    
+    // profilling end 
     cudaEventRecord(*deviceObj->stop_memory_copy_host);
+    d2hCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        d2hCLK.end();
-    #endif
+    // store the hd2h time
+    deviceObj->d2h_elapsed_time = d2hCLK.getElapsedMS();
 }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cudaEventSynchronize(*deviceObj->stop_memory_copy_host);
+    cudaEventSynchronize(*deviceObj->stop_memory_copy_host); // wait
+    
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
-    // memory transfer time host-device
-    cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
-    // kernel time
-    cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
-    //  memory transfer time device-host
-    cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
-
-    #ifdef PROFILING_CLOCK
+    
+    if (deviceObj->profiling_clock)
+    {
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
-        milliseconds_h_d  = h2dCLK.getElapsedMS();
-        milliseconds      = kernelCLK.getElapsedMS();
-        milliseconds_d_h  = d2hCLK.getElapsedMS();
-        const char* profilingMode = "CLOCK";
-    #else
-        const char* profilingMode = "GPU";
-    #endif
+        milliseconds_h_d  = deviceObj->h2d_elapsed_time;
+        milliseconds      = deviceObj->elapsed_time;
+        milliseconds_d_h  = deviceObj->d2h_elapsed_time;
+    }else{
+        // memory transfer time host-device
+        cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
+        // kernel time
+        cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
+        //  memory transfer time device-host
+        cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
+    }
     
     
     if (csv_format_timestamp){
@@ -178,7 +170,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", milliseconds_h_d,milliseconds,milliseconds_d_h);
     }else{
-         printf("profiling mode: %s\n", profilingMode);
+         printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "FALSE");
          printf("Elapsed time Host->Device: %.10f milliseconds\n", milliseconds_h_d);
          printf("Elapsed time kernel: %.10f milliseconds\n", milliseconds);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", milliseconds_d_h);
@@ -188,9 +180,8 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
 
 void clean(GraficCommon* device_object){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cudaError_t err = cudaSuccess;
-    err = cudaFree(deviceObj->d_A);
 
+    cudaError_t err = cudaFree(deviceObj->d_A);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));
@@ -198,7 +189,6 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->d_B);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector B (error code %s)!\n", cudaGetErrorString(err));
@@ -206,7 +196,6 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->d_R);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device R (error code %s)!\n", cudaGetErrorString(err));
@@ -220,6 +209,7 @@ void clean(GraficCommon* device_object){
         fprintf(stderr, "Failed to free device  mean_A (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
     err = cudaFree( deviceObj->mean_B);
     if (err != cudaSuccess)
     {
@@ -233,12 +223,14 @@ void clean(GraficCommon* device_object){
         fprintf(stderr, "Failed to free device acumulate_value_a_b (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
     err = cudaFree(deviceObj->acumulate_value_a_a);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device acumulate_value_a_a (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+    
     err = cudaFree(deviceObj->acumulate_value_b_b);
     if (err != cudaSuccess)
     {

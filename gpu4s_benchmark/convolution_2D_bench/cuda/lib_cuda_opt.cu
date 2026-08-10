@@ -1,21 +1,13 @@
 #include "../benchmark_library.h"
 
-#ifdef PROFILING_CLOCK
-    // kernel time execution
-    Clock kernelCLK;
-    // host <-> device 
-    Clock h2dCLK;
-    Clock d2hCLK;
-#endif
-
 /**
  * CUDA Kernel Device code
  *
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-//#define BLOCK_SIZE 32
-__global__ void
+
+ __global__ void
 covolution_kernel(const bench_t *A, bench_t *B, const bench_t *kernel,const int n, const int m, const int w, const int kernel_size, const int shared_size, const int kernel_rad)
 {
     unsigned int size = n;
@@ -106,16 +98,20 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     unsigned int size_shared = (BLOCK_SIZE + kernel_rad *2 ) * sizeof(bench_t) * (BLOCK_SIZE + kernel_rad *2) * sizeof(bench_t);
     unsigned int size_shared_position = (BLOCK_SIZE + kernel_rad *2);
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
 
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
-    covolution_kernel<<<dimGrid, dimBlock, size_shared >>>(deviceObj->d_A, deviceObj->d_B, deviceObj->kernel, n, m, w, kernel_size, size_shared_position, kernel_rad);
-    cudaEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    covolution_kernel<<<dimGrid, dimBlock, size_shared >>>(deviceObj->d_A, deviceObj->d_B, deviceObj->kernel, n, m, w, kernel_size, size_shared_position, kernel_rad);
+    
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

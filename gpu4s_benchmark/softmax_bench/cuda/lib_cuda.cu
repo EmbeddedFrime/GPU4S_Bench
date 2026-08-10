@@ -7,6 +7,7 @@
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
+
 __global__ void
 softmax_kernel(const bench_t *A, bench_t *B, bench_t *sum_d_B,const int size)
 {
@@ -24,6 +25,7 @@ softmax_kernel(const bench_t *A, bench_t *B, bench_t *sum_d_B,const int size)
         atomicAdd(sum_d_B, B[i*size+j]);
     }
 }
+
 __global__ void
 softmax_finish_kernel(bench_t *B, bench_t *sum_d_B,const int size)
 {
@@ -34,23 +36,25 @@ softmax_finish_kernel(bench_t *B, bench_t *sum_d_B,const int size)
     }
 }
 
-
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,unsigned int w){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
     dim3 dimGrid(ceil(float(n)/dimBlock.x), ceil(float(m)/dimBlock.y));
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
+
     softmax_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_A, deviceObj->d_B, deviceObj->sum_d_B, n);
     softmax_finish_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_B, deviceObj->sum_d_B, n);
+    
+    // profilling end 
     cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

@@ -109,20 +109,23 @@ void aux_execute_kernel(GraficCommon* device_object, int64_t size, int64_t posit
 void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
 
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
+
     for (unsigned int i = 0; i < (size * 2 - window + 1); i+=2){
         aux_execute_kernel(device_object, window, i);
     }
     
+    // profilling end 
     cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 

@@ -7,8 +7,8 @@
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-//#define BLOCK_SIZE 32
-__global__ void
+
+ __global__ void
 covolution_kernel(const bench_t *A, bench_t *B, const bench_t *kernel,const int n, const int m, const int w, const int kernel_size)
 {
     int size = n;
@@ -55,16 +55,20 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
     dim3 dimGrid(ceil(float(n)/dimBlock.x), ceil(float(m)/dimBlock.y));
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
 
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
-    covolution_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_A, deviceObj->d_B, deviceObj->kernel, n, m, w, kernel_size);
-    cudaEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    covolution_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_A, deviceObj->d_B, deviceObj->kernel, n, m, w, kernel_size);
+    
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

@@ -51,11 +51,13 @@ void execute_kernel(GraficCommon* device_object, int64_t size){
 
     bench_t wtemp, wpr, wpi, theta, wr, wi;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
 
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
+
     // reorder kernel
     binary_reverse_kernel<<<dimGrid_reverse, dimBlock_reverse>>>(deviceObj->d_B, deviceObj->d_Br, size, (int64_t)log2(size));
     // Synchronize
@@ -100,11 +102,12 @@ void execute_kernel(GraficCommon* device_object, int64_t size){
        
     }
    
+    // profilling end 
     cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 

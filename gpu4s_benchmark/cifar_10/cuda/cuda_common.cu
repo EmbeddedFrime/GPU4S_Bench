@@ -6,8 +6,6 @@
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
 #include "../benchmark_library.h"
-#include "cuda_common.h"
-
 
 void init(GraficCommon* device_object, char* device_name){
     init(device_object, 0,0, device_name);
@@ -140,12 +138,13 @@ bool device_memory_init(GraficCommon* device_object, unsigned int input_data, un
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, bench_t* kernel_1_data, bench_t* kernel_2_data, bench_t* weights_1 ,bench_t* weights_2,unsigned int input , unsigned int kernel_size_1, unsigned int kernel_size_2, unsigned int weights_1_size, unsigned int weights_2_size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // host -> device 
+    Clock h2dCLK;
 
-    #ifdef PROFILING_CLOCK
-        h2dCLK.start();
-    #endif
-
+    // profilling start 
+    h2dCLK.start();
     cudaEventRecord(*deviceObj->start_memory_copy_device);
+
     cudaError_t err = cudaMemcpy(deviceObj->input_data, input_data, sizeof(bench_t) * input * input, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
     {
@@ -176,51 +175,61 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, ben
         fprintf(stderr, "Failed to copy vector weights_layer_2 from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+    
+    // profilling end 
     cudaEventRecord(*deviceObj->stop_memory_copy_device);
-
-    #ifdef PROFILING_CLOCK
-        h2dCLK.end();
-    #endif
+    h2dCLK.end();
+    
+    // store the h2d time
+    deviceObj->h2d_elapsed_time = h2dCLK.getElapsedMS();
 }
 
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // device -> host
+    Clock d2hCLK;
 
-    #ifdef PROFILING_CLOCK
-        d2hCLK.start();
-    #endif
-
+    // profilling start 
+    d2hCLK.start();
     cudaEventRecord(*deviceObj->start_memory_copy_host);
-    cudaMemcpy(h_C, deviceObj->output_data, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
+    
+    cudaError_t err = cudaMemcpy(h_C, deviceObj->output_data, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy vector output_data from device to host (error code %s)!\n", cudaGetErrorString(err));
+        return;
+    }
     //cudaMemcpy(h_C, deviceObj->dense_layer_2_output, 10 * sizeof(bench_t), cudaMemcpyDeviceToHost);
+    
+    // profilling end 
     cudaEventRecord(*deviceObj->stop_memory_copy_host);
+    d2hCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        d2hCLK.end();
-    #endif
+    // store the hd2h time
+    deviceObj->d2h_elapsed_time = d2hCLK.getElapsedMS();
 }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cudaEventSynchronize(*deviceObj->stop_memory_copy_host);
-    float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
-    // memory transfer time host-device
-    cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
-    // kernel time
-    cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
-    //  memory transfer time device-host
-    cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
+    cudaEventSynchronize(*deviceObj->stop_memory_copy_host); // wait
 
-    #ifdef PROFILING_CLOCK
+    float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
+    
+    if (deviceObj->profiling_clock)
+    {
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
-        milliseconds_h_d  = h2dCLK.getElapsedMS();
-        milliseconds      = kernelCLK.getElapsedMS();
-        milliseconds_d_h  = d2hCLK.getElapsedMS();
-        const char* profilingMode = "CLOCK";
-    #else
-        const char* profilingMode = "GPU";
-    #endif
+        milliseconds_h_d  = deviceObj->h2d_elapsed_time;
+        milliseconds      = deviceObj->elapsed_time;
+        milliseconds_d_h  = deviceObj->d2h_elapsed_time;
+    }else{
+        // memory transfer time host-device
+        cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
+        // kernel time
+        cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
+        //  memory transfer time device-host
+        cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
+    }
     
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", milliseconds_h_d,milliseconds,milliseconds_d_h, current_time);
@@ -228,7 +237,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", milliseconds_h_d,milliseconds,milliseconds_d_h);
     }else{
-         printf("profiling mode: %s\n", profilingMode);
+         printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "GPU");
          printf("Elapsed time Host->Device: %.10f milliseconds\n", milliseconds_h_d);
          printf("Elapsed time kernel: %.10f milliseconds\n", milliseconds);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", milliseconds_d_h);
@@ -238,10 +247,8 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
 
 void clean(GraficCommon* device_object){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cudaError_t err = cudaSuccess;
 
-    err = cudaFree(deviceObj->input_data);
-
+    cudaError_t err = cudaFree(deviceObj->input_data);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector input_data (error code %s)!\n", cudaGetErrorString(err));
@@ -249,19 +256,19 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->kernel_1);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector kernel_1 (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->conv_1_output);
 
+    err = cudaFree(deviceObj->conv_1_output);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector conv_1_output (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
     err = cudaFree(deviceObj->pooling_1_output);
     if (err != cudaSuccess)
     {
@@ -270,21 +277,20 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->kernel_2);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector kernel_2 (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->conv_2_output);
 
+    err = cudaFree(deviceObj->conv_2_output);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector conv_2_output (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->pooling_2_output);
 
+    err = cudaFree(deviceObj->pooling_2_output);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector pooling_2_output (error code %s)!\n", cudaGetErrorString(err));
@@ -292,19 +298,19 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->dense_layer_1_weights);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector dense_layer_1_weights (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->dense_layer_2_weights);
 
+    err = cudaFree(deviceObj->dense_layer_2_weights);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector dense_layer_2_weights (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
     err = cudaFree(deviceObj->dense_layer_1_output);
     if (err != cudaSuccess)
     {
@@ -313,21 +319,20 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->dense_layer_2_output);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector dense_layer_2_output (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->output_data);
 
+    err = cudaFree(deviceObj->output_data);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector output_data (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-    err = cudaFree(deviceObj->sum_ouput);
 
+    err = cudaFree(deviceObj->sum_ouput);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector sum_ouput (error code %s)!\n", cudaGetErrorString(err));

@@ -1,4 +1,3 @@
-#include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
 
 
@@ -8,7 +7,6 @@
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-//#define BLOCK_SIZE 32
 
 __global__ void
 mean_matrices(const bench_t *A,const bench_t *B,result_bench_t *mean_A ,result_bench_t *mean_B ,const int n)
@@ -127,20 +125,22 @@ void execute_kernel(GraficCommon* device_object, unsigned int n){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     dim3 dimBlock(BLOCK_SIZE,BLOCK_SIZE);
     dim3 dimGrid(ceil(float(n)/dimBlock.x),ceil(float(n)/dimBlock.y));
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     (void)hipEventRecord(*deviceObj->start);
+    
     hipLaunchKernelGGL(mean_matrices, dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->d_A, deviceObj->d_B, deviceObj->mean_A, deviceObj->mean_B , n);
     hipLaunchKernelGGL(correlation_2D, dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->d_A, deviceObj->d_B, deviceObj->d_R, deviceObj->mean_A, deviceObj->mean_B,deviceObj->acumulate_value_a_b, deviceObj->acumulate_value_a_a, deviceObj->acumulate_value_b_b, n);
 
+    // profilling end 
     (void)hipEventRecord(*deviceObj->stop);
+    hipDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        hipDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 

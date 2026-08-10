@@ -7,8 +7,8 @@
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-//#define BLOCK_SIZE 32
-__global__ void
+
+ __global__ void
 covolution_kernel(const bench_t *A, bench_t *B, const bench_t *kernel,const int n, const int m, const int w, const int kernel_size)
 {
     unsigned int size = n;
@@ -173,16 +173,15 @@ softmax_finish_kernel(bench_t *B, bench_t *sum_d_B,const int size)
 
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2, unsigned int number_of_images){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    // execute net 
-    
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
-    cudaEventRecord(*deviceObj->start);
     bench_t* aux_output_data = deviceObj->output_data;
     bench_t* aux_input_data = deviceObj->input_data;
+
+    // profilling start 
+    kernelCLK.start();
+    cudaEventRecord(*deviceObj->start);
     
     for(unsigned int position = 0; position < number_of_images; ++position)
     {
@@ -260,11 +259,13 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         softmax_finish_kernel<<<dimGrid, dimBlock>>>(aux_output_data, deviceObj->sum_ouput, neurons_dense_2);
         cudaMemset(deviceObj->sum_ouput, 0, sizeof(bench_t));
     }
-    cudaEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 

@@ -370,14 +370,17 @@ cmake -B build-double-128 -DDATATYPE=DOUBLE -DBLOCKSIZE=128
 
 ## To do list:
 - [X] fix issue of correctness between cpu and gpu in some benchmark
-- [ ] Check for cl error dunring memory copy to host and clean
+- [X] refactor to extract the common of frameworks
+- [X] fix of the clock to be executed in runtime + kernerCLK->deviceOBJ
+- [X] Check for cl error dunring memory copy to host and clean
+- [ ] add UMA implementation for Android
 - [ ] Big cmake to compile everything 
+- [ ] be compatible with jetson board + add UMA for jetson board
+
 - [ ] Tuto to install every deps(HIP,CUDA,OpenMP,OpenBLAS,CLBlast,FFTW3,OpenCL,CUDNN...)
 - [ ] Tuto how to use the benchmark(param etc) + compile with cmake
-- [ ] fix of the clock to be executed in runtime
-- [ ] add UMA implementation for Android
-- [ ] be compatible with jetson board
-- [ ] add UMA for jetson board
-- [ ] create a test with vulkan for android to have best perfomance
+- [ ] fix matrix_mult_FP16/Tensor/Memory_bandwith -> add timestamp csv format
 
+**Bonus**:
+- [ ] create a test with vulkan for android to have best perfomance (with softmax ?)
 

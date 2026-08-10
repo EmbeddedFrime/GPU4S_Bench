@@ -156,17 +156,15 @@ wavelet_transform(const bench_t *A, bench_t *B, const int n, const bench_t *lowp
 #endif
 
 void execute_kernel(GraficCommon* device_object, unsigned int n){
-    
-GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
-    #ifdef INT
 
+    #ifdef INT
     dim3 dimBlock(BLOCK_SIZE*BLOCK_SIZE);
     dim3 dimGrid(ceil(float(n/NUMBERSUBDIVISIONS)/dimBlock.x));
     
@@ -181,24 +179,23 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
         wavelet_transform<<<dimGrid,dimBlock,0,cuda_streams[iter]>>>(deviceObj->d_A, deviceObj->d_B, n, iter,dimGrid.x);
         wavelet_transform_low<<<dimGrid,dimBlock,0,cuda_streams[iter]>>>(deviceObj->d_A, deviceObj->d_B, n, iter,dimGrid.x);
     }
-    
-
     #else
-    cudaStream_t cuda_streams[2];
-    dim3 dimBlock(BLOCK_SIZE*BLOCK_SIZE);
-    dim3 dimGrid(ceil(float(n)/dimBlock.x));
-    for (unsigned int streams = 0; streams < 2; ++streams)
-    {
-        cudaStreamCreate(&cuda_streams[streams]);
-    }
-    wavelet_transform<<<dimGrid,dimBlock,0,cuda_streams[0]>>>(deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
-    wavelet_transform_high<<<dimGrid,dimBlock,0,cuda_streams[1]>>>(deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
+        cudaStream_t cuda_streams[2];
+        dim3 dimBlock(BLOCK_SIZE*BLOCK_SIZE);
+        dim3 dimGrid(ceil(float(n)/dimBlock.x));
+        for (unsigned int streams = 0; streams < 2; ++streams)
+        {
+            cudaStreamCreate(&cuda_streams[streams]);
+        }
+        wavelet_transform<<<dimGrid,dimBlock,0,cuda_streams[0]>>>(deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
+        wavelet_transform_high<<<dimGrid,dimBlock,0,cuda_streams[1]>>>(deviceObj->d_A, deviceObj->d_B, n, deviceObj->low_filter, deviceObj->high_filter);
     #endif
 
+    // profilling end 
     cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

@@ -124,11 +124,11 @@ matrix_multiplication_kernel(const bench_t *A, const bench_t *B, bench_t *C, con
 
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,unsigned int w){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
     
     #ifdef FLOAT16
@@ -142,27 +142,36 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         matrix_multiplication_kernel<<<dimGrid, dimBlock>>>(deviceObj->d_A, deviceObj->d_B, deviceObj->d_C, n, m, w);
     #endif
 
+    // profilling end 
     cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // device -> host
+    Clock d2hCLK;
 
-    #ifdef PROFILING_CLOCK
-        d2hCLK.start();
-    #endif
-
+    // profilling start 
+    d2hCLK.start();
     cudaEventRecord(*deviceObj->start_memory_copy_host);
-    cudaMemcpy(h_C, deviceObj->d_C, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
-    cudaEventRecord(*deviceObj->stop_memory_copy_host);
 
-    #ifdef PROFILING_CLOCK
-        d2hCLK.end();
-    #endif
+    cudaError_t err = cudaMemcpy(h_C, deviceObj->d_C, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(err));
+        return;
+    }
+    
+    // profilling end
+    cudaEventRecord(*deviceObj->stop_memory_copy_host);
+    d2hCLK.end();
+
+    // store the hd2h time
+    deviceObj->d2h_elapsed_time = d2hCLK.getElapsedMS();
 }

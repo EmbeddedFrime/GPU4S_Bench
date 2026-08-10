@@ -27,6 +27,20 @@
 #elif HIP
 	// HIP part
     #include <hip/hip_runtime.h>
+
+    inline void hipDumbSync() 
+    {
+            void* dumb_ptr;
+            hipError_t err = hipMalloc(&dumb_ptr, 4);
+                    err = hipMemset(dumb_ptr, 0, 4);
+                    err = hipFree(dumb_ptr);
+
+            if (err != hipSuccess)
+            {
+                fprintf(stderr, "Enable to create the dumb obj (error code %s)!\n", hipGetErrorString(err));
+                return;
+            }
+    }
 #elif OPENMP
     // OpenMP lib
     #include <omp.h>
@@ -35,7 +49,7 @@
 #endif
 
 // --- profiling mangement ---
-#if defined(CLOCK) || defined(ANDROID)
+#if defined(ANDROID) && defined(OPENCL) 
     #define PROFILING_CLOCK 
 #endif
 
@@ -93,7 +107,10 @@ struct GraficCommon{
 	#else
 		// --- CPU variable ---
 	#endif
+	float h2d_elapsed_time;
 	float elapsed_time;
+	float d2h_elapsed_time;
+	bool  profiling_clock = false;
 };
 
 

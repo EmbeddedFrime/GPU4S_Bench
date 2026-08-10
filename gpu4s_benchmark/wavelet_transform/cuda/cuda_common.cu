@@ -35,43 +35,26 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
 }
 
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
    
-GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-   
-   // Allocate the device input vector A
-	cudaError_t err = cudaSuccess;
-    err = cudaMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
-
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+    // Allocate the device input vector A
+    cudaError_t err = cudaMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
+    if (err != cudaSuccess) return false;
 
     // Allocate the device input vector B
     err = cudaMalloc((void **)&deviceObj->d_B, size_b_matrix * sizeof(bench_t));
+    if (err != cudaSuccess) return false;
 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
     #ifdef INT
-    // if int don't add the allocation
+        // if int don't add the allocation
     #else
-    // Allocate the device low_filter
-    err = cudaMalloc((void **)&deviceObj->low_filter, LOWPASSFILTERSIZE * sizeof(bench_t));
+        // Allocate the device low_filter
+        err = cudaMalloc((void **)&deviceObj->low_filter, LOWPASSFILTERSIZE * sizeof(bench_t));
+        if (err != cudaSuccess) return false;
 
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
-
-    // Allocate the device high_filter
-    err = cudaMalloc((void **)&deviceObj->high_filter, HIGHPASSFILTERSIZE * sizeof(bench_t));
-
-    if (err != cudaSuccess)
-    {
-        return false;
-    }
+        // Allocate the device high_filter
+        err = cudaMalloc((void **)&deviceObj->high_filter, HIGHPASSFILTERSIZE * sizeof(bench_t));
+        if (err != cudaSuccess) return false;
     #endif
 
     return true;
@@ -79,82 +62,90 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned int size_a){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // host -> device 
+    Clock h2dCLK;
 
-    #ifdef PROFILING_CLOCK
-        h2dCLK.start();
-    #endif
-
+    // profilling start 
+    h2dCLK.start();
     cudaEventRecord(*deviceObj->start_memory_copy_device);
+
 	cudaError_t err = cudaMemcpy(deviceObj->d_A, h_A, sizeof(bench_t) * size_a, cudaMemcpyHostToDevice);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to copy vector A from host to device (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
-
     #ifdef INT
-    // if int don't add the copy of the filters
+        // if int don't add the copy of the filters
     #else
-    err = cudaMemcpy(deviceObj->low_filter, lowpass_filter, sizeof(bench_t) * LOWPASSFILTERSIZE, cudaMemcpyHostToDevice);
-    if (err != cudaSuccess)
-    {
-        fprintf(stderr, "Failed to copy vector lowpass filter from host to device (error code %s)!\n", cudaGetErrorString(err));
-        return;
-    }
+        err = cudaMemcpy(deviceObj->low_filter, lowpass_filter, sizeof(bench_t) * LOWPASSFILTERSIZE, cudaMemcpyHostToDevice);
+        if (err != cudaSuccess)
+        {
+            fprintf(stderr, "Failed to copy vector lowpass filter from host to device (error code %s)!\n", cudaGetErrorString(err));
+            return;
+        }
 
-    err = cudaMemcpy(deviceObj->high_filter, highpass_filter, sizeof(bench_t) * HIGHPASSFILTERSIZE, cudaMemcpyHostToDevice);
-    if (err != cudaSuccess)
-    {
-        fprintf(stderr, "Failed to copy vector highpass filter from host to device (error code %s)!\n", cudaGetErrorString(err));
-        return;
-    }
+        err = cudaMemcpy(deviceObj->high_filter, highpass_filter, sizeof(bench_t) * HIGHPASSFILTERSIZE, cudaMemcpyHostToDevice);
+        if (err != cudaSuccess)
+        {
+            fprintf(stderr, "Failed to copy vector highpass filter from host to device (error code %s)!\n", cudaGetErrorString(err));
+            return;
+        }
     #endif
 
+    // profilling end 
     cudaEventRecord(*deviceObj->stop_memory_copy_device);
-
-    #ifdef PROFILING_CLOCK
-        h2dCLK.end();
-    #endif
+    h2dCLK.end();
     
+    // store the h2d time
+    deviceObj->h2d_elapsed_time = h2dCLK.getElapsedMS();
 }
 
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // device -> host
+    Clock d2hCLK;
 
-    #ifdef PROFILING_CLOCK
-        d2hCLK.start();
-    #endif
-
+    // profilling start 
+    d2hCLK.start();
     cudaEventRecord(*deviceObj->start_memory_copy_host);
-    cudaMemcpy(h_B, deviceObj->d_B, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
-    cudaEventRecord(*deviceObj->stop_memory_copy_host);
 
-    #ifdef PROFILING_CLOCK
-        d2hCLK.end();
-    #endif
+    cudaError_t err = cudaMemcpy(h_B, deviceObj->d_B, size * sizeof(bench_t), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to copy vector B from device to host (error code %s)!\n", cudaGetErrorString(err));
+        return;
+    }
+    
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop_memory_copy_host);
+    d2hCLK.end();
+
+    // store the hd2h time
+    deviceObj->d2h_elapsed_time = d2hCLK.getElapsedMS();
 }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cudaEventSynchronize(*deviceObj->stop_memory_copy_host);
+    cudaEventSynchronize(*deviceObj->stop_memory_copy_host); // wait
+    
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
-    // memory transfer time host-device
-    cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
-    // kernel time
-    cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
-    //  memory transfer time device-host
-    cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
-
-    #ifdef PROFILING_CLOCK
+    
+    if (deviceObj->profiling_clock)
+    {
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
-        milliseconds_h_d  = h2dCLK.getElapsedMS();
-        milliseconds      = kernelCLK.getElapsedMS();
-        milliseconds_d_h  = d2hCLK.getElapsedMS();
-        const char* profilingMode = "CLOCK";
-    #else
-        const char* profilingMode = "GPU";
-    #endif
+        milliseconds_h_d  = deviceObj->h2d_elapsed_time;
+        milliseconds      = deviceObj->elapsed_time;
+        milliseconds_d_h  = deviceObj->d2h_elapsed_time;
+    }else{
+        // memory transfer time host-device
+        cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
+        // kernel time
+        cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
+        //  memory transfer time device-host
+        cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
+    }
     
     if (csv_format_timestamp){
         printf("%.10f;%.10f;%.10f;%ld;\n", milliseconds_h_d,milliseconds,milliseconds_d_h,current_time);
@@ -162,7 +153,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", milliseconds_h_d,milliseconds,milliseconds_d_h);
     }else{
-         printf("profiling mode: %s\n", profilingMode);
+         printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "FALSE");
          printf("Elapsed time Host->Device: %.10f milliseconds\n", milliseconds_h_d);
          printf("Elapsed time kernel: %.10f milliseconds\n", milliseconds);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", milliseconds_d_h);
@@ -172,9 +163,8 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
 
 void clean(GraficCommon* device_object){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cudaError_t err = cudaSuccess;
-    err = cudaFree(deviceObj->d_A);
 
+    cudaError_t  err = cudaFree(deviceObj->d_A);
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));
@@ -182,14 +172,25 @@ void clean(GraficCommon* device_object){
     }
 
     err = cudaFree(deviceObj->d_B);
-
     if (err != cudaSuccess)
     {
         fprintf(stderr, "Failed to free device vector B (error code %s)!\n", cudaGetErrorString(err));
         return;
     }
+
     err = cudaFree(deviceObj->low_filter);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to free device vector low_filter (error code %s)!\n", cudaGetErrorString(err));
+        return;
+    }
+
     err = cudaFree(deviceObj->high_filter);
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "Failed to free device vector high_filter (error code %s)!\n", cudaGetErrorString(err));
+        return;
+    }
 
     // delete events
     delete deviceObj->start;

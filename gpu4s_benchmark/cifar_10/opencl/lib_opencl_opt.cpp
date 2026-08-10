@@ -4,7 +4,6 @@
 #include "GEN_kernel_opt.hcl"
 #include "GEN_atomic_functions.hcl"
 
-
 #define BLOCK_SIZE_PLANE BLOCK_SIZE*BLOCK_SIZE
 
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2){
@@ -43,10 +42,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     unsigned int size_shared = (BLOCK_SIZE + kernel_rad *2 ) * sizeof(bench_t) * (BLOCK_SIZE + kernel_rad *2) * sizeof(bench_t);
     unsigned int size_shared_position = (BLOCK_SIZE + kernel_rad *2);
 
-    #ifdef PROFILING_CLOCK
-        deviceObj->queue->finish(); // Clear queue to ensure accurate start
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
+
+    // Clock profilling start 
+    kernelCLK.start();
 
     // 1-1 step convolution
     cl::Kernel kernel_conv=cl::Kernel(program,"kernel_matrix_convolution");
@@ -304,10 +304,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
     deviceObj->queue->enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, deviceObj->evt_softmax_fin);
 
     // end 
+    // Wait for completion before stopping the clock
     deviceObj->queue->finish();
+    // Clock profilling end 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.end();
-    #endif
-
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedNS();
 }

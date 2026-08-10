@@ -11,13 +11,14 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     const bench_t_gpu *beta = &bet;
     cublasHandle_t handle;
     cublasCreate(&handle);
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
     cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH);
+
     #ifdef INT
     printf("CUBLAS NOT SUPPORT INT OPERATIOS\n");
     #elif FLOAT16
@@ -28,12 +29,13 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, w, alpha, deviceObj->d_B, lda, deviceObj->d_A, ldb, beta, deviceObj->d_C, ldc);
     #endif
     
+    // profilling end 
     cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 
     // destroy cublas
     cublasDestroy(handle);

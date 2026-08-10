@@ -4,7 +4,6 @@
 #include "GEN_kernel.hcl"
 #include "GEN_atomic_functions.hcl"
 
-
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2, unsigned int number_of_images){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     unsigned int x_local= BLOCK_SIZE;
@@ -25,11 +24,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 
     // timing  
     deviceObj->queue->finish(); // Clear queue to ensure accurate start
-    
-    
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
+
+    // Clock profilling start 
+    kernelCLK.start();
 
     //FIX : GPU profiling use opencl marker
     deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt1_1);
@@ -260,10 +259,12 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 
     //FIX : GPU profiling use opencl marker
     deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt_softmax_fin);
+    
+    // Wait for completion before stopping the clock
     deviceObj->queue->finish();
-
-    #ifdef PROFILING_CLOCK
+    // Clock profilling end 
     kernelCLK.end();
-    #endif
 
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedNS();
 }

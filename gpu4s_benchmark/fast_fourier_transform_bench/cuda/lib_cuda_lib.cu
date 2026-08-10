@@ -8,15 +8,13 @@
  */
 
 void execute_kernel(GraficCommon* device_object, int64_t size){
-
-GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cufftHandle plan;
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
     
     #ifdef FLOAT
@@ -27,12 +25,13 @@ GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cufftExecZ2Z(plan, (cufftDoubleComplex *)deviceObj->d_B, (cufftDoubleComplex *)deviceObj->d_Br, CUFFT_FORWARD);
     #endif
     
+    // profilling end 
     cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 
     cufftDestroy(plan);
     

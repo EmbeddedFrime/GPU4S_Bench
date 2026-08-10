@@ -35,10 +35,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         exit(1);
     }
 
-     #ifdef PROFILING_CLOCK
-        deviceObj->queue->finish();
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
+
+    // Clock profilling start 
+    kernelCLK.start();
 
     cl::Kernel softmax_kernel=cl::Kernel(program,"kernel_softmax");
     softmax_kernel.setArg(0,*deviceObj->d_A);
@@ -48,17 +49,18 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 
     deviceObj->queue->enqueueNDRangeKernel(softmax_kernel,cl::NullRange,global,local, NULL, deviceObj->evt);
 
-
     cl::Kernel softmax_end_kernel=cl::Kernel(program,"kernel_softmax_end");
     softmax_end_kernel.setArg(0,*deviceObj->d_B);
     softmax_end_kernel.setArg(1,*deviceObj->sum_d_B);
     softmax_end_kernel.setArg(2,n);
 
     deviceObj->queue->enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, deviceObj->evt_complemet);
+    // Wait for completion before stopping the clock
     deviceObj->queue->finish();
+    // Clock profilling end 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedNS();
 }
 

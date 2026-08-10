@@ -1,4 +1,3 @@
-#include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
 #include "math.h"
 
@@ -8,8 +7,8 @@
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-//#define BLOCK_SIZE 1024
-__global__ void
+
+ __global__ void
 relu_kernel(const bench_t *A, bench_t *B, const int size)
 {
     unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -32,17 +31,20 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     dim3 dimBlock(BLOCK_SIZE);
     dim3 dimGrid(ceil(float((n*n))/(dimBlock.x)));
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     (void)hipEventRecord(*deviceObj->start);
-    hipLaunchKernelGGL((relu_kernel), dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->d_A, deviceObj->d_B, n);
-    (void)hipEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        hipDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    hipLaunchKernelGGL((relu_kernel), dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->d_A, deviceObj->d_B, n);
+    
+    // profilling end 
+    (void)hipEventRecord(*deviceObj->stop);
+    hipDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

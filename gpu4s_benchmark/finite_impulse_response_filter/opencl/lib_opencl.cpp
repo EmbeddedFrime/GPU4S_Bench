@@ -4,15 +4,6 @@
 #include <cstring>
 #include "kernel.cl"
 
-#ifdef PROFILING_CLOCK
-    // kernel time execution
-    Clock kernelCLK;
-    // host <-> device 
-    Clock h2dCLK;
-    Clock d2hCLK;
-#endif
-
-//#define BLOCK_SIZE 256
 void init(GraficCommon* device_object, char* device_name){
 	init(device_object, 0,0, device_name);
 }
@@ -69,11 +60,11 @@ bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix,
 
 void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* kernel, unsigned int size_a, unsigned int size_b){
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-	// copy memory host -> device
-	
-    #ifdef PROFILING_CLOCK
-        h2dCLK.start();
-    #endif
+	// host -> device
+    Clock h2dCLK;
+
+    // Clock profilling start 
+    h2dCLK.start();
 
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, deviceObj->evt_copyA);
     if (err != CL_SUCCESS) 
@@ -89,11 +80,11 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* k
         return;
     }
 
+    // Clock profilling end 
+    h2dCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        deviceObj->queue->finish();
-        h2dCLK.end();
-    #endif
+    // store the hd2h time
+    deviceObj->h2d_elapsed_time = h2dCLK.getElapsedNS();
 }
 
 
@@ -126,10 +117,11 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
         exit(1);
     }
 
-    #ifdef PROFILING_CLOCK
-        deviceObj->queue->finish(); // Clear queue to ensure accurate start
-        kernelCLK.start();
-    #endif
+    // kernel time execution
+    Clock kernelCLK;
+
+    // Clock profilling start 
+    kernelCLK.start();
 
     cl::Kernel kernel_conv=cl::Kernel(program,"kernel_vector_convolution");
     kernel_conv.setArg(0,*deviceObj->d_A);
@@ -142,49 +134,59 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 
     
     deviceObj->queue->enqueueNDRangeKernel(kernel_conv,cl::NullRange,global,local, NULL, deviceObj->evt);
+    
+    // Wait for completion before stopping the clock
     deviceObj->queue->finish();
+    // Clock profilling end 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.end();
-    #endif
-
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedNS();
 }
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    #ifdef PROFILING_CLOCK
-        d2hCLK.start();
-    #endif
+    // device ->  host
+    Clock d2hCLK;
 
-    deviceObj->queue->enqueueReadBuffer(*deviceObj->d_B,CL_TRUE,0,sizeof(bench_t)*size,h_C, NULL, deviceObj->evt_copyC);
+    // Clock profilling start 
+    d2hCLK.start();
 
-    #ifdef PROFILING_CLOCK
-        deviceObj->queue->finish();
-        d2hCLK.end();
-    #endif
+    cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->d_B, CL_TRUE, 0, sizeof(bench_t)*size, h_C, NULL, deviceObj->evt_copyC);
+    if (err != CL_SUCCESS)
+    {
+        fprintf(stderr, "Failed to copy vector B from device to host (OpenCL error code %d)!\n", err);
+        return;
+    }
+
+    // Clock profilling end 
+    d2hCLK.end();
+    
+    // store the hd2h time
+    deviceObj->d2h_elapsed_time = d2hCLK.getElapsedNS();
 }
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     deviceObj->evt_copyC->wait();
+    
     float elapsed_h_d = 0, elapsed = 0, elapsed_d_h = 0;
-    elapsed_h_d = deviceObj->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    elapsed_h_d += deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
-    elapsed = deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
-    elapsed_d_h = deviceObj->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-    //printf("Elapsed time Device->Host: %.10f \n", );
-
-    #ifdef PROFILING_CLOCK
+    
+    if (deviceObj->profiling_clock)
+    {
         // --- FIX: Use <chrono> instead of CLBlast event profiling (unreliable on PROFILING_CLOCK) ---
-        elapsed_h_d  = h2dCLK.getElapsedNS();
-        elapsed      = kernelCLK.getElapsedNS();
-        elapsed_d_h  = d2hCLK.getElapsedNS();
-        const char* profilingMode = "CLOCK";
-    #else
-        const char* profilingMode = "GPU";
-    #endif
+        elapsed_h_d  = deviceObj->h2d_elapsed_time;
+        elapsed      = deviceObj->elapsed_time;
+        elapsed_d_h  = deviceObj->d2h_elapsed_time;
+    }else{
+        elapsed_h_d = deviceObj->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+        elapsed_h_d += deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+        //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
+        elapsed = deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+        //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
+        elapsed_d_h = deviceObj->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+        //printf("Elapsed time Device->Host: %.10f \n", );
+    }
 
 
     if (csv_format_timestamp){
@@ -193,7 +195,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0);
     }else{
-         printf("profiling mode: %s\n", profilingMode);
+         printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "FALSE");
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
          printf("Elapsed time kernel: %.10f milliseconds\n", elapsed / 1000000.0);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", elapsed_d_h / 1000000.0);

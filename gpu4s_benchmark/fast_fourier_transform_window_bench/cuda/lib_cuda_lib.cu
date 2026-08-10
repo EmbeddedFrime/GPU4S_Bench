@@ -59,25 +59,29 @@ void execute_kernel(GraficCommon* device_object, int64_t window, int64_t size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     bench_cuda_complex* d_A = (bench_cuda_complex*)deviceObj->d_A;
     bench_cuda_complex* d_B = (bench_cuda_complex*)deviceObj->d_B;
-
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
-    cudaEventRecord(*deviceObj->start);
     cufftHandle plan;
+    // kernel time execution
+    Clock kernelCLK;
+
+    // profilling start 
+    kernelCLK.start();
+    cudaEventRecord(*deviceObj->start);
+
     for (unsigned int i = 0; i < (size * 2  - window + 1); i+=1){
         aux_execute_kernel(device_object, window, d_A, d_B, &plan);
         d_B += window;
         ++d_A;
 
     }
-    cufftDestroy(plan);
-    cudaEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
+
+    cufftDestroy(plan);
 }
 

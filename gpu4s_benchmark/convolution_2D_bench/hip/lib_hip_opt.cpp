@@ -1,4 +1,3 @@
-#include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
 
 
@@ -98,18 +97,21 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
     unsigned int kernel_rad =  kernel_size / 2;
     unsigned int size_shared = (BLOCK_SIZE + kernel_rad *2 ) * sizeof(bench_t) * (BLOCK_SIZE + kernel_rad *2) * sizeof(bench_t);
     unsigned int size_shared_position = (BLOCK_SIZE + kernel_rad *2);
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     (void)hipEventRecord(*deviceObj->start);
-    hipLaunchKernelGGL((covolution_kernel), dim3(dimGrid), dim3(dimBlock), size_shared , 0, deviceObj->d_A, deviceObj->d_B, deviceObj->kernel, n, m, w, kernel_size, size_shared_position, kernel_rad);
-    (void)hipEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        hipDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    hipLaunchKernelGGL((covolution_kernel), dim3(dimGrid), dim3(dimBlock), size_shared , 0, deviceObj->d_A, deviceObj->d_B, deviceObj->kernel, n, m, w, kernel_size, size_shared_position, kernel_rad);
+    
+    // profilling end 
+    (void)hipEventRecord(*deviceObj->stop);
+    hipDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }
 

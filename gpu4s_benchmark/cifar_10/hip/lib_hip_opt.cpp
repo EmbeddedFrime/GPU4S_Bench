@@ -1,4 +1,3 @@
-#include "hip/hip_runtime.h"
 #include "../benchmark_library.h"
 
 
@@ -8,7 +7,6 @@
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-//#define BLOCK_SIZE 16
 #define BLOCK_SIZE_PLANE (BLOCK_SIZE * BLOCK_SIZE)
 
 __global__ void
@@ -334,20 +332,20 @@ softmax_finish_kernel(bench_t *B, bench_t *sum_d_B,const int size)
 
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    // execute net 
-    // 1-1 step convolution
-
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
-    (void)hipEventRecord(*deviceObj->start);
     dim3 dimBlock, dimGrid,dimBlock_act, dimGrid_act;
     dimBlock = dim3(BLOCK_SIZE, BLOCK_SIZE);
     dimGrid = dim3(ceil(float(input_data)/dimBlock.x), ceil(float(input_data)/dimBlock.y));
     unsigned int kernel_rad =  kernel_1 / 2;
     unsigned int size_shared = (BLOCK_SIZE + kernel_rad *2 ) * sizeof(bench_t) * (BLOCK_SIZE + kernel_rad *2) * sizeof(bench_t);
     unsigned int size_shared_position = (BLOCK_SIZE + kernel_rad *2);
+    // kernel time execution
+    Clock kernelCLK;
+
+    // profilling start 
+    kernelCLK.start();
+    (void)hipEventRecord(*deviceObj->start);
+
+    // 1-1 step convolution
     hipLaunchKernelGGL((covolution_kernel), dim3(dimGrid), dim3(dimBlock), size_shared, 0, deviceObj->input_data, deviceObj->conv_1_output, deviceObj->kernel_1, input_data, input_data, input_data, kernel_1, size_shared_position, kernel_rad);
     // 1-2 step activation
     dimBlock = dim3(BLOCK_SIZE_PLANE);
@@ -431,10 +429,12 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 
     hipLaunchKernelGGL((softmax_kernel), dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->dense_layer_2_output, deviceObj->output_data, deviceObj->sum_ouput, neurons_dense_2);
     hipLaunchKernelGGL((softmax_finish_kernel), dim3(dimGrid), dim3(dimBlock), 0, 0, deviceObj->output_data, deviceObj->sum_ouput, neurons_dense_2);
+    
+    // profilling end 
     (void)hipEventRecord(*deviceObj->stop);
+    hipDeviceSynchronize(); 
+    kernelCLK.end();
 
-    #ifdef PROFILING_CLOCK
-        hipDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 }

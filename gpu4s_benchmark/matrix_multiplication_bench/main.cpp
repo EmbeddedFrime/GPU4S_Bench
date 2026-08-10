@@ -122,9 +122,17 @@ int main(int argc, char *argv[])
 	if (!arguments_parameters->csv_format_timestamp && !arguments_parameters->csv_format && !arguments_parameters->mute_messages ){
 		printf("Using device: %s\n", device);
 	}
+
+	// Update profiling clock mode
+	matrix_bench->profiling_clock = arguments_parameters->profiling_clock;
+
+	/ If android and opencl force profiling clock
+	#ifdef PROFILING_CLOCK 
+		matrix_bench->profiling_clock = true;
+	#endif
 	
 	// init memory
-	device_memory_init(matrix_bench, arguments_parameters->size * arguments_parameters->size, arguments_parameters->size * arguments_parameters->size, size_matrix);
+	device_memory_init(matrix_bench, size_matrix, size_matrix, size_matrix);
 
 	#ifdef UNIFIED_MEMORY
 		bench_t *A, *B, *C;
@@ -174,8 +182,6 @@ int main(int argc, char *argv[])
 		
 	}
 	
-
-
 	if (arguments_parameters->verification)
 	{
 		Clock cpuKernelCLK;
@@ -239,7 +245,6 @@ return 0;
 
 
 // Arguments part
-
 void print_usage(const char * appName)
 {
 	printf("Usage: %s -s Size [-v] [-e] [-o] [-t] [-d] [-i input_file_A_MATRIX input_file_B_MATRIX] \n", appName);
@@ -255,6 +260,7 @@ void print_usage(const char * appName)
 	printf(" -d: selects GPU\n");
 	printf(" -f: mutes all print\n");
 	printf(" -h: print help information\n");
+	printf(" -p: clock profilling \n");
 }
 
 void init_arguments(BenchmarkParameters* arguments_parameters){
@@ -268,6 +274,7 @@ void init_arguments(BenchmarkParameters* arguments_parameters){
 	arguments_parameters->csv_format = false;
 	arguments_parameters->mute_messages = false;
 	arguments_parameters->csv_format_timestamp = false;
+	arguments_parameters->profiling_clock = false;
 	// --- Properly clear character arrays ---
 	arguments_parameters->input_file_A[0] = '\0';
 	arguments_parameters->input_file_B[0] = '\0';
@@ -292,7 +299,7 @@ int arguments_handler(int argc, char ** argv, BenchmarkParameters* arguments_par
 			case 't' : arguments_parameters->print_timing = true;break;
 			case 'c' : arguments_parameters->csv_format   = true;break;
 			case 'C' : arguments_parameters->csv_format_timestamp = true;break;
-			case 'g' : arguments_parameters->export_results_gpu = true;break;
+			case 'g' : arguments_parameters->export_results_gpu   = true;break;
 			case 'd' : args +=1; arguments_parameters->gpu = atoi(argv[args]);break;
 			case 'f' : arguments_parameters->mute_messages = true;break;
 					   args +=1;
@@ -303,7 +310,8 @@ int arguments_handler(int argc, char ** argv, BenchmarkParameters* arguments_par
 					args +=1;
 					strcpy(arguments_parameters->input_file_B,argv[args]); //TODO FIX with final version of input files
 					break;
-			case 's' : args +=1; arguments_parameters->size = atoi(argv[args]);break;
+			case 's' : args +=1; arguments_parameters->size  = atoi(argv[args]);break;
+			case 'p' : arguments_parameters->profiling_clock = true;break;
 			default: print_usage(argv[0]); return ERROR_ARGUMENTS;
 		}
 

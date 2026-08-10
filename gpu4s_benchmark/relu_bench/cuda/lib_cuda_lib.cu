@@ -20,18 +20,19 @@
 #endif
 
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,unsigned int w){
-   GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-   // CUDNN settings
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // CUDNN settings
     const bench_t alf = 1;
     const bench_t bet = 0;
     cudnnHandle_t cudnn;
+    // kernel time execution
+    Clock kernelCLK;
 
-    #ifdef PROFILING_CLOCK
-        kernelCLK.start();
-    #endif
-
+    // profilling start 
+    kernelCLK.start();
     cudaEventRecord(*deviceObj->start);
     checkCUDNN(cudnnCreate(&cudnn));
+
     // create input tensor
     cudnnTensorDescriptor_t input_descriptor;
     checkCUDNN(cudnnCreateTensorDescriptor(&input_descriptor));
@@ -69,13 +70,14 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
                                     &bet,
                                     output_descriptor,
                                     deviceObj->d_B));
-     
-    cudaEventRecord(*deviceObj->stop);
 
-    #ifdef PROFILING_CLOCK
-        cudaDeviceSynchronize(); 
-        kernelCLK.end();
-    #endif
+    // profilling end 
+    cudaEventRecord(*deviceObj->stop);
+    cudaDeviceSynchronize(); 
+    kernelCLK.end();
+
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedMS();
 
     // destroy cuDNN
     cudnnDestroyTensorDescriptor(input_descriptor);
