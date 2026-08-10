@@ -371,8 +371,8 @@ cmake -B build-double-128 -DDATATYPE=DOUBLE -DBLOCKSIZE=128
 ## To do list:
 - [X] fix issue of correctness between cpu and gpu in some benchmark
 - [X] refactor to extract the common of frameworks
-- [ ] fix of the clock to be executed in runtime + kernerCLK->deviceOBJ
-- [ ] Check for cl error dunring memory copy to host and clean
+- [X] fix of the clock to be executed in runtime + kernerCLK->deviceOBJ
+- [X] Check for cl error dunring memory copy to host and clean
 - [ ] add UMA implementation for Android
 - [ ] Big cmake to compile everything 
 - [ ] be compatible with jetson board + add UMA for jetson board
