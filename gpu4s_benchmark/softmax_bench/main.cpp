@@ -230,6 +230,7 @@ void print_usage(const char * appName)
 	printf(" -i: pass input data and the result and compares\n");
 	printf(" -d: selects GPU\n");
 	printf(" -h: print help information\n");
+	printf(" -p: clock profilling \n");
 }
 
 void init_arguments(BenchmarkParameters* arguments_parameters){

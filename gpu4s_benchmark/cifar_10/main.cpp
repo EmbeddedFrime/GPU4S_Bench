@@ -180,8 +180,6 @@ int main(int argc, char *argv[]){
 	if (!arguments_parameters->csv_format_timestamp && !arguments_parameters->csv_format && !arguments_parameters->mute_messages ){
 		printf("Using device: %s\n", device);
 	}
-	
-	
 
 	// Update profiling clock mode
 	cifar10_bench->profiling_clock = arguments_parameters->profiling_clock;
@@ -307,6 +305,7 @@ void print_usage(const char * appName)
 	printf(" -d: selects GPU\n");
 	printf(" -f: mutes all print\n");
 	printf(" -h: print help information\n");
+	printf(" -p: clock profilling \n");
 }
 
 void init_arguments(BenchmarkParameters* arguments_parameters){
@@ -342,6 +341,7 @@ int arguments_handler(int argc, char ** argv, BenchmarkParameters* arguments_par
 					   args +=1;
 					   strcpy(arguments_parameters->input_file_B,argv[args]);
 					   break;
+			case 'p' : arguments_parameters->profiling_clock = true;break;
 			// specific
 			case 'i' : args +=1;
 					   strcpy(arguments_parameters->input_file_A,argv[args]);

@@ -254,6 +254,7 @@ void print_usage(const char * appName)
 	printf(" -d: selects GPU\n");
 	printf(" -f: mutes all print\n");
 	printf(" -h: print help information\n");
+	printf(" -p: clock profilling \n");
 }
 
 void init_arguments(BenchmarkParameters* arguments_parameters){
