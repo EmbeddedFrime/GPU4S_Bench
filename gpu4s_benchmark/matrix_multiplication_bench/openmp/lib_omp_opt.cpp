@@ -22,17 +22,17 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 	bench_t *B_transposed;
     B_transposed = (bench_t*)malloc( sizeof(bench_t) * n * n);
     transpose(deviceObj->d_B, B_transposed, n);
-	unsigned int i, j, k;
 	
+	// FIX: declare the variable inside so OpenMP treats them as private per thread
 	#pragma omp parallel for
-	for (i = 0; i < n; i++) { 
-		for (j = 0; j < n; j++) {
-			bench_t dot  = 0;
-			for (k = 0; k < n; k++) {
-				dot += deviceObj->d_A[i*n+k]*B_transposed[j*n+k];
-			} 
-			deviceObj->d_C[i*n+j ] = dot;
-		}
+    for (unsigned int i = 0; i < n; i++) { 
+        for (unsigned int j = 0; j < n; j++) {
+            bench_t dot = 0;
+            for (unsigned int k = 0; k < n; k++) {
+                dot += deviceObj->d_A[i*n+k]*B_transposed[j*n+k];
+            } 
+            deviceObj->d_C[i*n+j ] = dot;
+   		}
 	}
 
     free(B_transposed);

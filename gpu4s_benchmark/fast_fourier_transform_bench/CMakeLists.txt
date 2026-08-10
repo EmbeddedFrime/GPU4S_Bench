@@ -124,18 +124,20 @@ if(ANDROID)
     if(ANDROID_FFTW_LIB_INC)    
         # --- OpenMP-lib ---
         compile_target(${PROJECT_NAME}_openmp_lib
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES      openmp/lib_omp_opt.cpp
-            COMPILE_DEFS       OPENMP 
-            COMPILE_OPTIONS    -fopenmp  
-            LIBRARIES          -static-openmp   #openmp flags
-                            -fopenmp  
-                            -lm              # add math lib
+            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            SOURCES_FILES       openmp/lib_omp_opt.cpp
+                                openmp/omp_common.cpp
+
+            COMPILE_DEFS        OPENMP 
+            COMPILE_OPTIONS     -fopenmp  
+            LIBRARIES           -static-openmp   #openmp flags
+                                -fopenmp  
+                                -lm              # add math lib
                                 ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3_omp.a  
                                 ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3.a   
 
 
-            SHORTCUTS_NAMES    openmp-lib OpenMP-lib
+            SHORTCUTS_NAMES     openmp-lib OpenMP-lib
         )
     endif()
 

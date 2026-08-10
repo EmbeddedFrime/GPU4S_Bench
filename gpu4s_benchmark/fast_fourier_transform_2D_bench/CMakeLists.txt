@@ -36,6 +36,7 @@ if(ANDROID)
         compile_target(${PROJECT_NAME}_cpu
             BENCH_DIR               ${CMAKE_SOURCE_DIR}
             SOURCES_FILES           cpu/lib_cpu_lib.cpp 
+            INCLUDES                ${ANDROID_INC}
             LIBRARIES               ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3.a  
             SHORTCUTS_NAMES         cpu CPU
         )

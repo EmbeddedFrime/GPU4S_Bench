@@ -105,6 +105,15 @@ void execute_kernel(GraficCommon* device_object, int64_t size) {
     #ifdef DOUBLE
     config.doublePrecision  = 1;
     #endif
+    
+    #ifdef ANDROID
+    // --- ADRENO MOBILE HARDWARE CONSTRAINTS ---
+    // FIX: Reduce the chunk size for shared (local) memory reads (Adreno has very little local RAM)
+    config.coalescedMemory = 32; 
+
+    // FIX: Lower the target threads per block and precompute math (LUT)
+    config.aimThreads = 64;  
+    #endif
 
     // kernel time execution
     Clock kernelCLK;
@@ -123,6 +132,8 @@ void execute_kernel(GraficCommon* device_object, int64_t size) {
     deviceObj->queue->finish();
     kernelCLK.end(); // End clock
 
+    // store the kernel time
+    deviceObj->elapsed_time = kernelCLK.getElapsedNS();
 
     // --- cleanup ---
     deleteVkFFT(&app);
@@ -179,6 +190,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
         //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
         elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
         //printf("Elapsed time Device->Host: %.10f \n", );
+        elapsed      = deviceObj->elapsed_time;
     }
 
     if (csv_format_timestamp){
@@ -187,7 +199,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0, elapsed / 1000000.0,elapsed_d_h / 1000000.0);
     }else{
-         printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "FALSE");
+         printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "GPU");
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
          printf("Elapsed time kernel: %.10f milliseconds\n", elapsed / 1000000.0);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", elapsed_d_h / 1000000.0);

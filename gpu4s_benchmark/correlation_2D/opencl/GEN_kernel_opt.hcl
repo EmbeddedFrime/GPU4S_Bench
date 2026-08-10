@@ -24,7 +24,7 @@ std::string kernel_code =
 "}\n"
 "for(unsigned int s_x = get_local_size(0)/2; s_x > 0; s_x >>= 1 )\n"
 "{\n"
-"if(tid_x < s_x)\n"
+"if(tid_x < s_x && tid_y == 0)\n"
 "{\n"
 "shared_data_A[tid_x * get_local_size(1)] += shared_data_A[(tid_x + s_x) * get_local_size(1)];\n"
 "shared_data_B[tid_x * get_local_size(1)] += shared_data_B[(tid_x + s_x) * get_local_size(1)];\n"

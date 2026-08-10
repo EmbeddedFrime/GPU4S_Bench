@@ -29,6 +29,7 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
         std::cout<<" No devices found. Check OpenCL installation!\n";
         exit(1);
     }
+
     cl::Device default_device=all_devices[device];
     //std::cout<< "Using device: "<<default_device.getInfo<CL_DEVICE_NAME>()<<"\n";
     strcpy(device_name,default_device.getInfo<CL_DEVICE_NAME>().c_str() );
@@ -241,7 +242,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,deviceObj->elapsed_time,elapsed_d_h / 1000000.0);
     }else{
-         printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "FALSE");
+         printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "GPU");
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
          printf("Elapsed time kernel: %.10f milliseconds\n", elapsed / 1000000.0);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", elapsed_d_h / 1000000.0);
