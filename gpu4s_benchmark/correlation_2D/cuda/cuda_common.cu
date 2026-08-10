@@ -147,7 +147,6 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
     cudaEventSynchronize(*deviceObj->stop_memory_copy_host); // wait
     
     float milliseconds_h_d = 0, milliseconds = 0, milliseconds_d_h = 0;
-    const char* profilingMode;
     
     if (deviceObj->profiling_clock)
     {
@@ -155,7 +154,6 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
         milliseconds_h_d  = deviceObj->h2d_elapsed_time;
         milliseconds      = deviceObj->elapsed_time;
         milliseconds_d_h  = deviceObj->d2h_elapsed_time;
-        profilingMode = "CLOCK";
     }else{
         // memory transfer time host-device
         cudaEventElapsedTime(&milliseconds_h_d, *deviceObj->start_memory_copy_device, *deviceObj->stop_memory_copy_device);
@@ -163,7 +161,6 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
         cudaEventElapsedTime(&milliseconds, *deviceObj->start, *deviceObj->stop);
         //  memory transfer time device-host
         cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
-        profilingMode = "GPU";
     }
     
     
@@ -173,7 +170,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", milliseconds_h_d,milliseconds,milliseconds_d_h);
     }else{
-         printf("profiling mode: %s\n", profilingMode);
+         printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "FALSE");
          printf("Elapsed time Host->Device: %.10f milliseconds\n", milliseconds_h_d);
          printf("Elapsed time kernel: %.10f milliseconds\n", milliseconds);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", milliseconds_d_h);

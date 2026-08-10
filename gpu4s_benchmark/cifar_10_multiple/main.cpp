@@ -332,7 +332,6 @@ void print_usage(const char * appName)
 	printf(" -h: print help information\n");
 	printf(" -p: clock profilling \n");
 }
-}
 
 void init_arguments(BenchmarkParameters* arguments_parameters){
 	arguments_parameters->size = 0;

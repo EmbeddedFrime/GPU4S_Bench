@@ -171,7 +171,6 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
     deviceObj->evt_copyC->wait();
     
     float elapsed_h_d = 0, elapsed = 0, elapsed_d_h = 0;
-    const char* profilingMode;
     
     if (deviceObj->profiling_clock)
     {
@@ -179,7 +178,6 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
         elapsed_h_d  = deviceObj->h2d_elapsed_time;
         elapsed      = deviceObj->elapsed_time;
         elapsed_d_h  = deviceObj->d2h_elapsed_time;
-        profilingMode = "CLOCK";
     }else{
         elapsed_h_d = deviceObj->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_START>();
         elapsed_h_d += deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
@@ -188,7 +186,6 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
         //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
         elapsed_d_h = deviceObj->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
         //printf("Elapsed time Device->Host: %.10f \n", );
-        profilingMode = "GPU";
     }
 
 
@@ -198,7 +195,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0);
     }else{
-         printf("profiling mode: %s\n", profilingMode);
+         printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "FALSE");
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
          printf("Elapsed time kernel: %.10f milliseconds\n", elapsed / 1000000.0);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", elapsed_d_h / 1000000.0);
