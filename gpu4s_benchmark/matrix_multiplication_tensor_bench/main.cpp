@@ -115,10 +115,15 @@ int main(int argc, char *argv[]){
 		printf("Using device: %s\n", device);
 	}
 	
-	// init memory
 	// Update profiling clock mode
 	matrix_benck->profiling_clock = arguments_parameters->profiling_clock;
 
+	/ If android and opencl force profiling clock
+	#ifdef PROFILING_CLOCK 
+		matrix_benck->profiling_clock = true;
+	#endif
+
+	// init memory
 	device_memory_init(matrix_benck, size_matrix, size_matrix, size_matrix);
 	// copy memory to device
 	copy_memory_to_device(matrix_benck, A, B, size_matrix, size_matrix);

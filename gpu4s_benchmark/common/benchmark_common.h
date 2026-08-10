@@ -48,6 +48,12 @@
     //CPU part
 #endif
 
+// --- profiling mangement ---
+#if defined(ANDROID) && defined(OPENCL) 
+    #define PROFILING_CLOCK 
+#endif
+
+
 // ======= Commmon variable =======
 // --- Core Data Types ---
 #ifdef INT

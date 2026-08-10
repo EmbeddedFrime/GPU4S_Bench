@@ -193,9 +193,14 @@ int main(int argc, char *argv[]){
 		printf("Using device: %s\n", device);
 	}
 	
-	
 	// Update profiling clock mode
 	cifar10_bench->profiling_clock = arguments_parameters->profiling_clock;
+
+	// If android and opencl force profiling clock
+	#ifdef PROFILING_CLOCK 
+		cifar10_bench->profiling_clock = true;
+	#endif
+
 
 	// init memory
 	bool mem_result = true;

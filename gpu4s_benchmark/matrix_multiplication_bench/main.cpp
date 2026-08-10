@@ -125,6 +125,11 @@ int main(int argc, char *argv[])
 
 	// Update profiling clock mode
 	matrix_bench->profiling_clock = arguments_parameters->profiling_clock;
+
+	/ If android and opencl force profiling clock
+	#ifdef PROFILING_CLOCK 
+		matrix_bench->profiling_clock = true;
+	#endif
 	
 	// init memory
 	device_memory_init(matrix_bench, size_matrix, size_matrix, size_matrix);

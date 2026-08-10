@@ -95,6 +95,11 @@ int main(int argc, char *argv[]){
 	// Update profiling clock mode
 	fft_bench->profiling_clock = arguments_parameters->profiling_clock;
 
+	// If android and opencl force profiling clock
+	#ifdef PROFILING_CLOCK 
+		fft_bench->profiling_clock = true;
+	#endif
+
 	// init memory
 	device_memory_init(fft_bench, size_A);
 	// copy memory to device

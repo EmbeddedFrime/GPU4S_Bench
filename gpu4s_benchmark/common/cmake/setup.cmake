@@ -16,7 +16,6 @@ set(ENDIANFLAGS    "little"         CACHE STRING "ENDIANFLAGS : LITTLENDIAN, BIG
 set(OPT_FLAG       "-O3"      CACHE STRING "Compiler optimization level : -O2, -O3, -Ofast")
 set(CUDA_ARCH      "native"   CACHE STRING "API CUDA version: native, sm_72-86")
 set(BLA_VENDOR     "OpenBLAS" CACHE STRING "BLAS lib : ATLAS, OpenBLAS")
-set(PROFILING      "GPU"      CACHE STRING "PROFILING mode : GPU, CLOCK")
 
 if(NOT BLOCKSIZE)
     set(BLOCKSIZE       16        CACHE STRING "Block size for tiled kernels")

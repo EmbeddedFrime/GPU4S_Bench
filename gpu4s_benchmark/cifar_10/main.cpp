@@ -184,6 +184,11 @@ int main(int argc, char *argv[]){
 	// Update profiling clock mode
 	cifar10_bench->profiling_clock = arguments_parameters->profiling_clock;
 
+	// If android and opencl force profiling clock
+	#ifdef PROFILING_CLOCK 
+		cifar10_bench->profiling_clock = true;
+	#endif
+
 	// init memory
 	bool mem_result = true;
 	mem_result = device_memory_init(cifar10_bench, CIFAR_10_INPUT, CIFAR_10_OUTPUT, KERNEL_CON_1, KERNEL_CON_2, STRIDE_1, STRIDE_2, DENSE_1, DENSE_2);

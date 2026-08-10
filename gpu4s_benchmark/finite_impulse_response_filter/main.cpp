@@ -132,6 +132,11 @@ int main(int argc, char *argv[])
 	// Update profiling clock mode
 	fir_bench->profiling_clock = arguments_parameters->profiling_clock;
 
+	// If android and opencl force profiling clock
+	#ifdef PROFILING_CLOCK 
+		fir_bench->profiling_clock = true;
+	#endif
+
 	// init memory
 	device_memory_init(fir_bench, arguments_parameters->size , size_B , size_k);
 	// copy memory to device

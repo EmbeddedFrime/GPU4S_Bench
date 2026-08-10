@@ -114,6 +114,12 @@ int main(int argc, char *argv[]){
 	// Update profiling clock mode
 	softmax_bench->profiling_clock = arguments_parameters->profiling_clock;
 
+	/ If android and opencl force profiling clock
+	#ifdef PROFILING_CLOCK 
+		softmax_bench->profiling_clock = true;
+	#endif
+
+
 	// init memory
 	device_memory_init(softmax_bench, arguments_parameters->size * arguments_parameters->size, arguments_parameters->size * arguments_parameters->size);
 	// copy memory to device
