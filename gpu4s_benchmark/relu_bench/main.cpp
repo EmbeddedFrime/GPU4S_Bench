@@ -37,8 +37,8 @@ int main(int argc, char *argv[]){
 	// A input matrix
 	bench_t* A = NULL;
 	// B input matrix
-	bench_t* h_B = NULL;
-	bench_t* d_B = (bench_t*) malloc(mem_size);
+	bench_t* d_B = NULL;
+	bench_t* h_B = (bench_t*) malloc(mem_size);
 	// init devices
 	char device[100] = "";
 
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]){
 	{
 		// normale malloc
 		A = (bench_t*) malloc(mem_size);
-		h_B = (bench_t*) malloc(mem_size);
+		d_B = (bench_t*) malloc(mem_size);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -239,10 +239,10 @@ int main(int argc, char *argv[]){
 	if (!arguments_parameters->unified_memory) 
 	{
         free(A);
-        free(h_B);
+        free(d_B);
     }
 
-	free(d_B);
+	free(h_B);
 	return 0;
 }
 

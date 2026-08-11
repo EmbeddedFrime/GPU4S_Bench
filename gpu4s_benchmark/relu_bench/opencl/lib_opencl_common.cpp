@@ -6,6 +6,8 @@
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
 #include "../benchmark_library.h"
+#include "../../common/opencl_common.hpp"
+
 
 void init(GraficCommon* device_object, char* device_name){
 	init(device_object, 0,0, device_name);
@@ -80,54 +82,6 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
     deviceObj->h2d_elapsed_time = h2dCLK.getElapsedNS();
 }
 
-#ifdef UNIFIED_MEMORY
-void device_unified_memory_init_copy(GraficCommon* device_object, bench_t* &A, bench_t* &B, unsigned int buff_size, char input_file_A[100],char input_file_B[100]){
-    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    unsigned int squared_buff_size = buff_size * buff_size;
-    unsigned int mem_size = squared_buff_size * sizeof(bench_t);
-
-    h2dCLK.start();
-    //--- Aquire the pointer of buffer from graphic card ---
-    A = (bench_t*)deviceObj->queue->enqueueMapBuffer(
-        *deviceObj->d_A, CL_TRUE, CL_MAP_WRITE, 0, mem_size);
-    B = (bench_t*)deviceObj->queue->enqueueMapBuffer(
-        *deviceObj->d_B, CL_TRUE, CL_MAP_WRITE, 0, mem_size);
-    h2dCLK.end();
-    
-    h2dTotal += h2dCLK.getElapsedNS();
-
-    if (strlen(input_file_A) == 0)
-    {
-
-        // --- Initialize the buffer ---
-        for (int i = 0; i < buff_size; i++)
-            for (int j = 0; j < buff_size; j++)
-            A[i*buff_size+j] = (bench_t)rand()/(bench_t)(RAND_MAX*2.0-1.0);
-
-        for (int i = 0; i < buff_size; i++)
-            for (int j = 0; j < buff_size; j++)
-                B[i*buff_size+j] = 0;
-
-    } else 
-    {
-        get_double_hexadecimal_values(input_file_A, A,mem_size);
-		get_double_hexadecimal_values(input_file_B, B,mem_size);
-    }
-    
-
-    h2dCLK.start();
-    // --- Unmap the buffers for GPU kernel ---
-    deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_A, A, NULL, deviceObj->evt_copyA);
-    deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_B, B, NULL, deviceObj->evt_copyB);
-
-
-    deviceObj->queue->finish();
-    h2dCLK.end();
-
-    h2dTotal += h2dCLK.getElapsedNS();
-}
-#endif
-
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -151,19 +105,6 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     deviceObj->d2h_elapsed_time = d2hCLK.getElapsedNS();
 }
 
-#ifdef UNIFIED_MEMORY
-    void copy_memory_unified_to_host(GraficCommon* device_object, bench_t* &d_B, unsigned int buff_size){
-        GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-
-        d2hCLK.start();
-        // Map the output buffer to d_C pointer   
-        d_B = (bench_t*)deviceObj->queue->enqueueMapBuffer(*deviceObj->d_B, CL_TRUE, CL_MAP_READ, 0, buff_size, NULL, deviceObj->evt_copyB);
-        
-        
-        deviceObj->queue->finish();
-        d2hCLK.end();
-    }
-#endif
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
@@ -219,3 +160,34 @@ void clean(GraficCommon* device_object){
     delete deviceObj->evt_copyA;
     delete deviceObj->evt_copyB;
 }
+
+#ifdef UMA_COMPATIBILITY
+// ====== UMA function ======
+void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, unsigned int memSize){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    map_unified_memory(device_object, memSize, 
+        BufferMapCL{&A, deviceObj->d_A, nullptr},
+        BufferMapCL{&B, deviceObj->d_B, nullptr}
+    );
+}
+
+void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    unmap_unified_memory(device_object, 
+        BufferMapCL{&A, deviceObj->d_A, deviceObj->evt_copyA},
+        BufferMapCL{&B, deviceObj->d_B, nullptr}
+    );
+} 
+
+
+void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int memSize){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    map_unified_memory_to_host(device_object, memSize, 
+        BufferMapCL{&d_output, deviceObj->d_B, deviceObj->evt_copyB}
+    );
+}
+
+#endif
