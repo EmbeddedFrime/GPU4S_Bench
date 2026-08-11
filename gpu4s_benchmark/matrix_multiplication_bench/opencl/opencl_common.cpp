@@ -96,61 +96,63 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
     deviceObj->h2d_elapsed_time = h2dCLK.getElapsedNS();
 }
 
-#ifdef UNIFIED_MEMORY
-void device_unified_memory_init_copy(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int buff_size, char input_file_A[100], char input_file_B[100]){
+
+
+
+/**
+ * @brief 
+ * 
+ * @param device_object 
+ * @param A 
+ * @param B 
+ * @param C 
+ * @param memSize 
+ */
+void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int memSize){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    unsigned int squared_buff_size = buff_size * buff_size;
-    unsigned int mem_size = squared_buff_size * sizeof(bench_t);
+    Clock mapCLK;
 
-    h2dCLK.start();
-    //--- Aquire the pointer of buffer from graphic card ---
+    mapCLK.start();
+
+    //--- Allocate and check space of pointer for graphic card ---
     A = (bench_t*)deviceObj->queue->enqueueMapBuffer(
-        *deviceObj->d_A, CL_TRUE, CL_MAP_WRITE, 0, mem_size);
+        *deviceObj->d_A, CL_TRUE, CL_MAP_WRITE, 0, memSize);
     B = (bench_t*)deviceObj->queue->enqueueMapBuffer(
-        *deviceObj->d_B, CL_TRUE, CL_MAP_WRITE, 0, mem_size);
+        *deviceObj->d_B, CL_TRUE, CL_MAP_WRITE, 0, memSize);
     C = (bench_t*)deviceObj->queue->enqueueMapBuffer(
-        *deviceObj->d_C, CL_TRUE, CL_MAP_WRITE, 0, mem_size);
-    h2dCLK.end();
+        *deviceObj->d_C, CL_TRUE, CL_MAP_WRITE, 0, memSize);
     
-    h2dTotal += h2dCLK.getElapsedNS();
-
-    if (strlen(input_file_A) == 0)
-    {
-
-        // --- Initialize the buffer ---
-        for (int i = 0; i < buff_size; i++)
-            for (int j = 0; j < buff_size; j++)
-            A[i*buff_size+j] = (bench_t)rand()/(bench_t)(RAND_MAX/NUMBER_BASE);
-
-        for (int i = 0; i < buff_size; i++)
-            for (int j = 0; j < buff_size; j++)
-                B[i*buff_size+j] = (bench_t)rand()/(bench_t)(RAND_MAX/NUMBER_BASE);
-
-        for (int i = 0; i < buff_size; i++)
-            for (int j = 0; j < buff_size; j++)
-                C[i*buff_size+j] = 0;
-
-    } else 
-    {
-        get_double_hexadecimal_values(input_file_A, A,mem_size);
-		get_double_hexadecimal_values(input_file_B, B,mem_size);
-    }
+    mapCLK.end();
     
-
-    h2dCLK.start();
-    // --- Unmap the buffers for GPU kernel ---
-    deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_A, A, NULL, deviceObj->evt_copyA);
-    deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_B, B, NULL, deviceObj->evt_copyB);
-    deviceObj->queue->enqueueUnmapMemObject(*deviceObj->d_C, C, NULL, deviceObj->evt_copyC);
-
-
-    deviceObj->queue->finish();
-    h2dCLK.end();
-
-    h2dTotal += h2dCLK.getElapsedNS();
+    deviceObj->h2d_elapsed_time = mapCLK.getElapsedNS();
 }
-#endif
 
+/**
+ * @brief 
+ * 
+ * @param device_object 
+ * @param A 
+ * @param B 
+ * @param C 
+ */
+void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    Clock mapCLK;
+
+    mapCLK.start();
+
+    // --- Unmap the buffers for GPU kernel ---
+    deviceObj->queue->enqueueUnmapMemObject(
+        *deviceObj->d_A, A, NULL, deviceObj->evt_copyA);
+    deviceObj->queue->enqueueUnmapMemObject(
+        *deviceObj->d_B, B, NULL, deviceObj->evt_copyB);
+    deviceObj->queue->enqueueUnmapMemObject(
+        *deviceObj->d_C, C, NULL, deviceObj->evt_copyC);
+    
+    mapCLK.end();
+    
+    deviceObj->h2d_elapsed_time += mapCLK.getElapsedNS();
+}
 
 
 
@@ -176,19 +178,30 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     deviceObj->d2h_elapsed_time = d2hCLK.getElapsedNS();
 }
 
-#ifdef UNIFIED_MEMORY
-void copy_memory_unified_to_host(GraficCommon* device_object, bench_t* &d_C, unsigned int buff_size){
+/**
+ * @brief 
+ * 
+ * @param device_object 
+ * @param d_C 
+ * @param buff_size 
+ */
+void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_C, unsigned int buff_size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    Clock d2hCLK;
 
     d2hCLK.start();
     // Map the output buffer to d_C pointer   
-    d_C = (bench_t*)deviceObj->queue->enqueueMapBuffer(*deviceObj->d_C, CL_TRUE, CL_MAP_READ, 0, buff_size, NULL, deviceObj->evt_copyC);
+    d_C = (bench_t*)deviceObj->queue->enqueueMapBuffer(
+        *deviceObj->d_C, CL_TRUE, CL_MAP_READ, 0, buff_size, NULL, deviceObj->evt_copyC);
     
     
     deviceObj->queue->finish();
     d2hCLK.end();
+
+    // store the hd2h time
+    deviceObj->d2h_elapsed_time = d2hCLK.getElapsedNS();
 }
-#endif
+
 
 float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
