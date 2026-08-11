@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        opencl_common.cpp (./relu_bench)
+ * @file        lib_opencl_common.cpp (./relu_bench)
  * @brief       Common OpenCL platform initialization, device setup, 
  *              profiling timer evaluation, and generic cleanup routines.
  * @paragraph   License

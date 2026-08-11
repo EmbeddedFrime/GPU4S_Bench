@@ -137,7 +137,7 @@ int main(int argc, char *argv[]){
 	conv_bench->profiling_clock = arguments_parameters->profiling_clock;
 
 	// If android and opencl force profiling clock
-	#ifdef PROFILING_CLOCK 
+	#ifdef FORCE_PROFILING_CLOCK
 		conv_bench->profiling_clock = true;
 	#endif
 
@@ -259,7 +259,8 @@ void print_usage(const char * appName)
 	printf(" -d: selects GPU\n");
 	printf(" -f: mutes all print\n");
 	printf(" -h: print help information\n");
-	printf(" -p: clock profilling \n");
+	printf(" -p: clock profilling\n");
+	printf(" -u: enable unified memory (ANDROID/JETSON)\n");
 }
 
 void init_arguments(BenchmarkParameters* arguments_parameters){
@@ -274,7 +275,14 @@ void init_arguments(BenchmarkParameters* arguments_parameters){
 	arguments_parameters->csv_format = false;
 	arguments_parameters->mute_messages = false;
 	arguments_parameters->csv_format_timestamp = false;
-	arguments_parameters->profiling_clock = false;
+	arguments_parameters->unified_memory = false;
+
+	// If android and opencl force profiling clock
+	#ifdef FORCE_PROFILING_CLOCK
+		arguments_parameters->profiling_clock = true;
+	#else
+		arguments_parameters->profiling_clock = false;
+	#endif
 }
 
 int arguments_handler(int argc, char ** argv, BenchmarkParameters* arguments_parameters){
@@ -306,6 +314,7 @@ int arguments_handler(int argc, char ** argv, BenchmarkParameters* arguments_par
 					   break;
 			case 's' : args +=1; arguments_parameters->size = atoi(argv[args]);break;
 			case 'p' : arguments_parameters->profiling_clock = true;break;
+			case 'u' : arguments_parameters->unified_memory  = true;break;
 			case 'k' : args +=1; arguments_parameters->kernel_size = atoi(argv[args]);break;
 			default: print_usage(argv[0]); return ERROR_ARGUMENTS;
 		}

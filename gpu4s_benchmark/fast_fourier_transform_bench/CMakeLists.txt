@@ -43,7 +43,7 @@ if(ANDROID)
         compile_target(${PROJECT_NAME}_opencl
             BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       opencl/lib_opencl.cpp
-                                opencl/opencl_common.cpp
+                                opencl/lib_opencl_common.cpp
 
             COMPILE_DEFS        OPENCL
                                 CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
@@ -56,7 +56,7 @@ if(ANDROID)
         compile_target(${PROJECT_NAME}_opencl_opt
             BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       opencl/lib_opencl_opt.cpp
-                                opencl/opencl_common.cpp
+                                opencl/lib_opencl_common.cpp
 
             COMPILE_DEFS        OPENCL   
                                 CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
@@ -72,7 +72,7 @@ if(ANDROID)
             compile_target(${PROJECT_NAME}_opencl_lib
                 BENCH_DIR           ${CMAKE_SOURCE_DIR}
                 SOURCES_FILES       opencl/lib_opencl_lib.cpp
-                                    opencl/opencl_common.cpp
+                                    opencl/lib_opencl_common.cpp
 
                 COMPILE_DEFS        OPENCL   
                                     OPENCL VKFFT_BACKEND=3
@@ -151,7 +151,7 @@ if(NOT ANDROID)
         compile_target(${PROJECT_NAME}_opencl
             BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       opencl/lib_opencl.cpp
-                                opencl/opencl_common.cpp
+                                opencl/lib_opencl_common.cpp
 
             COMPILE_DEFS        OPENCL
                                 CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
@@ -164,7 +164,7 @@ if(NOT ANDROID)
         compile_target(${PROJECT_NAME}_opencl_opt
             BENCH_DIR           ${CMAKE_SOURCE_DIR}
             SOURCES_FILES       opencl/lib_opencl_opt.cpp
-                                opencl/opencl_common.cpp
+                                opencl/lib_opencl_common.cpp
 
             COMPILE_DEFS        OPENCL
                                 CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
@@ -178,7 +178,7 @@ if(NOT ANDROID)
             compile_target(${PROJECT_NAME}_opencl_lib
                 BENCH_DIR           ${CMAKE_SOURCE_DIR}
                 SOURCES_FILES       opencl/lib_opencl_lib.cpp
-                                    opencl/opencl_common.cpp
+                                    opencl/lib_opencl_common.cpp
 
                 COMPILE_DEFS        OPENCL
                                     OPENCL VKFFT_BACKEND=3

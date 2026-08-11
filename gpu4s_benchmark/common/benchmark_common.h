@@ -48,10 +48,12 @@
     //CPU part
 #endif
 
-// --- profiling mangement ---
+// --- UMA + profiling mangement ---
 #if defined(ANDROID) && defined(OPENCL) 
-    #define PROFILING_CLOCK 
+    #define FORCE_PROFILING_CLOCK
+    #define UMA_COMPATIBILITY 
 #endif
+
 
 
 // ======= Commmon variable =======
@@ -107,10 +109,11 @@ struct GraficCommon{
 	#else
 		// --- CPU variable ---
 	#endif
-	float h2d_elapsed_time;
-	float elapsed_time;
-	float d2h_elapsed_time;
-	bool  profiling_clock = false;
+    // --- clock profiling ---
+	float h2d_elapsed_time  = 0.0f;
+	float d2h_elapsed_time  = 0.0f;
+    float elapsed_time      = 0.0f;
+	bool  profiling_clock   = false;
 };
 
 
@@ -156,3 +159,16 @@ float get_elapsed_time(GraficCommon *device_object, bool csv_format, bool csv_fo
 
 // Standard clean prototype used by every the benchmarks
 void clean(GraficCommon *device_object);
+
+
+// --- UMA memory function ---
+#ifdef UMA_COMPATIBILITY
+    // --- 2 buffer ---
+    void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, unsigned int memSize);
+    void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B);
+
+    // --- 3 buffer ---
+    void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int memSize);
+    void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C);
+    void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_C, unsigned int buff_size);
+#endif

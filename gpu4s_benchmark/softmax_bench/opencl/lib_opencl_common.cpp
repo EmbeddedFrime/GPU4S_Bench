@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        opencl_common.cpp (./convolution_2D_bench)
+ * @file        lib_opencl_common.cpp (./softmax_bench)
  * @brief       Common OpenCL platform initialization, device setup, 
  *              profiling timer evaluation, and generic cleanup routines.
  * @paragraph   License
@@ -37,47 +37,43 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     deviceObj->default_device = default_device;
     
     // events
-    deviceObj->evt = new cl::Event; 
+    deviceObj->evt = new cl::Event;
+    deviceObj->evt_complemet = new cl::Event;  
     deviceObj->evt_copyA = new cl::Event;
     deviceObj->evt_copyB = new cl::Event;
-    deviceObj->evt_copyC = new cl::Event;
+    
 }
 
-bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix){
-    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    cl_int err;
+bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix){
+   GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+   cl_int err;
+
+   deviceObj->d_A = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
+
+   deviceObj->d_B = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_b_matrix, nullptr, &err);
+   if (err != CL_SUCCESS) return false;
    
-    deviceObj->d_A = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_a_matrix, nullptr, &err);
+   deviceObj->sum_d_B = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
-
-   deviceObj->d_B = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,sizeof(bench_t)*size_b_matrix, nullptr, &err);
-   if (err != CL_SUCCESS) return false;
-
-   deviceObj->kernel = new cl::Buffer(*deviceObj->context,CL_MEM_READ_WRITE ,sizeof(bench_t)*size_c_matrix, nullptr, &err);
-   if (err != CL_SUCCESS) return false;
+   
    // inicialice Arrays
    return true;
 }
 
-void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* kernel, unsigned int size_a, unsigned int size_b){
+void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned int size_a){
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 	// host -> device
     Clock h2dCLK;
 
     // Clock profilling start 
     h2dCLK.start();
-
+    
+    // Enqueue writing host memory h_A to device buffer d_A
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, deviceObj->evt_copyA);
     if (err != CL_SUCCESS) 
     {
         fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
-
-    err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->kernel,CL_TRUE,0,sizeof(bench_t)*size_b, kernel, NULL, deviceObj->evt_copyB);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy vector B from host to device (OpenCL error code %d)!\n", err);
         return;
     }
 
@@ -89,6 +85,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* k
 }
 
 
+
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     // device ->  host
@@ -97,11 +94,16 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     // Clock profilling start 
     d2hCLK.start();
 
-    cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->d_B, CL_TRUE, 0, sizeof(bench_t)*size, h_C, NULL, deviceObj->evt_copyC);
+
+    cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->d_B, CL_TRUE, 0, sizeof(bench_t)*size, h_C, NULL, deviceObj->evt_copyB);
     if (err != CL_SUCCESS)
     {
         fprintf(stderr, "Failed to copy vector B from device to host (OpenCL error code %d)!\n", err);
+
+
         return;
+
+
     }
 
     // Clock profilling end 
@@ -111,9 +113,9 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     deviceObj->d2h_elapsed_time = d2hCLK.getElapsedNS();
 }
 
-float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_format_timestamp, long int current_time){
+float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    deviceObj->evt_copyC->wait();
+    deviceObj->evt_copyB->wait();
 
     float elapsed_h_d = 0, elapsed = 0, elapsed_d_h = 0;
     
@@ -125,19 +127,18 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format,bool csv_for
         elapsed_d_h  = deviceObj->d2h_elapsed_time;
     }else{
         elapsed_h_d = deviceObj->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyA->getProfilingInfo<CL_PROFILING_COMMAND_START>();
-        elapsed_h_d += deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
         //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
         
         elapsed = deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+        elapsed += deviceObj->evt_complemet->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_complemet->getProfilingInfo<CL_PROFILING_COMMAND_START>();
         //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
         
-        elapsed_d_h = deviceObj->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyC->getProfilingInfo<CL_PROFILING_COMMAND_START>();
+        elapsed_d_h = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
         //printf("Elapsed time Device->Host: %.10f \n", );
     }
 
-
     if (csv_format_timestamp){
-        printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0, current_time);
+        printf("%.10f;%.10f;%.10f;%ld;\n",  elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0,current_time);
     }
     else if (csv_format){
          printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0);
@@ -158,9 +159,9 @@ void clean(GraficCommon* device_object){
     // pointer to memory
     delete deviceObj->d_A;
     delete deviceObj->d_B;
-    delete deviceObj->kernel;
     delete deviceObj->evt;
+    delete deviceObj->evt_complemet;
     delete deviceObj->evt_copyA;
     delete deviceObj->evt_copyB;
-    delete deviceObj->evt_copyC;
 }
+

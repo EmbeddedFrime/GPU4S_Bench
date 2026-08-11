@@ -1,5 +1,5 @@
 /** * ====================================================================
- * @file        opencl_common.cpp (./finite_impulse_response_filter)
+ * @file        lib_opencl_common.cpp (./finite_impulse_response_filter)
  * @brief       Common OpenCL platform initialization, device setup, 
  *              profiling timer evaluation, and generic cleanup routines.
  * @paragraph   License
