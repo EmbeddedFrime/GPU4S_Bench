@@ -6,6 +6,7 @@
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
 #include "../benchmark_library.h"
+#include "../../common/opencl_common.hpp"
 
 #ifdef FLOAT16
 cl::Kernel kernel_fp32_to_fp16;
@@ -105,19 +106,11 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
     // copy memory host -> device
     
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, deviceObj->evt_copyA);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector A from host to device", err)) return;
 
     // Enqueue writing host memory h_B to device buffer d_B
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_B,CL_TRUE,0,sizeof(bench_t)*size_b, h_B, NULL, deviceObj->evt_copyB);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy vector B from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector B from host to device", err)) return;
 
     #ifdef FLOAT16
         // --- Conver tto FP16 ---
@@ -155,11 +148,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     #endif
 
     cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->d_C, CL_TRUE, 0, sizeof(bench_t)*size, h_C, NULL, deviceObj->evt_copyC);
-    if (err != CL_SUCCESS)
-    {
-        fprintf(stderr, "Failed to copy vector C from device to host (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector C from device to host", err)) return;
     
     // Clock profilling end 
     d2hCLK.end();

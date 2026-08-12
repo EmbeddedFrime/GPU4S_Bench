@@ -6,6 +6,7 @@
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
 #include "../benchmark_library.h"
+#include "../../common/opencl_common.hpp"
 #include <cmath>
 
 void init(GraficCommon* device_object, char* device_name){
@@ -90,18 +91,10 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
     h2dCLK.start();
 
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, deviceObj->evt_copyA);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector A from host to device", err)) return;
 
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_B,CL_TRUE,0,sizeof(bench_t)*size_b, h_B, NULL, deviceObj->evt_copyB);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy vector B from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector B from host to device", err)) return;
 
     // Clock profilling end 
     h2dCLK.end();
@@ -122,23 +115,11 @@ void copy_memory_to_host(GraficCommon* device_object, result_bench_t* h_R){
     result_bench_t acumulate_value_a_b;
     result_bench_t acumulate_value_b_b;
     cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->acumulate_value_a_a,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_a_a, NULL, deviceObj->evt_copyAA);
-    if (err != CL_SUCCESS)
-    {
-        fprintf(stderr, "Failed to copy vector acumulate_value_a_a from device to host (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector acumulate_value_a_a from device to host", err)) return;
     err = deviceObj->queue->enqueueReadBuffer(*deviceObj->acumulate_value_a_b,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_a_b, NULL, deviceObj->evt_copyAB);
-    if (err != CL_SUCCESS)
-    {
-        fprintf(stderr, "Failed to copy vector acumulate_value_a_b from device to host (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector acumulate_value_a_b from device to host", err)) return;
     err = deviceObj->queue->enqueueReadBuffer(*deviceObj->acumulate_value_b_b,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_b_b, NULL, deviceObj->evt_copyBB);
-    if (err != CL_SUCCESS)
-    {
-        fprintf(stderr, "Failed to copy vector acumulate_value_b_b from device to host (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector acumulate_value_b_b from device to host", err)) return;
     deviceObj->evt_copyBB->wait();
     *h_R = (result_bench_t)(acumulate_value_a_b / (result_bench_t)(sqrt(acumulate_value_a_a * acumulate_value_b_b)));
 

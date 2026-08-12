@@ -6,6 +6,7 @@
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
 #include "../benchmark_library.h"
+#include "../../common/opencl_common.hpp"
 
 void init(GraficCommon* device_object, char* device_name){
     init(device_object, 0,0, device_name);
@@ -66,11 +67,7 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A,int64_t siz
     h2dCLK.start();
     
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size, h_A, NULL, deviceObj->evt_copyB);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy data vector A from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy data vector A from host to device", err)) return;
 
     // Clock profilling end 
     h2dCLK.end();
@@ -89,11 +86,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_B, int64_t size
     d2hCLK.start();
 
     cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->d_B, CL_TRUE, 0, sizeof(bench_t)*size, h_B, NULL, deviceObj->evt_copyBr);
-    if (err != CL_SUCCESS)
-    {
-        fprintf(stderr, "Failed to copy vector B from device to host (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector B from device to host", err)) return;
 
     // Clock profilling end 
     d2hCLK.end();

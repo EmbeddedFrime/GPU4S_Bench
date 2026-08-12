@@ -9,8 +9,13 @@
 #include "benchmark_common.h"
 
 // ============ global opencl function ============
-// nothing for now
-
+inline bool openclError(const char* txt, const cl_int err){
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "%s (OpenCL error code %d)\n", txt, err);
+        return true; // Error detected
+    }
+    return false;
+}
 
 
 #ifdef UMA_COMPATIBILITY
@@ -26,15 +31,6 @@ struct BufferMapCL {
     cl::Buffer* deviceBuffer; /**< Pointer to the OpenCL device buffer object */
     cl::Event*  deviceEvent;  /**< Pointer to the OpenCL device event object used for profiling timing */
 };
-
-inline bool openclError(cl_int err, const char* txt){
-    if (err != CL_SUCCESS) {
-        fprintf(stderr, "%s (OpenCL error code %d)\n", txt, err);
-        return true; // Error detected
-    }
-    return false;
-}
-
 // ============ UMA function ============
 
 /**
@@ -67,7 +63,7 @@ inline void map_unified_memory(GraficCommon* device_object, unsigned memSize, Ma
         (lastErr != CL_SUCCESS ? err = lastErr : CL_SUCCESS)
     ), ...);
 
-    if (openclError(err, "Failed to map buffer!")) return;
+    if (openclError("Failed to map buffer!", err)) return;
 
     mapCLK.end();
 
@@ -95,14 +91,14 @@ inline void unmap_unified_memory(GraficCommon* device_object, MapCL... mapCL) {
     // --- C++17 Fold Expression Unrolled at compile-time  ---
     // For each MapCL unmap host buffer to devcie buffer
     ((
-        deviceObj->queue->enqueueUnmapMemObject(
-            *(mapCL.deviceBuffer), *(mapCL.hostBuffer), NULL, mapCL.deviceEvent, &lastErr
+        lastErr = deviceObj->queue->enqueueUnmapMemObject(
+            *(mapCL.deviceBuffer), *(mapCL.hostBuffer), NULL, mapCL.deviceEvent
         ),
         // Update err to not miss an error
         (lastErr != CL_SUCCESS ? err = lastErr : CL_SUCCESS)
     ), ...);
 
-    if (openclError(err, "Failed to unmap buffer!")) return;
+    if (openclError("Failed to unmap buffer!", err)) return;
 
     unmapCLK.end();
 
@@ -139,7 +135,7 @@ inline void map_unified_memory_to_host(GraficCommon* device_object, unsigned mem
         (lastErr != CL_SUCCESS ? err = lastErr : CL_SUCCESS)
     ), ...);
 
-    if (openclError(err, "Failed to map buffer!")) return;
+    if (openclError("Failed to map buffer!", err)) return;
 
     mapCLK.end();
 

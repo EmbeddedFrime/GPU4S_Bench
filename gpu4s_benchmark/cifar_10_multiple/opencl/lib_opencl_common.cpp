@@ -139,41 +139,21 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, ben
 
     // input data
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->input_data,CL_TRUE,0,sizeof(bench_t)* input * input * number_of_images, input_data, NULL, deviceObj->evt_copyIN);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy input_data from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy input_data from host to device", err)) return;
     
     // kernels
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->kernel_1,CL_TRUE,0,sizeof(bench_t)* kernel_size_1 * kernel_size_1, kernel_1_data, NULL, deviceObj->evt_copyK1);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy kernel_1 from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy kernel_1 from host to device", err)) return;
 
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->kernel_2,CL_TRUE,0,sizeof(bench_t)* kernel_size_2 * kernel_size_2, kernel_2_data, NULL, deviceObj->evt_copyK2);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy kernel_2 from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy kernel_2 from host to device", err)) return;
 
     // dense layer
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->dense_layer_1_weights,CL_TRUE,0,sizeof(bench_t)* weights_1_size, weights_1, NULL, deviceObj->evt_copyW1);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy dense_layer_1_weights from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy dense_layer_1_weights from host to device", err)) return;
 
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->dense_layer_2_weights,CL_TRUE,0,sizeof(bench_t)* weights_2_size, weights_2, NULL, deviceObj->evt_copyW2);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy dense_layer_2 from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy dense_layer_2 from host to device", err)) return;
 
     // Clock profilling end 
     h2dCLK.end();
@@ -181,8 +161,6 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, ben
     // store the hd2h time
     deviceObj->h2d_elapsed_time = h2dCLK.getElapsedNS();
 }
-
-
 
 
 void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size, unsigned int number_of_images){
@@ -194,11 +172,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size, un
     d2hCLK.start();
 
     cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->output_data, CL_TRUE, 0, sizeof(bench_t)*size*number_of_images, h_C, NULL, deviceObj->evt_copyOut);
-    if (err != CL_SUCCESS)
-    {
-        fprintf(stderr, "Failed to copy vector output_data from device to host (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector output_data from device to host", err)) return;
     //deviceObj->queue->enqueueReadBuffer(*deviceObj->conv_2_output,CL_TRUE,0,sizeof(bench_t)*16*16,h_C, NULL, deviceObj->evt_copyOut);
     
     // Clock profilling end 
@@ -294,49 +268,3 @@ void clean(GraficCommon* device_object){
     delete deviceObj->output_data;
     delete deviceObj->sum_ouput;
 }
-
-
-#ifdef UMA_COMPATIBILITY
-// ====== UMA function ======
-void get_unified_memory_pointers(GraficCommon* device_object,bench_t* &input_data, unsigned int input_mem_size,bench_t* &kernel_1, bench_t* &kernel_2, unsigned int kernel_mem_size, bench_t* &weights_1, unsigned int weights_1_mem_size, bench_t* &weights_2, unsigned int weights_2_mem_size, bench_t* &d_output, unsigned int output_mem_size){
-    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    // --- Call the openCL common function ---
-     map_unified_memory(device_object, input_mem_size,
-        BufferMapCL{&input_data, deviceObj->input_data, nullptr});
-
-    map_unified_memory(device_object, kernel_mem_size,
-        BufferMapCL{&kernel_1, deviceObj->kernel_1, nullptr},
-        BufferMapCL{&kernel_2, deviceObj->kernel_2, nullptr});
-
-    map_unified_memory(device_object, weights_1_mem_size,
-        BufferMapCL{&weights_1, deviceObj->dense_layer_1_weights, nullptr});
-
-    map_unified_memory(device_object, weights_2_mem_size,
-        BufferMapCL{&weights_2, deviceObj->dense_layer_2_weights, nullptr});
-
-    map_unified_memory(device_object, output_mem_size,
-        BufferMapCL{&d_output, deviceObj->output_data, nullptr});
-}
-
-void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &input_data, bench_t* &kernel_1, bench_t* &kernel_2, bench_t* &weights_1, bench_t* &weights_2, bench_t* &d_output){
-    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    // --- Call the openCL common function ---
-    unmap_unified_memory(device_object,
-        BufferMapCL{&input_data, deviceObj->input_data,             deviceObj->evt_copyIN},
-        BufferMapCL{&kernel_1,   deviceObj->kernel_1,               deviceObj->evt_copyK1},
-        BufferMapCL{&kernel_2,   deviceObj->kernel_2,               deviceObj->evt_copyK2},
-        BufferMapCL{&weights_1,  deviceObj->dense_layer_1_weights,  deviceObj->evt_copyW1},
-        BufferMapCL{&weights_2,  deviceObj->dense_layer_2_weights,  deviceObj->evt_copyW2},
-        BufferMapCL{&d_output,   deviceObj->output_data,            nullptr}
-    );
-} 
-
-void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int memSize){
-    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-    // --- Call the openCL common function ---
-    map_unified_memory_to_host(device_object, memSize, 
-        BufferMapCL{&d_output, deviceObj->output_data, deviceObj->evt_copyOut}
-    );
-}
-
-#endif

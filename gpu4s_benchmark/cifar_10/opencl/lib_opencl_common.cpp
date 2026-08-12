@@ -131,41 +131,21 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* input_data, ben
 
     // input data
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->input_data,CL_TRUE,0,sizeof(bench_t)* input * input, input_data, NULL, deviceObj->evt_copyIN);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy input_data from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy input_data from host to device", err)) return;
 
     // kernels
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->kernel_1,CL_TRUE,0,sizeof(bench_t)* kernel_size_1 * kernel_size_1, kernel_1_data, NULL, deviceObj->evt_copyK1);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy kernel_1 from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy kernel_1 from host to device", err)) return;
 
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->kernel_2,CL_TRUE,0,sizeof(bench_t)* kernel_size_2 * kernel_size_2, kernel_2_data, NULL, deviceObj->evt_copyK2);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy kernel_2 from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy kernel_2 from host to device", err)) return;
     
     // dense layer
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->dense_layer_1_weights,CL_TRUE,0,sizeof(bench_t)* weights_1_size, weights_1, NULL, deviceObj->evt_copyW1);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy dense_layer_1_weights from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy dense_layer_1_weights from host to device", err)) return;
 
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->dense_layer_2_weights,CL_TRUE,0,sizeof(bench_t)* weights_2_size, weights_2, NULL, deviceObj->evt_copyW2);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy dense_layer_2 from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy dense_layer_2 from host to device", err)) return;
 
     // Clock profilling end 
     h2dCLK.end();
@@ -185,11 +165,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     d2hCLK.start();
     
     cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->output_data, CL_TRUE, 0, sizeof(bench_t)*size, h_C, NULL, deviceObj->evt_copyOut);
-    if (err != CL_SUCCESS)
-    {
-        fprintf(stderr, "Failed to copy vector output_data from device to host (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector output_data from device to host", err)) return;
     //deviceObj->queue->enqueueReadBuffer(*deviceObj->conv_2_output,CL_TRUE,0,sizeof(bench_t)*16*16,h_C, NULL, deviceObj->evt_copyOut);
 
     // Clock profilling end 

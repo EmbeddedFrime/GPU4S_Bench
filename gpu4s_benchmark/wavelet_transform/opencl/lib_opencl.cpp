@@ -78,28 +78,16 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
     h2dCLK.start();
 
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, deviceObj->evt_copyA);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector A from host to device", err)) return;
 
     #ifdef INT
     // if int don't add the copy of the filters
     #else
         err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->low_filter,CL_TRUE,0,sizeof(bench_t)*LOWPASSFILTERSIZE, lowpass_filter, NULL, deviceObj->evt_copyB);
-        if (err != CL_SUCCESS) 
-        {
-            fprintf(stderr, "Failed to copy low_filter from host to device (OpenCL error code %d)!\n", err);
-            return;
-        }
+        if (openclError("Failed to copy low_filter from host to device", err)) return;
 
         err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->high_filter,CL_TRUE,0,sizeof(bench_t)*HIGHPASSFILTERSIZE, highpass_filter, NULL, deviceObj->evt_copyC);
-        if (err != CL_SUCCESS) 
-        {
-            fprintf(stderr, "Failed to copy high_filter from host to device (OpenCL error code %d)!\n", err);
-            return;
-        }
+        if (openclError("Failed to copy high_filter from host to device", err)) return;
     #endif
 
     // Clock profilling end 
@@ -196,11 +184,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     d2hCLK.start();
 
     cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->d_B, CL_TRUE, 0, sizeof(bench_t)*size, h_C, NULL, deviceObj->evt_copyC);
-    if (err != CL_SUCCESS)
-    {
-        fprintf(stderr, "Failed to copy vector B from device to host (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector B from device to host", err)) return;
     
     // Clock profilling end 
     d2hCLK.end();

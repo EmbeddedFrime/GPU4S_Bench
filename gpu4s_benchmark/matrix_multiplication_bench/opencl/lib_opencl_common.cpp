@@ -74,19 +74,11 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* h
     h2dCLK.start();
     
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, deviceObj->evt_copyA);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector A from host to device", err)) return;
 
     // Enqueue writing host memory h_B to device buffer d_B
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_B,CL_TRUE,0,sizeof(bench_t)*size_b, h_B, NULL, deviceObj->evt_copyB);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy vector B from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector B from host to device", err)) return;
     
     // Clock profilling end 
     h2dCLK.end();
@@ -104,11 +96,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     d2hCLK.start();
 
     cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->d_C, CL_TRUE, 0, sizeof(bench_t)*size, h_C, NULL, deviceObj->evt_copyC);
-    if (err != CL_SUCCESS)
-    {
-        fprintf(stderr, "Failed to copy vector C from device to host (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector C from device to host", err)) return;
 
     // Clock profilling end 
     d2hCLK.end();
