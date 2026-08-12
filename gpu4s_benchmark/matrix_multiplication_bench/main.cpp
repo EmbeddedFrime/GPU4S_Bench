@@ -142,7 +142,6 @@ int main(int argc, char *argv[])
 	if (arguments_parameters->unified_memory)
 	{	
 		#ifdef UMA_COMPATIBILITY
-			// Copy back ptr
 			sync_unified_memory_to_host(matrix_bench, d_C, mem_size);
 		#endif
     } else
@@ -183,7 +182,7 @@ int main(int argc, char *argv[])
 		//set_values_file(output_file, d_C, size);
 	}
 	
-	//check if error
+	//check for error
 	if (arguments_parameters->verification)
 	{
 		Clock cpuKernelCLK;
@@ -227,7 +226,6 @@ int main(int argc, char *argv[])
 	    	print_double_hexadecimal_values(GPU_FILE, d_C, size_matrix);
 	    	print_double_hexadecimal_values(CPU_FILE, h_C, size_matrix);
 	    }
-
 	}
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// CLEAN MEMORY

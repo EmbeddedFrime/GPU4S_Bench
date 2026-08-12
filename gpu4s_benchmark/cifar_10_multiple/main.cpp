@@ -49,28 +49,29 @@ int main(int argc, char *argv[]){
 	// A input matrix
 	unsigned int size_A = CIFAR_10_INPUT * CIFAR_10_INPUT * arguments_parameters->size;
     unsigned int mem_size_A = sizeof(bench_t) * size_A;
-	bench_t* input_data = (bench_t*) malloc(mem_size_A);
+	bench_t* input_data = NULL;
 	// B output matrix
-	unsigned int size_B = CIFAR_10_OUTPUT * CIFAR_10_OUTPUT * arguments_parameters->size;
+	unsigned int size_B = CIFAR_10_OUTPUT * arguments_parameters->size;
     unsigned int mem_size_B = sizeof(bench_t) * size_B;
-	bench_t* d_output = (bench_t*) malloc(mem_size_B);
+	bench_t* d_output = NULL;
 	// kernel matrix 1
 	unsigned int size_k_1 = KERNEL_CON_1 * KERNEL_CON_2;
     unsigned int mem_size_k_1 = sizeof(bench_t) * size_k_1;
-	bench_t* kernel_1 = (bench_t*) malloc(mem_size_k_1);
+	bench_t* kernel_1 = NULL;
 	// kernel matrix 2
 	unsigned int size_k_2 = KERNEL_CON_2 * KERNEL_CON_2;
     unsigned int mem_size_k_2 = sizeof(bench_t) * size_k_2;
-	bench_t* kernel_2 = (bench_t*) malloc(mem_size_k_2);
+	bench_t* kernel_2 = NULL;
 	// weights  1
 	unsigned int size_w_1 = DENSE_1 * (((CIFAR_10_INPUT / STRIDE_1)/STRIDE_2)*((CIFAR_10_INPUT / STRIDE_1)/STRIDE_2));
     unsigned int mem_size_w_1 = sizeof(bench_t) * size_w_1;
-	bench_t* weights_1 = (bench_t*) malloc(mem_size_w_1);
+	bench_t* weights_1 = NULL;
 	// weights  1
 	unsigned int size_w_2 = DENSE_1 * DENSE_2;
     unsigned int mem_size_w_2 = sizeof(bench_t) * size_w_2;
-	bench_t* weights_2 = (bench_t*) malloc(mem_size_w_2);
+	bench_t* weights_2 = NULL;
 	// Outputs 
+	unsigned int mem_size_output = sizeof(bench_t) * CIFAR_10_OUTPUT * arguments_parameters->size;
 	const unsigned int size_pooling_1 = CIFAR_10_INPUT / STRIDE_1;
     const unsigned int size_pooling_2 = size_pooling_1 / STRIDE_2;
 	bench_t* conv_1_output = (bench_t*) malloc ( CIFAR_10_INPUT * CIFAR_10_INPUT * sizeof(bench_t*));
@@ -80,9 +81,48 @@ int main(int argc, char *argv[]){
    	bench_t* dense_layer_1_output = (bench_t*) malloc ( DENSE_1 * sizeof(bench_t));
 	bench_t* dense_layer_2_output = (bench_t*) malloc ( DENSE_2 * sizeof(bench_t));
 	bench_t* output_data = (bench_t*) malloc ( DENSE_2 * sizeof(bench_t) * arguments_parameters->size);
+	// init devices
+	char device[100] = "";
+
+	// main object init
+	GraficCommon*cifar10_bench = (GraficCommon*)malloc(sizeof(GraficObject));
 	
-	// comparation result
-	bool result = false;
+	// --- 1. Init Device & Context ---
+	init(cifar10_bench, 0, arguments_parameters->gpu, device);
+
+	// Update profiling clock mode
+	cifar10_bench->profiling_clock = arguments_parameters->profiling_clock;
+
+	// --- 2. Allocate Device Memory ---
+	bool mem_result = device_memory_init(cifar10_bench, CIFAR_10_INPUT, CIFAR_10_OUTPUT, KERNEL_CON_1, KERNEL_CON_2, STRIDE_1, STRIDE_2, DENSE_1, DENSE_2, arguments_parameters->size);
+	if (!mem_result)
+	{
+		printf("ERROR MEMORY INIT\n");
+		exit(-1);
+	}
+
+	// --- 3. Allocate Host Pointers ---
+	if (arguments_parameters->unified_memory)
+	{	
+		#ifdef UMA_COMPATIBILITY
+			// map the buffzer to the gpu + cpu take the lead
+			get_unified_memory_pointers(cifar10_bench,input_data, mem_size_A,kernel_1, kernel_2, mem_size_k_1,weights_1, mem_size_w_1,weights_2, mem_size_w_2,d_output, mem_size_output);
+		#else
+			fprintf(stderr, "\033[1;31merror:\033[0m This framework is not compatible with unified memory. Please remove the -u arg!\n");			
+			exit(-1);
+		#endif
+	} else
+	{
+		// normale malloc
+		input_data 	= (bench_t*) malloc(mem_size_A);
+		kernel_1    = (bench_t*) malloc(mem_size_k_1);
+		kernel_2    = (bench_t*) malloc(mem_size_k_2);
+		weights_1   = (bench_t*) malloc(mem_size_w_1);
+		weights_2   = (bench_t*) malloc(mem_size_w_2);
+		d_output    = (bench_t*) malloc(mem_size_B);
+	}
+	
+
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// DATA INIT
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,7 +160,6 @@ int main(int argc, char *argv[]){
 	    printf("\n");
 	  }
 	// reseed por compasion reasons
-	//srand (time(NULL));
 	srand (21121993);
 	// inicialice kernel 1
 		for (int i=0; i<size_k_1; i++)
@@ -183,113 +222,116 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// CODE BENCKMARK
 	///////////////////////////////////////////////////////////////////////////////////////////////
-
-	// base object init
-	GraficCommon*cifar10_bench = (GraficCommon*)malloc(sizeof(GraficObject));
-	// init devices
-	char device[100] = "";
-	init(cifar10_bench, 0,arguments_parameters->gpu, device);
 	if (!arguments_parameters->csv_format_timestamp && !arguments_parameters->csv_format && !arguments_parameters->mute_messages ){
 		printf("Using device: %s\n", device);
 	}
 	
-	// Update profiling clock mode
-	cifar10_bench->profiling_clock = arguments_parameters->profiling_clock;
 
-	// If android and opencl force profiling clock
-	#ifdef FORCE_PROFILING_CLOCK
-		cifar10_bench->profiling_clock = true;
-	#endif
-
-
-	// init memory
-	bool mem_result = true;
-	mem_result = device_memory_init(cifar10_bench, CIFAR_10_INPUT, CIFAR_10_OUTPUT, KERNEL_CON_1, KERNEL_CON_2, STRIDE_1, STRIDE_2, DENSE_1, DENSE_2, arguments_parameters->size);
-	if (!mem_result)
-	{
-		printf("ERROR MEMORY INIT\n");
-		exit(-1);
-	}
 	// copy memory to device
-	copy_memory_to_device(cifar10_bench, input_data, kernel_1, kernel_2, weights_1, weights_2, CIFAR_10_INPUT, KERNEL_CON_1, KERNEL_CON_2, size_w_1, size_w_2, arguments_parameters->size);
+	if(arguments_parameters->unified_memory)
+	{
+		#ifdef UMA_COMPATIBILITY 
+			sync_unified_memory_to_device(cifar10_bench, input_data, kernel_1, kernel_2, weights_1, weights_2, d_output);
+		#endif
+	}
+	else
+	{	
+		copy_memory_to_device(cifar10_bench, input_data, kernel_1, kernel_2, weights_1, weights_2, CIFAR_10_INPUT, KERNEL_CON_1, KERNEL_CON_2, size_w_1, size_w_2, arguments_parameters->size);
+	}
+	
 	// execute kernel
 	execute_kernel(cifar10_bench, CIFAR_10_INPUT, CIFAR_10_OUTPUT, KERNEL_CON_1, KERNEL_CON_2, STRIDE_1, STRIDE_2, DENSE_1, DENSE_2, arguments_parameters->size);
-	// copy memory to host
-	copy_memory_to_host(cifar10_bench, d_output, CIFAR_10_OUTPUT, arguments_parameters->size);
+	
 
+	// copy memory to host
+	if (arguments_parameters->unified_memory)
+	{	
+		#ifdef UMA_COMPATIBILITY
+			sync_unified_memory_to_host(cifar10_bench, d_output, mem_size_output);
+		#endif
+    } else
+	{
+        // copy memory to host
+		copy_memory_to_host(cifar10_bench, d_output, CIFAR_10_OUTPUT, arguments_parameters->size);
+    }
+	
 	// get time
 	if (arguments_parameters->print_timing || arguments_parameters->csv_format || arguments_parameters->csv_format_timestamp)
 	{
 		get_elapsed_time(cifar10_bench, arguments_parameters->csv_format, arguments_parameters->csv_format_timestamp, get_timestamp());
 	}
+
+	// print output buffer
 	if (arguments_parameters->print_output)
 	{
 		#ifdef INT
-		for (int i=0; i < arguments_parameters->size; ++i){
-			for (int j=0; j<CIFAR_10_OUTPUT; ++j){
-	    		printf("%d ", d_output[i*CIFAR_10_OUTPUT + j]);
+			for (int i=0; i < arguments_parameters->size; ++i){
+				for (int j=0; j<CIFAR_10_OUTPUT; ++j){
+					printf("%d ", d_output[i*CIFAR_10_OUTPUT + j]);
+				}
+				printf("\n");
 			}
 			printf("\n");
-		}
-		printf("\n");
 		#else
-		for (int i=0; i < arguments_parameters->size; ++i){
-			for (int j=0; j<CIFAR_10_OUTPUT; ++j){
-	    		printf("%f ", d_output[i*CIFAR_10_OUTPUT + j]);
+			for (int i=0; i < arguments_parameters->size; ++i){
+				for (int j=0; j<CIFAR_10_OUTPUT; ++j){
+					printf("%f ", d_output[i*CIFAR_10_OUTPUT + j]);
+				}
+				printf("\n");
 			}
 			printf("\n");
-		}
-		printf("\n");
 		#endif
+	}
 
-
+	// export gpu buffer
+	if (arguments_parameters->export_results_gpu)
+	{
+		print_double_hexadecimal_values(GPU_FILE, d_output, size_B);
 	}
 	
-
+	//check for error
 	if (arguments_parameters->verification)
 	{
 		Clock cpuKernelCLK;
 		cpuKernelCLK.start();
 		cifar10(output_data, conv_1_output, pooling_1_output, conv_2_output, pooling_2_output, dense_layer_1_output, dense_layer_2_output, input_data, kernel_1, kernel_2, weights_1 , weights_2, CIFAR_10_INPUT, CIFAR_10_OUTPUT, KERNEL_CON_1, KERNEL_CON_2, STRIDE_1,STRIDE_2, DENSE_1, DENSE_2, arguments_parameters->size);		
 		cpuKernelCLK.end();
+
 		if (arguments_parameters->print_timing)
 		{
 			printf("CPU Time %.0f milliseconds\n", cpuKernelCLK.getElapsedMS());
 		}
+
 		if (arguments_parameters->print_output)
 		{
 			#ifdef INT
-			for (int i=0; i < arguments_parameters->size; ++i){
-				for (int j=0; j<CIFAR_10_OUTPUT; ++j){
-					printf("%d ", output_data[i*CIFAR_10_OUTPUT + j]);
+				for (int i=0; i < arguments_parameters->size; ++i){
+					for (int j=0; j<CIFAR_10_OUTPUT; ++j){
+						printf("%d ", output_data[i*CIFAR_10_OUTPUT + j]);
+					}
+					printf("\n");
 				}
 				printf("\n");
-			}
-			printf("\n");
 			#else
-			for (int i=0; i < arguments_parameters->size; ++i){
-				for (int j=0; j<CIFAR_10_OUTPUT; ++j){
-					printf("%f ", output_data[i*CIFAR_10_OUTPUT + j]);
+				for (int i=0; i < arguments_parameters->size; ++i){
+					for (int j=0; j<CIFAR_10_OUTPUT; ++j){
+						printf("%f ", output_data[i*CIFAR_10_OUTPUT + j]);
+					}
+					printf("\n");
 				}
 				printf("\n");
-			}
-		printf("\n");
-		#endif
+			#endif
 		} 
-	    result = compare_vectors(output_data, d_output, CIFAR_10_OUTPUT);
-	    if (result){
+
+
+	    if (compare_vectors(output_data, d_output, CIFAR_10_OUTPUT * arguments_parameters->size)){
 	    	printf("OK\n");
 	    }
+
 	    if (arguments_parameters->export_results){
-	    	print_double_hexadecimal_values(GPU_FILE, d_output, CIFAR_10_OUTPUT);
-	    	print_double_hexadecimal_values(CPU_FILE, output_data, CIFAR_10_OUTPUT);
+	    	print_double_hexadecimal_values(GPU_FILE, d_output, CIFAR_10_OUTPUT * arguments_parameters->size);
+	    	print_double_hexadecimal_values(CPU_FILE, output_data, CIFAR_10_OUTPUT * arguments_parameters->size);
 	    }
-	}
-
-
-	if (arguments_parameters->export_results_gpu)
-	{
-		print_double_hexadecimal_values(GPU_FILE, d_output, size_B);
 	}
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// CLEAN MEMORY
@@ -299,12 +341,17 @@ int main(int argc, char *argv[]){
 	// free object memory 
 	free(arguments_parameters);
 	free(cifar10_bench);
-	free(input_data);
-	free(d_output);
-	free(kernel_1);
-	free(kernel_2);
-	free(weights_1);
-	free(weights_2);
+
+	if (!arguments_parameters->unified_memory) 
+	{
+        free(input_data);
+		free(d_output);
+		free(kernel_1);
+		free(kernel_2);
+		free(weights_1);
+		free(weights_2);
+    }
+
 	free(conv_1_output);
 	free(pooling_1_output);
 	free(conv_2_output);

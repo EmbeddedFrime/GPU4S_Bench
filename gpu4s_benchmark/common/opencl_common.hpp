@@ -27,6 +27,14 @@ struct BufferMapCL {
     cl::Event*  deviceEvent;  /**< Pointer to the OpenCL device event object used for profiling timing */
 };
 
+inline bool openclError(cl_int err, const char* txt){
+    if (err != CL_SUCCESS) {
+        fprintf(stderr, "%s (OpenCL error code %d)\n", txt, err);
+        return true; // Error detected
+    }
+    return false;
+}
+
 // ============ UMA function ============
 
 /**
@@ -42,24 +50,29 @@ template <typename... MapCL>
 inline void map_unified_memory(GraficCommon* device_object, unsigned memSize, MapCL... mapCL) {
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     Clock mapCLK;
+    cl_int err = CL_SUCCESS;
+    cl_int lastErr = CL_SUCCESS;
+
     mapCLK.start();
 
     // --- C++17 Fold Expression Unrolled at compile-time  ---
     // For each MapCL map host buffer to devcie buffer
-    ((*(mapCL.hostBuffer) = static_cast<bench_t*>(
-        deviceObj->queue->enqueueMapBuffer(
-            *(mapCL.deviceBuffer), CL_TRUE, CL_MAP_WRITE, 0, memSize, nullptr, mapCL.deviceEvent)
-    )), ...);
+    (( 
+        *(mapCL.hostBuffer) = static_cast<bench_t*>(
+            deviceObj->queue->enqueueMapBuffer(
+                *(mapCL.deviceBuffer), CL_TRUE, CL_MAP_WRITE, 0, memSize, nullptr, mapCL.deviceEvent, &lastErr
+            )
+        ),
+        // Update err to not miss an error
+        (lastErr != CL_SUCCESS ? err = lastErr : CL_SUCCESS)
+    ), ...);
 
-    // equivalent but less optimized
-    // for (const auto& item : { mapCL... }) {
-    //     *(item.host_buffer) = static_cast<bench_t*>(
-    //         deviceObj->queue->enqueueMapBuffer(*(item.device_clBuffer), CL_TRUE, CL_MAP_WRITE, 0, memSize)
-    //     );
-    // }
+    if (openclError(err, "Failed to map buffer!")) return;
 
     mapCLK.end();
-    deviceObj->h2d_elapsed_time = mapCLK.getElapsedNS();
+
+    // store the hd2h time
+    deviceObj->h2d_elapsed_time += mapCLK.getElapsedNS();
 }
 
 /**
@@ -74,16 +87,27 @@ template <typename... MapCL>
 inline void unmap_unified_memory(GraficCommon* device_object, MapCL... mapCL) {
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     Clock unmapCLK;
+    cl_int err = CL_SUCCESS;
+    cl_int lastErr = CL_SUCCESS;
+    
     unmapCLK.start();
 
     // --- C++17 Fold Expression Unrolled at compile-time  ---
     // For each MapCL unmap host buffer to devcie buffer
-    ((deviceObj->queue->enqueueUnmapMemObject(
-        *(mapCL.deviceBuffer), mapCL.hostBuffer, NULL, mapCL.deviceEvent)
+    ((
+        deviceObj->queue->enqueueUnmapMemObject(
+            *(mapCL.deviceBuffer), *(mapCL.hostBuffer), NULL, mapCL.deviceEvent, &lastErr
+        ),
+        // Update err to not miss an error
+        (lastErr != CL_SUCCESS ? err = lastErr : CL_SUCCESS)
     ), ...);
 
+    if (openclError(err, "Failed to unmap buffer!")) return;
+
     unmapCLK.end();
-    deviceObj->d2h_elapsed_time = unmapCLK.getElapsedNS();
+
+    // store the h2d time
+    deviceObj->h2d_elapsed_time += unmapCLK.getElapsedNS();
 }
 
 /**
@@ -98,18 +122,32 @@ template <typename... MapCL>
 inline void map_unified_memory_to_host(GraficCommon* device_object, unsigned memSize, MapCL... mapCL) {
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     Clock mapCLK;
+    cl_int err = CL_SUCCESS;
+    cl_int lastErr = CL_SUCCESS;
+    
     mapCLK.start();
 
     // --- C++17 Fold Expression Unrolled at compile-time  ---
     // For each MapCL map host buffer to devcie buffer
-    ((*(mapCL.hostBuffer) = static_cast<bench_t*>(
-        deviceObj->queue->enqueueMapBuffer(
-            *(mapCL.deviceBuffer), CL_TRUE, CL_MAP_WRITE, 0, memSize, nullptr, mapCL.deviceEvent)
-    )), ...);
+    (( 
+        *(mapCL.hostBuffer) = static_cast<bench_t*>(
+            deviceObj->queue->enqueueMapBuffer(
+                *(mapCL.deviceBuffer), CL_TRUE, CL_MAP_READ, 0, memSize, nullptr, mapCL.deviceEvent, &lastErr
+            )
+        ),
+        // Update err to not miss an error
+        (lastErr != CL_SUCCESS ? err = lastErr : CL_SUCCESS)
+    ), ...);
+
+    if (openclError(err, "Failed to map buffer!")) return;
 
     mapCLK.end();
-    deviceObj->d2h_elapsed_time += mapCLK.getElapsedNS();
+
+    // store the d2h time
+    deviceObj->d2h_elapsed_time = mapCLK.getElapsedNS();
 }
 #endif
+
+
 
 

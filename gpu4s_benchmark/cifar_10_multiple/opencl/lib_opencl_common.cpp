@@ -6,6 +6,7 @@
  * ESA-PL Strong Copyleft – v2.5
  * ======================================================================= */
 #include "../benchmark_library.h"
+#include "../../common/opencl_common.hpp"
 #include <cstring>
 
 void init(GraficCommon* device_object, char* device_name){
@@ -103,7 +104,7 @@ bool device_memory_init(GraficCommon* device_object, unsigned int input_data, un
    if (err != CL_SUCCESS) return false;
    
    // dense 1 weights
-   deviceObj->dense_layer_1_weights = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,weights_layer_1 * sizeof(bench_t));
+   deviceObj->dense_layer_1_weights = new cl::Buffer(*deviceObj->context,CL_MEM_READ_ONLY ,weights_layer_1 * sizeof(bench_t), nullptr, &err);
    if (err != CL_SUCCESS) return false;
 
    // dense 1 output 
@@ -293,3 +294,49 @@ void clean(GraficCommon* device_object){
     delete deviceObj->output_data;
     delete deviceObj->sum_ouput;
 }
+
+
+#ifdef UMA_COMPATIBILITY
+// ====== UMA function ======
+void get_unified_memory_pointers(GraficCommon* device_object,bench_t* &input_data, unsigned int input_mem_size,bench_t* &kernel_1, bench_t* &kernel_2, unsigned int kernel_mem_size, bench_t* &weights_1, unsigned int weights_1_mem_size, bench_t* &weights_2, unsigned int weights_2_mem_size, bench_t* &d_output, unsigned int output_mem_size){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+     map_unified_memory(device_object, input_mem_size,
+        BufferMapCL{&input_data, deviceObj->input_data, nullptr});
+
+    map_unified_memory(device_object, kernel_mem_size,
+        BufferMapCL{&kernel_1, deviceObj->kernel_1, nullptr},
+        BufferMapCL{&kernel_2, deviceObj->kernel_2, nullptr});
+
+    map_unified_memory(device_object, weights_1_mem_size,
+        BufferMapCL{&weights_1, deviceObj->dense_layer_1_weights, nullptr});
+
+    map_unified_memory(device_object, weights_2_mem_size,
+        BufferMapCL{&weights_2, deviceObj->dense_layer_2_weights, nullptr});
+
+    map_unified_memory(device_object, output_mem_size,
+        BufferMapCL{&d_output, deviceObj->output_data, nullptr});
+}
+
+void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &input_data, bench_t* &kernel_1, bench_t* &kernel_2, bench_t* &weights_1, bench_t* &weights_2, bench_t* &d_output){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    unmap_unified_memory(device_object,
+        BufferMapCL{&input_data, deviceObj->input_data,             deviceObj->evt_copyIN},
+        BufferMapCL{&kernel_1,   deviceObj->kernel_1,               deviceObj->evt_copyK1},
+        BufferMapCL{&kernel_2,   deviceObj->kernel_2,               deviceObj->evt_copyK2},
+        BufferMapCL{&weights_1,  deviceObj->dense_layer_1_weights,  deviceObj->evt_copyW1},
+        BufferMapCL{&weights_2,  deviceObj->dense_layer_2_weights,  deviceObj->evt_copyW2},
+        BufferMapCL{&d_output,   deviceObj->output_data,            nullptr}
+    );
+} 
+
+void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int memSize){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    map_unified_memory_to_host(device_object, memSize, 
+        BufferMapCL{&d_output, deviceObj->output_data, deviceObj->evt_copyOut}
+    );
+}
+
+#endif
