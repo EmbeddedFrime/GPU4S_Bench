@@ -66,7 +66,7 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_fo
     }else{
         elapsed_h_d = deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyB->getProfilingInfo<CL_PROFILING_COMMAND_START>();
         //printf("Elapsed time Host->Device: %.10f \n", elapsed / 1000000.0);
-        
+        elapsed     = deviceObj->elapsed_time;
         //printf("Elapsed time kernel: %.10f \n", elapsed / 1000000.0);
         
         elapsed_d_h = deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_END>() - deviceObj->evt_copyBr->getProfilingInfo<CL_PROFILING_COMMAND_START>();
