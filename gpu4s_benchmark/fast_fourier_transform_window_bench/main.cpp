@@ -24,7 +24,8 @@ int main(int argc, char *argv[]){
 	BenchmarkParameters *arguments_parameters = (BenchmarkParameters *)malloc(sizeof(BenchmarkParameters));
 
 	int resolution = arguments_handler(argc,argv,arguments_parameters);
-	if (resolution == ERROR_ARGUMENTS){
+	if (resolution == ERROR_ARGUMENTS)
+	{
 		exit(-1);
 	}
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,24 +34,52 @@ int main(int argc, char *argv[]){
 	// A input vector
 	int64_t size_A = arguments_parameters->size;
     int64_t mem_size_A = sizeof(bench_t) * size_A;
-	bench_t* A = (bench_t*) malloc(mem_size_A);
+	bench_t* A = nullptr;
 	// B output vector
 	int64_t size_B = ((arguments_parameters->size - arguments_parameters->window) + 1) * arguments_parameters->window;
     int64_t mem_size_B = sizeof(bench_t) * size_B;
+	bench_t* d_B = nullptr;
 	bench_t* h_B = (bench_t*) malloc(mem_size_B);
-	bench_t* d_B = (bench_t*) malloc(mem_size_B);
-
 	bench_t aux_value = 0;
-	// comparation result
-	bool result = false;
+	// init devices
+	char device[100] = "";
+
+	// main object init
+	GraficCommon*fft_bench = (GraficCommon*)malloc(sizeof(GraficObject));
+
+	// --- 1. Init Device & Context ---
+	init(fft_bench, 0,arguments_parameters->gpu, device);
+	// Update profiling clock mode
+	fft_bench->profiling_clock = arguments_parameters->profiling_clock;
+	
+	// --- 2. Allocate Device Memory ---
+	device_memory_init(fft_bench, size_A ,size_B);
+
+
+	// --- 3. Allocate Host Pointers ---
+	if (arguments_parameters->unified_memory)
+	{	
+		#ifdef UMA_COMPATIBILITY
+			// map the buffzer to the gpu + cpu take the lead
+			get_unified_memory_pointers(fft_bench, A, mem_size_A);
+		#else
+			fprintf(stderr, "\033[1;31merror:\033[0m This framework is not compatible with unified memory. Please remove the -u arg!\n");			
+			exit(-1);
+		#endif
+	} else
+	{
+		// normale malloc
+		A = (bench_t*) malloc(mem_size_A);
+		d_B = (bench_t*) malloc(mem_size_B);
+	}
+
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// DATA INIT
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	if (strlen(arguments_parameters->input_file_A) == 0)
 	{
-	// inicialice A matrix 
-		for (int i=0; i<size_A; i++)
-		{
+		// inicialice A matrix 
+		for (int i=0; i<size_A; i++){
 			if (i % 2 == 0)
 			{
 				aux_value = (bench_t)rand()/(bench_t)(RAND_MAX/NUMBER_BASE);
@@ -79,42 +108,44 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// CODE BENCKMARK
 	///////////////////////////////////////////////////////////////////////////////////////////////
-	/*for (unsigned int i = 0; i < size_A; ++i)
-	{
-		h_B[i] = A[i];
-		d_B[i] = A[i];
-	}*/
-	// base object init
-	GraficCommon*fft_bench = (GraficCommon*)malloc(sizeof(GraficObject));
-	// init devices
-	char device[100] = "";
-	init(fft_bench, 0,arguments_parameters->gpu, device);
 	if (!arguments_parameters->csv_format_timestamp && !arguments_parameters->csv_format && !arguments_parameters->mute_messages ){
 		printf("Using device: %s\n", device);
 	}
-	
-	// Update profiling clock mode
-	fft_bench->profiling_clock = arguments_parameters->profiling_clock;
 
-	// If android and opencl force profiling clock
-	#ifdef FORCE_PROFILING_CLOCK
-		fft_bench->profiling_clock = true;
-	#endif
-
-	// init memory
-	device_memory_init(fft_bench, size_A ,size_B);
 	// copy memory to device
-	copy_memory_to_device(fft_bench, A, size_A);
+	if(arguments_parameters->unified_memory)
+	{
+		#ifdef UMA_COMPATIBILITY 
+			sync_unified_memory_to_device(fft_bench, A);
+		#endif
+	}
+	else
+	{	
+		copy_memory_to_device(fft_bench, A, size_A);
+	}
+
 	// execute kernel
 	execute_kernel(fft_bench, arguments_parameters->window, arguments_parameters->size>>1);
+	
 	// copy memory to host
-	copy_memory_to_host(fft_bench, d_B, size_B);
+	if (arguments_parameters->unified_memory)
+	{	
+		#ifdef UMA_COMPATIBILITY
+			sync_unified_memory_to_host(fft_bench, d_B, size_B);
+		#endif
+    } else
+	{
+       copy_memory_to_host(fft_bench, d_B, size_B);
+    }
+	
 
 	// get time
 	if (arguments_parameters->print_timing || arguments_parameters->csv_format || arguments_parameters->csv_format_timestamp)
 	{
 		get_elapsed_time(fft_bench, arguments_parameters->csv_format, arguments_parameters->csv_format_timestamp, get_timestamp());
 	}
+
+	// print output buffer
 	if (arguments_parameters->print_output)
 	{
 		for (int i=0; i<size_B; i++){
@@ -129,19 +160,26 @@ int main(int argc, char *argv[]){
 		}
 		printf("\n");*/
 	}
-	
 
+	// export gpu buffer
+	if (arguments_parameters->export_results_gpu)
+	{
+		print_double_hexadecimal_values(GPU_FILE, d_B, size_B);
+	}
 
+	//check for error
 	if (arguments_parameters->verification)
 	{
 		Clock cpuKernelCLK;
 		cpuKernelCLK.start();
 		fft_function(A ,h_B , arguments_parameters->window ,arguments_parameters->size>>1);
 		cpuKernelCLK.end();
+
 		if (arguments_parameters->print_timing)
 		{
 			printf("CPU Time %.1f milliseconds\n", cpuKernelCLK.getElapsedMS());
 		}
+
 		if (arguments_parameters->print_output)
 		{
 			for (int i=0; i<size_B; i++){
@@ -154,19 +192,16 @@ int main(int argc, char *argv[]){
 			}
 			printf("\n");*/
 		} 
-	    result = compare_vectors(h_B, d_B, size_B);
-	    if (result){
+	    
+	    if (compare_vectors(h_B, d_B, size_B)){
 	    	printf("OK\n");
 	    }
+
 	    if (arguments_parameters->export_results){
 	    	print_double_hexadecimal_values(GPU_FILE, d_B, size_B);
 	    	print_double_hexadecimal_values(CPU_FILE, h_B, size_B);
 	    }
 
-	}
-	if (arguments_parameters->export_results_gpu)
-	{
-		print_double_hexadecimal_values(GPU_FILE, d_B, size_B);
 	}
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// CLEAN MEMORY
@@ -176,8 +211,11 @@ int main(int argc, char *argv[]){
 	// free object memory 
 	free(fft_bench);
 	free(arguments_parameters);
-	free(A);
-	free(d_B);
+	if (!arguments_parameters->unified_memory) 
+	{
+        free(A);
+        free(d_B);
+    }
 	free(h_B);
 	return 0; 
 }
