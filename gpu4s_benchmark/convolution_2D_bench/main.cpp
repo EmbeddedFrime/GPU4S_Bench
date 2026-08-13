@@ -36,8 +36,10 @@ int main(int argc, char *argv[]){
     unsigned int mem_size = sizeof(bench_t) * size_matrix;
 	bench_t* A = NULL;
 	// kernel matrix
+	unsigned int size_k = arguments_parameters->kernel_size * arguments_parameters->kernel_size ;
+    unsigned int mem_size_k = sizeof(bench_t) * size_k;
 	bench_t* kernel = NULL;
-	// B input matrix
+	// B output matrix
 	bench_t* d_B = NULL;
 	bench_t* h_B = (bench_t*) malloc(mem_size);
 	// init devices
@@ -53,14 +55,14 @@ int main(int argc, char *argv[]){
 	conv_bench->profiling_clock = arguments_parameters->profiling_clock;
 
 	// --- 2. Allocate Device Memory ---
-	device_memory_init(conv_bench, size_matrix, size_matrix, size_matrix);
+	device_memory_init(conv_bench, size_matrix, size_matrix, size_k);
 
 	// --- 3. Allocate Host Pointers ---
 	if (arguments_parameters->unified_memory)
 	{	
 		#ifdef UMA_COMPATIBILITY
 			// map the buffzer to the gpu + cpu take the lead
-			get_unified_memory_pointers(conv_bench, A, kernel, d_B, mem_size);
+			get_unified_memory_pointers(conv_bench, A, kernel, d_B, mem_size, size_k);
 		#else
 			fprintf(stderr, "\033[1;31merror:\033[0m This framework is not compatible with unified memory. Please remove the -u arg!\n");			
 			exit(-1);
@@ -69,7 +71,7 @@ int main(int argc, char *argv[]){
 	{
 		// normale malloc
 		A 		= (bench_t*) malloc(mem_size);
-		kernel 	= (bench_t*) malloc(mem_size);
+		kernel 	= (bench_t*) malloc(mem_size_k);
 		d_B    	= (bench_t*) malloc(mem_size);
 	}
 
@@ -90,7 +92,7 @@ int main(int argc, char *argv[]){
 		}
 	
 		// iniciate kernel matrix
-		for (int i=0; i < size_matrix; ++i)
+		for (int i=0; i < size_k; ++i)
 		{
 			#ifdef INT
 	        	kernel[i] =  rand() % (NUMBER_BASE * 100);
@@ -99,7 +101,7 @@ int main(int argc, char *argv[]){
 	        #endif
 		}
 
-		// reset B matrix 
+		// reset output B matrix 
 		for (int i=0; i<arguments_parameters->size; i++){
 	    	for (int j=0; j<arguments_parameters->size; j++){
 	        	h_B[i*arguments_parameters->size+j] = 0;
@@ -137,7 +139,7 @@ int main(int argc, char *argv[]){
 	    	printf("\n");
 		}
 		printf("\n\n");
-		for (int i=0; i < size_matrix; ++i)
+		for (int i=0; i < size_k; ++i)
 		{
 			#ifdef INT
 			printf("%d ",kernel[i]);
@@ -163,7 +165,7 @@ int main(int argc, char *argv[]){
 	}
 	else
 	{	
-		copy_memory_to_device(conv_bench, A, kernel, size_matrix, size_matrix);
+		copy_memory_to_device(conv_bench, A, kernel, size_matrix, size_k);
 	}
 	
 	// execute kernel
