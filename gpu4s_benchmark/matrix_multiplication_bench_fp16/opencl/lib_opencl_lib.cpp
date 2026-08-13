@@ -1,6 +1,7 @@
 // OpenCL lib code 
 #include <cmath>
 #include "../benchmark_library.h"
+#include "../../common/opencl_common.hpp"
 #include <clblast.h>
 
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m, unsigned int w){

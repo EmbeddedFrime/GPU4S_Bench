@@ -33,23 +33,46 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// linearizable versions of matrix
 	unsigned int size_matrix = arguments_parameters->size  * arguments_parameters->size;
+	unsigned int mem_size = sizeof(bench_t) * size_matrix;
 	// A input matrix
-	unsigned int size_A = arguments_parameters->size  * arguments_parameters->size;
-    unsigned int mem_size_A = sizeof(bench_t) * size_A;
-	bench_t* A = (bench_t*) malloc(mem_size_A);
+	bench_t* A = (bench_t*) malloc(mem_size);
 	// B input matrix
-	unsigned int size_B = arguments_parameters->size  * arguments_parameters->size;
-    unsigned int mem_size_B = sizeof(bench_t) * size_B;
-	bench_t* B = (bench_t*) malloc(mem_size_B);
+	bench_t* B = (bench_t*) malloc(mem_size);
 	// C matrix
-	unsigned int size_C = arguments_parameters->size  * arguments_parameters->size;
-    unsigned int mem_size_C = sizeof(bench_t) * size_C;
-	bench_t* h_C = (bench_t*) malloc(mem_size_C);
-	bench_t* d_C = (bench_t*) malloc(mem_size_C);
-	// auxiliar matrix for compare the output
-	bench_t* h_C_output = (bench_t*) malloc(mem_size_C);;
-	// comparation result
-	bool result = false;
+	bench_t* d_C = (bench_t*) malloc(mem_size);
+	bench_t* h_C = (bench_t*) malloc(mem_size);
+	// init devices
+	char device[100] = "";
+	
+	// main object init
+	GraficCommon*matrix_benck = (GraficCommon*)malloc(sizeof(GraficObject));
+
+	// --- 1. Init Device & Context ---
+	init(matrix_benck, 0,arguments_parameters->gpu, device);
+	// Update profiling clock mode
+	matrix_benck->profiling_clock = arguments_parameters->profiling_clock;
+
+	// --- 2. Allocate Device Memory ---
+	device_memory_init(matrix_benck, size_matrix, size_matrix, size_matrix);
+
+	// --- 3. Allocate Host Pointers ---
+	if (arguments_parameters->unified_memory)
+	{	
+		#ifdef UMA_COMPATIBILITY
+			// map the buffzer to the gpu + cpu take the lead
+			get_unified_memory_pointers(matrix_benck, A, B, d_C, mem_size);
+		#else
+			fprintf(stderr, "\033[1;31merror:\033[0m This framework is not compatible with unified memory. Please remove the -u arg!\n");			
+			exit(-1);
+		#endif
+	} else
+	{
+		// normale malloc
+		A = (bench_t*) malloc(mem_size);
+		B = (bench_t*) malloc(mem_size);
+		d_C = (bench_t*) malloc(mem_size);
+	}
+
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// DATA INIT
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,103 +99,105 @@ int main(int argc, char *argv[]){
 	        	#endif
 	    	}
 		}
-	// iniciate C matrix
-		for (int i=0; i<arguments_parameters->size; i++){
-	    	for (int j=0; j<arguments_parameters->size; j++){
-	        	h_C[i*arguments_parameters->size+j] = 0;
-	        	d_C[i*arguments_parameters->size+j] = 0;
-	        	
-	    	}
-		}
 	}
 	else
 	{	
 		/// load data
-		get_double_hexadecimal_values(arguments_parameters->input_file_A, A,size_A);
-		get_double_hexadecimal_values(arguments_parameters->input_file_B, B,size_B);
+		get_double_hexadecimal_values(arguments_parameters->input_file_A, A,size_matrix);
+		get_double_hexadecimal_values(arguments_parameters->input_file_B, B,size_matrix);
 		//get_values_file(input_file, A, B);
+	}
 
-		// iniciate C matrix
-		for (int i=0; i<arguments_parameters->size; i++){
-	    	for (int j=0; j<arguments_parameters->size; j++){
-	        	h_C[i*arguments_parameters->size+j] = 0;
-	        	d_C[i*arguments_parameters->size+j] = 0;
-	        	
-	    	}
+	// reset C  output matrix
+	for (int i=0; i<arguments_parameters->size; i++){
+		for (int j=0; j<arguments_parameters->size; j++){
+			h_C[i*arguments_parameters->size+j] = 0;
+			d_C[i*arguments_parameters->size+j] = 0;	
 		}
 	}
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// CODE BENCKMARK
 	///////////////////////////////////////////////////////////////////////////////////////////////
-
-	// base object init
-	GraficCommon*matrix_benck = (GraficCommon*)malloc(sizeof(GraficObject));
-	// init devices
-	char device[100] = "";
-	init(matrix_benck, 0,arguments_parameters->gpu, device);
 	if (!arguments_parameters->csv_format_timestamp && !arguments_parameters->csv_format && !arguments_parameters->mute_messages ){
 		printf("Using device: %s\n", device);
 	}
 	
 	
-	// Update profiling clock mode
-	matrix_benck->profiling_clock = arguments_parameters->profiling_clock;
-
-	// If android and opencl force profiling clock
-	#ifdef FORCE_PROFILING_CLOCK
-		matrix_benck->profiling_clock = true;
-	#endif
-
-	// init memory
-	device_memory_init(matrix_benck, size_matrix, size_matrix, size_matrix);
 	// copy memory to device
-	copy_memory_to_device(matrix_benck, A, B, size_matrix, size_matrix);
+	if(arguments_parameters->unified_memory)
+	{
+		#ifdef UMA_COMPATIBILITY 
+			sync_unified_memory_to_device(matrix_benck, A, B, d_C);
+		#endif
+	}
+	else
+	{	
+		copy_memory_to_device(matrix_benck, A, B, size_matrix, size_matrix);
+	}
+	
 	// execute kernel
 	execute_kernel(matrix_benck, arguments_parameters->size, arguments_parameters->size, arguments_parameters->size);
+	
 	// copy memory to host
-	copy_memory_to_host(matrix_benck, d_C, size_matrix);
+	if (arguments_parameters->unified_memory)
+	{	
+		#ifdef UMA_COMPATIBILITY
+			sync_unified_memory_to_host(matrix_benck, d_C, mem_size);
+		#endif
+    } else
+	{
+        copy_memory_to_host(matrix_benck, d_C, size_matrix);
+    }
+	
 
 	// get time
 	if (arguments_parameters->print_timing || arguments_parameters->csv_format || arguments_parameters->csv_format_timestamp)
 	{
 		get_elapsed_time(matrix_benck, arguments_parameters->csv_format);
 	}
+
+	// print output buffer
 	if (arguments_parameters->print_output)
 	{
 		#ifdef INT
-		for (int i=0; i<arguments_parameters->size; i++){
-	    	for (int j=0; j<arguments_parameters->size; j++){
-	    		printf("%d ", d_C[i*arguments_parameters->size+j]);
-	        	
-	    	}
-    		printf("\n");
-		}
+			for (int i=0; i<arguments_parameters->size; i++){
+				for (int j=0; j<arguments_parameters->size; j++){
+					printf("%d ", d_C[i*arguments_parameters->size+j]);
+				}
+				printf("\n");
+			}
 		#else
-		for (int i=0; i<arguments_parameters->size; i++){
-	    	for (int j=0; j<arguments_parameters->size; j++){
-	    		printf("%f ", d_C[i*arguments_parameters->size+j]);
-	        	
-	    	}
-    		printf("\n");
-		}
+			for (int i=0; i<arguments_parameters->size; i++){
+				for (int j=0; j<arguments_parameters->size; j++){
+					printf("%f ", d_C[i*arguments_parameters->size+j]);
+				}
+				printf("\n");
+			}
 		#endif
 		printf("\n");
-		
 	}
 	
+	// export gpu buffer
+	if (arguments_parameters->export_results_gpu)
+	{
+		print_double_hexadecimal_values(GPU_FILE, d_C, size_matrix);
+		//set_values_file(output_file, d_C, size);
+	}
 
-
+	//check for error
 	if (arguments_parameters->verification)
 	{
 		Clock cpuKernelCLK;
 		cpuKernelCLK.start();
 		matrix_multiplication(A, B, h_C, arguments_parameters->size,  arguments_parameters->size, arguments_parameters->size);
 		cpuKernelCLK.end();
+
 		if (arguments_parameters->print_timing)
 		{
 			printf("CPU Time %.0f milliseconds\n", cpuKernelCLK.getElapsedMS());
 		}
+
 		if (arguments_parameters->print_output)
 		{
 		#ifdef INT
@@ -193,21 +218,16 @@ int main(int argc, char *argv[]){
 			}
 		#endif
 		} 
-	    result = compare_vectors(h_C, d_C, size_C);
-	    if (result){
+	    
+	    if (compare_vectors(h_C, d_C, size_matrix)){
 	    	printf("OK\n");
 	    }
+
 	    if (arguments_parameters->export_results){
 	    	//set_values_file(output_file, d_C, size);
-	    	print_double_hexadecimal_values(GPU_FILE, d_C, size_C);
-	    	print_double_hexadecimal_values(CPU_FILE, h_C, size_C);
+	    	print_double_hexadecimal_values(GPU_FILE, d_C, size_matrix);
+	    	print_double_hexadecimal_values(CPU_FILE, h_C, size_matrix);
 	    }
-
-	}
-	if (arguments_parameters->export_results_gpu)
-	{
-		print_double_hexadecimal_values(GPU_FILE, d_C, size_C);
-		//set_values_file(output_file, d_C, size);
 	}
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// CLEAN MEMORY
@@ -217,11 +237,16 @@ int main(int argc, char *argv[]){
 	free(arguments_parameters);
 	// free object memory 
 	free(matrix_benck);
-	free(A);
-	free(B);
+
+	if (!arguments_parameters->unified_memory) 
+	{
+        free(A);
+        free(B);
+        free(d_C);
+    }
+
 	free(h_C);
-	free(d_C);
-return 0;
+	return 0;
 }
 
 
