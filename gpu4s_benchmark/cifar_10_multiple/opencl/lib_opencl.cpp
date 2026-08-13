@@ -252,9 +252,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         softmax_end_kernel.setArg(2,neurons_dense_2);
         softmax_end_kernel.setArg(3, position * output_data);
 
-        deviceObj->queue->enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, NULL);
-        deviceObj->queue->enqueueWriteBuffer(*deviceObj->sum_ouput,CL_TRUE,0,sizeof(bench_t), 0, NULL,NULL);
-        
+        deviceObj->queue->enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, NULL);        
     }
 
     //FIX : GPU profiling use opencl marker

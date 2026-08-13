@@ -22,7 +22,8 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	BenchmarkParameters *arguments_parameters = (BenchmarkParameters *)malloc(sizeof(BenchmarkParameters));
 	int resolution = arguments_handler(argc,argv,arguments_parameters);
-	if (resolution == ERROR_ARGUMENTS){
+	if (resolution == ERROR_ARGUMENTS)
+	{
 		exit(-1);
 	}
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,21 +34,48 @@ int main(int argc, char *argv[]){
 	// VARIABLES 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// linearizable versions of matrix
-	unsigned int size_matrix =arguments_parameters->size * arguments_parameters->size;
+	unsigned int size_matrix  =arguments_parameters->size * arguments_parameters->size;
 	// A input matrix
-	unsigned int size_A = arguments_parameters->size * arguments_parameters->size;
-    unsigned int mem_size_A = sizeof(bench_t) * size_A;
-	bench_t* A = (bench_t*) malloc(mem_size_A);
+    unsigned int mem_size = sizeof(bench_t) * size_matrix;
+	bench_t* A = NULL;
 	// B input matrix
-	unsigned int size_B = arguments_parameters->size * arguments_parameters->size ;
-    unsigned int mem_size_B = sizeof(bench_t) * size_B;
-	bench_t* B = (bench_t*) malloc(mem_size_B);
+	bench_t* B = NULL;
 	// Correaltion Value alwais is a float number
+	result_bench_t* d_R = NULL;
 	result_bench_t* h_R = (result_bench_t*) malloc(sizeof(result_bench_t));
-	result_bench_t* d_R = (result_bench_t*) malloc(sizeof(result_bench_t));
-	
-	// comparation result
-	bool result = false;
+	// init devices
+	char device[100] = "";
+
+	// main object init
+	GraficCommon*correlation_bench = (GraficCommon*)malloc(sizeof(GraficObject));
+
+	// --- 1. Init Device & Context ---
+	init(correlation_bench, 0,arguments_parameters->gpu, device);
+	// Update profiling clock mode
+	correlation_bench->profiling_clock = arguments_parameters->profiling_clock;
+
+	// --- 2. Allocate Device Memory ---
+	device_memory_init(correlation_bench, size_matrix, size_matrix );
+
+	// --- 3. Allocate Host Pointers ---
+	if (arguments_parameters->unified_memory)
+	{	
+		#ifdef UMA_COMPATIBILITY
+			// map the buffzer to the gpu + cpu take the lead
+			get_unified_memory_pointers(correlation_bench, A, B, d_R, mem_size);
+		#else
+			fprintf(stderr, "\033[1;31merror:\033[0m This framework is not compatible with unified memory. Please remove the -u arg!\n");			
+			exit(-1);
+		#endif
+	} else
+	{
+		// normale malloc
+		A = (bench_t*) malloc(mem_size);
+		B = (bench_t*) malloc(mem_size);
+		d_R = (result_bench_t*) malloc(sizeof(result_bench_t));
+	}
+
+
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// DATA INIT
 	///////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,7 +103,7 @@ int main(int argc, char *argv[]){
 				#endif
 			}
 		}
-		// iniciate C Values
+		// iniciate R Values
 		*h_R = 0;
 		*d_R = 0;
 
@@ -125,72 +153,85 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// CODE BENCKMARK
 	///////////////////////////////////////////////////////////////////////////////////////////////
-
-	// base object init
-	GraficCommon*correlation_bench = (GraficCommon*)malloc(sizeof(GraficObject));
-	// init devices
-	char device[100] = "";
-	init(correlation_bench, 0,arguments_parameters->gpu, device);
 	if (!arguments_parameters->csv_format_timestamp && !arguments_parameters->csv_format && !arguments_parameters->mute_messages ){
 		printf("Using device: %s\n", device);
 	}
 
-	// Update profiling clock mode
-	correlation_bench->profiling_clock = arguments_parameters->profiling_clock;
-
-	// If android and opencl force profiling clock
-	#ifdef FORCE_PROFILING_CLOCK
-		correlation_bench->profiling_clock = true;
-	#endif
-
-	// init memory
-	device_memory_init(correlation_bench, size_A , size_B );
 	// copy memory to device
-	copy_memory_to_device(correlation_bench, A, size_A, B, size_B );
+	if(arguments_parameters->unified_memory)
+	{
+		#ifdef UMA_COMPATIBILITY 
+			sync_unified_memory_to_device(correlation_bench, A, B, d_R);
+		#endif
+	}
+	else
+	{	
+		copy_memory_to_device(correlation_bench, A, size_matrix, B, size_matrix );
+	}
+	
 	// execute kernel
 	execute_kernel(correlation_bench, arguments_parameters->size);
-	// copy memory to host
-	copy_memory_to_host(correlation_bench, d_R);
 
+	// copy memory to host
+	if (arguments_parameters->unified_memory)
+	{	
+		#ifdef UMA_COMPATIBILITY
+			sync_unified_memory_to_host(correlation_bench, d_R, sizeof(result_bench_t));
+		#endif
+    } else
+	{
+        copy_memory_to_host(correlation_bench, d_R);
+    }
+
+	
 	// get time
 	if (arguments_parameters->print_timing || arguments_parameters->csv_format || arguments_parameters->csv_format_timestamp)
 	{
 		get_elapsed_time(correlation_bench, arguments_parameters->csv_format, arguments_parameters->csv_format_timestamp, get_timestamp());
 	}
+
+	// print output buffer
 	if (arguments_parameters->print_output)
 	{	
 	    printf("%f ", *d_R);
 		printf("\n");
 	}
-	
+
+	// export gpu buffer
+	if (arguments_parameters->export_results_gpu)
+	{
+		print_double_hexadecimal_values(GPU_FILE, d_R, 1);
+	}
+
+	//check for error
 	if (arguments_parameters->verification)
 	{
 		Clock cpuKernelCLK;
 		cpuKernelCLK.start();	
 		correlation_2D(A,B, h_R ,arguments_parameters->size);
 		cpuKernelCLK.end();
+
 		if (arguments_parameters->print_timing)
 		{
 			printf("CPU Time %.0f milliseconds\n", cpuKernelCLK.getElapsedMS());
 		}
+
 		if (arguments_parameters->print_output)
 		{
 			printf("%f ", *h_R);
 	    	printf("\n");
 		} 
-		result = compare_values(h_R, d_R);
-	    if (result){
+
+		
+	    if (compare_values(h_R, d_R))
+		{
 	    	printf("OK\n");
 	    }
+
 	    if (arguments_parameters->export_results){
 	    	print_double_hexadecimal_values(GPU_FILE, d_R, 1);
 	    	print_double_hexadecimal_values(CPU_FILE, h_R, 1);
 	    }
-
-	}
-	if (arguments_parameters->export_results_gpu)
-	{
-		print_double_hexadecimal_values(GPU_FILE, d_R, 1);
 	}
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// CLEAN MEMORY
@@ -200,10 +241,15 @@ int main(int argc, char *argv[]){
 	// free object memory 
 	free(correlation_bench);
 	free(arguments_parameters);
-	free(A);
-	free(B);
+
+	if (!arguments_parameters->unified_memory) 
+	{
+        free(A);
+        free(B);
+        free(d_R);
+    }
+
 	free(h_R);
-	free(d_R);
 return 0;
 }
 

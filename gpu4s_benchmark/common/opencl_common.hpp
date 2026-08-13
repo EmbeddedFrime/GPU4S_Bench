@@ -65,6 +65,7 @@ inline void map_unified_memory(GraficCommon* device_object, unsigned memSize, Ma
 
     if (openclError("Failed to map buffer!", err)) return;
 
+    deviceObj->queue->finish();
     mapCLK.end();
 
     // store the hd2h time
@@ -100,6 +101,7 @@ inline void unmap_unified_memory(GraficCommon* device_object, MapCL... mapCL) {
 
     if (openclError("Failed to unmap buffer!", err)) return;
 
+    deviceObj->queue->finish();
     unmapCLK.end();
 
     // store the h2d time
@@ -135,8 +137,9 @@ inline void map_unified_memory_to_host(GraficCommon* device_object, unsigned mem
         (lastErr != CL_SUCCESS ? err = lastErr : CL_SUCCESS)
     ), ...);
 
-    if (openclError("Failed to map buffer!", err)) return;
+    if (openclError("Failed to map buffer to host!", err)) return;
 
+    deviceObj->queue->finish();
     mapCLK.end();
 
     // store the d2h time

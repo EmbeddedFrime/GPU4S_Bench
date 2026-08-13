@@ -320,7 +320,7 @@ int main(int argc, char *argv[]){
 			#endif
 		} 
 	    
-	    if (compare_vectors(output_data, d_output, CIFAR_10_OUTPUT)){
+	    if (compare_vectors(output_data, d_output, CIFAR_10_OUTPUT * arguments_parameters->size)){
 	    	printf("OK\n");
 	    }
 
@@ -329,6 +329,7 @@ int main(int argc, char *argv[]){
 	    	print_double_hexadecimal_values(CPU_FILE, output_data, CIFAR_10_OUTPUT);
 	    }
 	}
+	
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// CLEAN MEMORY
 	///////////////////////////////////////////////////////////////////////////////////////////////

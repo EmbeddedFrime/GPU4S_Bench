@@ -139,7 +139,6 @@ int main(int argc, char *argv[]){
     } else
 	{
         copy_memory_to_host(fft_bench, d_B, size);
-
     }
 
 	// get time

@@ -163,6 +163,10 @@ void clean(GraficCommon *device_object);
 
 // --- UMA memory function ---
 #ifdef UMA_COMPATIBILITY
+    // --- 1 buffer ---
+    void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, unsigned int memSize);
+    void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A);
+
     // --- 2 buffer ---
     void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, unsigned int memSize);
     void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B);

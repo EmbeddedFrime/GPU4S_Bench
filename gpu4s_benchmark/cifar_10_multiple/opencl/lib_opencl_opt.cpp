@@ -317,7 +317,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         kernel_add.setArg(2,neurons_dense_2/2);
         kernel_add.setArg(3,stream * neurons_dense_2);
         queues[stream].enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
-
+        
         //soft max
         if((neurons_dense_2) <= BLOCK_SIZE)
         {

@@ -105,15 +105,15 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
 
 void copy_memory_to_host(GraficCommon* device_object, result_bench_t* h_R){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    result_bench_t acumulate_value_a_a;
+    result_bench_t acumulate_value_a_b;
+    result_bench_t acumulate_value_b_b;
     // device ->  host
     Clock d2hCLK;
 
     // Clock profilling start 
     d2hCLK.start();
 
-    result_bench_t acumulate_value_a_a;
-    result_bench_t acumulate_value_a_b;
-    result_bench_t acumulate_value_b_b;
     cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->acumulate_value_a_a,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_a_a, NULL, deviceObj->evt_copyAA);
     if (openclError("Failed to copy vector acumulate_value_a_a from device to host", err)) return;
     err = deviceObj->queue->enqueueReadBuffer(*deviceObj->acumulate_value_a_b,CL_TRUE,0,sizeof(result_bench_t),&acumulate_value_a_b, NULL, deviceObj->evt_copyAB);
@@ -187,3 +187,60 @@ void clean(GraficCommon* device_object){
     delete deviceObj->evt_copyAB;
     delete deviceObj->evt_copyAA;
 }
+
+
+#ifdef UMA_COMPATIBILITY
+// ====== UMA function ======
+void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int memSize){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    
+    // --- Call the openCL common function ---
+    map_unified_memory(device_object, memSize, 
+        BufferMapCL{&A, deviceObj->d_A, nullptr},
+        BufferMapCL{&B, deviceObj->d_B, nullptr}
+    );
+
+    bench_t* tmp_dR = nullptr;
+    map_unified_memory(device_object, sizeof(result_bench_t), 
+        BufferMapCL{&tmp_dR, deviceObj->d_R, nullptr}
+    );
+    C = (result_bench_t*)tmp_dR;
+}
+
+void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
+    bench_t* tmp_dR = (bench_t*)C;
+    
+    // --- Call the openCL common function ---
+    unmap_unified_memory(device_object, 
+        BufferMapCL{&A, deviceObj->d_A, deviceObj->evt_copyA},
+        BufferMapCL{&B, deviceObj->d_B, deviceObj->evt_copyB},
+        BufferMapCL{&tmp_dR, deviceObj->d_R, nullptr}
+    );
+} 
+
+
+void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int memSize){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+
+    bench_t* tmp_aa = nullptr;
+    bench_t* tmp_ab = nullptr;
+    bench_t* tmp_bb = nullptr;
+    
+    // --- Call the openCL common function ---
+    map_unified_memory_to_host(device_object, sizeof(result_bench_t), 
+        BufferMapCL{&tmp_aa, deviceObj->acumulate_value_a_a, deviceObj->evt_copyAA},
+        BufferMapCL{&tmp_ab, deviceObj->acumulate_value_a_b, deviceObj->evt_copyAB},
+        BufferMapCL{&tmp_bb, deviceObj->acumulate_value_b_b, deviceObj->evt_copyBB}
+    );
+
+    // --- Cast back to bench_t ---
+    result_bench_t a_a = *((result_bench_t*)tmp_aa);
+    result_bench_t a_b = *((result_bench_t*)tmp_ab);
+    result_bench_t b_b = *((result_bench_t*)tmp_bb);
+
+    // Compute the result
+    *d_output = (result_bench_t)(a_b / (result_bench_t)(sqrt(a_a * b_b)));
+}
+#endif
