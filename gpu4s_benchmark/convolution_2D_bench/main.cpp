@@ -34,13 +34,14 @@ int main(int argc, char *argv[]){
 	unsigned int size_matrix = arguments_parameters->size * arguments_parameters->size;
 	// A input matrix
     unsigned int mem_size = sizeof(bench_t) * size_matrix;
-	bench_t* A = NULL;
+	// initialized to nullptr to prevent wild/dangling pointer references with UMA
+	bench_t* A = nullptr;
 	// kernel matrix
 	unsigned int size_k = arguments_parameters->kernel_size * arguments_parameters->kernel_size ;
     unsigned int mem_size_k = sizeof(bench_t) * size_k;
-	bench_t* kernel = NULL;
+	bench_t* kernel = nullptr;
 	// B output matrix
-	bench_t* d_B = NULL;
+	bench_t* d_B = nullptr;
 	bench_t* h_B = (bench_t*) malloc(mem_size);
 	// init devices
 	char device[100] = "";

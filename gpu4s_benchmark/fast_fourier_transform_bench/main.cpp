@@ -32,6 +32,7 @@ int main(int argc, char *argv[]){
 	// VARIABLES 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// A input vector
+	// initialized to nullptr to prevent wild/dangling pointer references with UMA
 	int64_t size = arguments_parameters->size;
     int64_t mem_size = sizeof(bench_t) * size;
 	bench_t* A = (bench_t*) malloc(mem_size);

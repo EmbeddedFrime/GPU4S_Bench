@@ -31,6 +31,7 @@ int main(int argc, char *argv[]){
 	// VARIABLES 
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	// linearizable versions of matrix
+	// initialized to nullptr to prevent wild/dangling pointer references with UMA
 	unsigned int size_matrix = arguments_parameters->size * arguments_parameters->size;
 	unsigned int mem_size = sizeof(bench_t) * size_matrix;
 	// A input matrix

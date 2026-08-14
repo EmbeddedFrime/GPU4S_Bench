@@ -37,9 +37,10 @@ int main(int argc, char *argv[])
 	unsigned int size_matrix = arguments_parameters->size * arguments_parameters->size;
 	unsigned int mem_size = sizeof(bench_t) * size_matrix;
 	// A input matrix
-	bench_t* A = (bench_t*) malloc(mem_size);
+	// initialized to nullptr to prevent wild/dangling pointer references with UMA
+	bench_t* A = nullptr;
 	// B output matrix
-	bench_t* d_B = (bench_t*) malloc(mem_size);
+	bench_t* d_B = nullptr;
 	bench_t* h_B = (bench_t*) malloc(mem_size);
 	// init devices
 	char device[100] = "";

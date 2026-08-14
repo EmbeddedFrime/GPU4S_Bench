@@ -49,6 +49,7 @@ int main(int argc, char *argv[]){
 	// linearizable versions of matrix
 	unsigned int size_matrix = CIFAR_10_INPUT * CIFAR_10_INPUT * arguments_parameters->size;
 	// A input matrix
+	// initialized to nullptr to prevent wild/dangling pointer references with UMA
 	unsigned int size_A = CIFAR_10_INPUT * CIFAR_10_INPUT * arguments_parameters->size;
     unsigned int mem_size_A = sizeof(bench_t) * size_A;
 	bench_t* input_data = nullptr;

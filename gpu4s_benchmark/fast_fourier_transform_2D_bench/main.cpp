@@ -35,11 +35,12 @@ int main(int argc, char *argv[]){
 	// A input vector
 	int64_t size_A = arguments_parameters->size;
 	int64_t mem_size = sizeof(COMPLEX*) * size_A;
+	// initialized to nullptr to prevent wild/dangling pointer references with UMA
 	COMPLEX **A = (COMPLEX **)malloc(arguments_parameters->size * sizeof(COMPLEX*));
-    for(int64_t i = 0; i < arguments_parameters->size; ++i) A[i] = NULL;
+    for(int64_t i = 0; i < arguments_parameters->size; ++i) A[i] = nullptr;
 
     COMPLEX **d_B = (COMPLEX **)malloc(arguments_parameters->size * sizeof(COMPLEX*));
-    for(int64_t i = 0; i < arguments_parameters->size; ++i) d_B[i] = NULL;
+    for(int64_t i = 0; i < arguments_parameters->size; ++i) d_B[i] = nullptr;
 
     COMPLEX **h_B = (COMPLEX **)malloc(arguments_parameters->size * sizeof(COMPLEX*));
     for(int64_t i = 0; i < arguments_parameters->size; ++i) h_B[i] = (COMPLEX *)malloc(arguments_parameters->size * sizeof(COMPLEX));

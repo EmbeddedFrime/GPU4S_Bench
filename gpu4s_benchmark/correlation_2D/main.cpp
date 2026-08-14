@@ -37,11 +37,12 @@ int main(int argc, char *argv[]){
 	unsigned int size_matrix  =arguments_parameters->size * arguments_parameters->size;
 	// A input matrix
     unsigned int mem_size = sizeof(bench_t) * size_matrix;
-	bench_t* A = NULL;
+	// initialized to nullptr to prevent wild/dangling pointer references with UMA
+	bench_t* A = nullptr;
 	// B input matrix
-	bench_t* B = NULL;
+	bench_t* B = nullptr;
 	// Correaltion Value alwais is a float number
-	result_bench_t* d_R = NULL;
+	result_bench_t* d_R = nullptr;
 	result_bench_t* h_R = (result_bench_t*) malloc(sizeof(result_bench_t));
 	// init devices
 	char device[100] = "";

@@ -34,6 +34,7 @@ int main(int argc, char *argv[]){
 	// A input matrix
 	unsigned int size_A = arguments_parameters->size * arguments_parameters->size;
     unsigned int mem_size_A = sizeof(bench_t) * size_A;
+	// initialized to nullptr to prevent wild/dangling pointer references with UMA
 	bench_t* A = nullptr;
 	// B input matrix
 	unsigned int size_lateral = arguments_parameters->size / arguments_parameters->stride;
