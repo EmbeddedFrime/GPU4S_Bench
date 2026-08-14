@@ -84,6 +84,8 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* k
 
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,unsigned int w, unsigned int kernel_size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    //FIX: use W instead of  N the other implementation need size_matrix and this one need size_B
+    n = w;
     const unsigned int x_local= BLOCK_SIZE;
     cl::NDRange local;
     cl::NDRange global;

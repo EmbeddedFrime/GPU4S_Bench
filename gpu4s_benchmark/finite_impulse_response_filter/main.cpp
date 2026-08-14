@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 	}
 	
 	// execute kernel
-	execute_kernel(fir_bench, size_B, size_matrix, size_B, size_k);
+	execute_kernel(fir_bench, size_matrix, size_matrix, size_B, size_k);
 
 	// copy memory to host
 	if (arguments_parameters->unified_memory)
