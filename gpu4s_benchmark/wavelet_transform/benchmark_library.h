@@ -70,8 +70,34 @@ struct GraficObject : public GraficCommon {
 	#endif
 };
 
+
+
 // --- Specefic overload of benchmarking function ---
 #ifdef UMA_COMPATIBILITY
-	void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D, unsigned int memSize);
-	void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D);
+// --- 4 buffer, 1 shared size + 2 conditional (wavelet_transform) ---
+    /**
+     * @brief Maps input/output (A -> d_A, B -> d_B, both sized memSize) plus, in FLOAT/DOUBLE
+     *        builds only, two filter buffers (C -> low_filter, sized
+     *        LOWPASSFILTERSIZE; D -> high_filter, sized HIGHPASSFILTERSIZE). 
+
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to receive the mapped input host pointer (d_A)
+     * @param B Reference to receive the mapped output host pointer (d_B)
+     * @param C Reference to receive the mapped lowpass-filter host pointer (low_filter); unused under INT
+     * @param D Reference to receive the mapped highpass-filter host pointer (high_filter); unused under INT
+     * @param memSize Size shared by A and B, in bytes. C and D use their own fixed
+     *        LOWPASSFILTERSIZE/HIGHPASSFILTERSIZE internally, not this parameter.
+     */
+    void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D, unsigned int memSize);
+    /**
+     * @brief Unmaps A, B, and (FLOAT/DOUBLE builds only) C and D, blocking until the device
+     *        regains ownership of each. 
+	 * 
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to the mapped input host pointer to unmap
+     * @param B Reference to the mapped output host pointer to unmap
+     * @param C Reference to the mapped lowpass-filter host pointer to unmap; unused under INT
+     * @param D Reference to the mapped highpass-filter host pointer to unmap; unused under INT
+     */
+    void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D);
 #endif

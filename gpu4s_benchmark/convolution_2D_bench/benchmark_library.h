@@ -54,3 +54,19 @@ struct GraficObject : public GraficCommon {
 
 // --- Specefic overload of benchmarking function ---
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m, unsigned int w, unsigned int kernel_size);
+
+// --- UMA memory function ---
+#ifdef UMA_COMPATIBILITY
+// --- 3 buffer, 2 sizes 
+/**
+ * @brief Maps three device buffers into host-visible memory across two distinct sizes.
+ * 
+ * @param device_object Pointer to the device common structure
+ * @param A Reference to receive the mapped host pointer for d_A (sized memSize)
+ * @param B Reference to receive the mapped host pointer for kernel (sized memSize2, NOT memSize)
+ * @param C Reference to receive the mapped host pointer for d_B (sized memSize, same as A)
+ * @param memSize Size shared by A and C, in bytes
+ * @param memSize2 Size of B alone, in bytes
+ */
+void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int memSize, unsigned int memSize2);
+#endif

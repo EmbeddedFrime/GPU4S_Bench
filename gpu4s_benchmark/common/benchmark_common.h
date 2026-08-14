@@ -161,27 +161,65 @@ float get_elapsed_time(GraficCommon *device_object, bool csv_format, bool csv_fo
 void clean(GraficCommon *device_object);
 
 
-// --- UMA memory function ---
+/// --- UMA memory function ---
 #ifdef UMA_COMPATIBILITY
+
     // --- 1 buffer ---
+    /**
+     * @brief Maps one device buffer into host-visible memory (blocking write-map).
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to receive the mapped host pointer
+     * @param memSize Size of the buffer to map, in bytes
+     */
     void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, unsigned int memSize);
+    /**
+     * @brief Unmaps a single buffer, blocking until the device regains ownership.
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to the mapped host pointer to unmap
+     */
     void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A);
 
     // --- 2 buffer ---
+    /**
+     * @brief Maps two equal-sized device buffers into host-visible memory 
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to receive the first mapped host pointer
+     * @param B Reference to receive the second mapped host pointer
+     * @param memSize Size of EACH buffer to map, in bytes - both buffers share this one size
+     */
     void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, unsigned int memSize);
+    /**
+     * @brief Unmaps two buffers, blocked for host until the device give aigain ownership 
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to the first mapped host pointer to unmap
+     * @param B Reference to the second mapped host pointer to unmap
+     */
     void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B);
 
     // --- 3 buffer ---
+    /**
+     * @brief Maps three equal-sized device buffers into host-visible memory
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to receive the first mapped host pointer
+     * @param B Reference to receive the second mapped host pointer
+     * @param C Reference to receive the third mapped host pointer
+     * @param memSize Size of EACH buffer, in bytes. 
+     */
     void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int memSize);
+    /**
+     * @brief Unmaps three buffers, blocked for host until the device give aigain ownership
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to the first mapped host pointer to unmap
+     * @param B Reference to the second mapped host pointer to unmap
+     * @param C Reference to the third mapped host pointer to unmap
+     */
     void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C);
 
-    // --- 3 buffer + 2 size ---
-    void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int memSize, unsigned int memSize2);
-
-     // --- 3 buffer + 3 size ---
-    void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned memSize, unsigned memSize2, unsigned memSize3);
-
-    // --- common ---
+    /**
+     * @brief Maps output result buffer back to host
+     * @param device_object Pointer to the device common structure
+     * @param d_output Reference to receive the mapped host pointer
+     * @param memSize Size of the buffer to map, in bytes
+     */
     void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int memSize);
-
 #endif

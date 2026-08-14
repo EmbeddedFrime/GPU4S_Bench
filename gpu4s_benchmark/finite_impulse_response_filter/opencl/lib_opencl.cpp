@@ -247,7 +247,7 @@ void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     // --- Call the openCL common function ---
     map_unified_memory_to_host(device_object, memSize, 
-        BufferMapCL{&d_output, deviceObj->d_B, deviceObj->evt_copyB}
+        BufferMapCL{&d_output, deviceObj->d_B, deviceObj->evt_copyC}
     );
 }
 
