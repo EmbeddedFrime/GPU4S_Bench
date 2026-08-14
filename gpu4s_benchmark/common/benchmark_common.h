@@ -174,5 +174,14 @@ void clean(GraficCommon *device_object);
     // --- 3 buffer ---
     void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int memSize);
     void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C);
+
+    // --- 3 buffer + 2 size ---
+    void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int memSize, unsigned int memSize2);
+
+     // --- 3 buffer + 3 size ---
+    void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned memSize, unsigned memSize2, unsigned memSize3);
+
+    // --- common ---
     void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int memSize);
+
 #endif

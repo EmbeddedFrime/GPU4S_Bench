@@ -35,11 +35,11 @@ int main(int argc, char *argv[]){
 	unsigned int size_matrix = arguments_parameters->size  * arguments_parameters->size;
 	unsigned int mem_size = sizeof(bench_t) * size_matrix;
 	// A input matrix
-	bench_t* A = (bench_t*) malloc(mem_size);
+	bench_t* A = nullptr;
 	// B input matrix
-	bench_t* B = (bench_t*) malloc(mem_size);
+	bench_t* B = nullptr;
 	// C matrix
-	bench_t* d_C = (bench_t*) malloc(mem_size);
+	bench_t* d_C = nullptr;
 	bench_t* h_C = (bench_t*) malloc(mem_size);
 	// init devices
 	char device[100] = "";

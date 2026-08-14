@@ -211,11 +211,13 @@ int main(int argc, char *argv[]){
 	// free object memory 
 	free(fft_bench);
 	free(arguments_parameters);
+	
 	if (!arguments_parameters->unified_memory) 
 	{
         free(A);
         free(d_B);
     }
+
 	free(h_B);
 	return 0; 
 }
