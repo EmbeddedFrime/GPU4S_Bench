@@ -61,20 +61,6 @@ if(ANDROID)
             SHORTCUTS_NAMES     opencl-opt OpenCL-opt
         )
 
-        # --- OpenCL-lib ---
-        compile_target(${PROJECT_NAME}_opencl_lib
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES       opencl/lib_opencl_lib.cpp
-                                opencl/lib_opencl_common.cpp
-
-            COMPILE_DEFS        OPENCL   
-                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION} 
-
-            INCLUDES            ${ANDROID_INC}
-            LIBRARIES           ${ANDROID_LIB}/${ANDROID_ABI}/libOpenCL.so
-
-            SHORTCUTS_NAMES     opencl-lib OpenCL-lib
-        )
     endif()
 
     # --- OpenMP---
@@ -137,19 +123,6 @@ if(NOT ANDROID)
 
             LIBRARIES           OpenCL::OpenCL
             SHORTCUTS_NAMES     opencl-opt OpenCL-opt
-        )
-
-        # --- OpenCL-lib ---
-        compile_target(${PROJECT_NAME}_opencl_lib
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
-            SOURCES_FILES       opencl/lib_opencl_lib.cpp
-                                opencl/lib_opencl_common.cpp
-
-            COMPILE_DEFS        OPENCL
-                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
-
-            LIBRARIES           OpenCL::OpenCL 
-            SHORTCUTS_NAMES     opencl-lib OpenCL-lib
         )
       
     endif()
