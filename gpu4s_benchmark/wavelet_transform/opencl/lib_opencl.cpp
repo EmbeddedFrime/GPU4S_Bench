@@ -1,6 +1,7 @@
 // OpenCL lib code 
 #include <cmath>
 #include "../benchmark_library.h"
+#include "../../common/opencl_common.hpp"
 #include <cstring>
 #ifdef INT
 #include "GEN_kernel_integer.hcl"
@@ -253,3 +254,54 @@ void clean(GraficCommon* device_object){
     delete deviceObj->evt_copyB;
     delete deviceObj->evt_copyC;
 }
+
+
+#ifdef UMA_COMPATIBILITY
+// ====== UMA function ======
+void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D, unsigned int memSize){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    map_unified_memory(device_object, memSize, 
+        BufferMapCL{&A, deviceObj->d_A, nullptr},
+        BufferMapCL{&B, deviceObj->d_B, nullptr}
+    );
+
+    #ifndef INT
+    //lowpass_filter
+    map_unified_memory(device_object, sizeof(bench_t) * LOWPASSFILTERSIZE, 
+        BufferMapCL{&C, deviceObj->low_filter, nullptr}
+    );
+
+    //high pass_filter
+    map_unified_memory(device_object, sizeof(bench_t) * HIGHPASSFILTERSIZE, 
+        BufferMapCL{&D, deviceObj->high_filter, nullptr}
+    );
+    #endif
+}
+
+void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    unmap_unified_memory(device_object, 
+        BufferMapCL{&A, deviceObj->d_A, deviceObj->evt_copyA},
+        BufferMapCL{&B, deviceObj->d_B, nullptr}
+        #ifndef INT
+        // comma only for FLOAT or DOUBLE
+        ,BufferMapCL{&C, deviceObj->low_filter, nullptr},
+        BufferMapCL{&D, deviceObj->high_filter, nullptr}
+        #endif
+    );
+
+
+} 
+
+
+void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int memSize){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    map_unified_memory_to_host(device_object, memSize, 
+        BufferMapCL{&d_output, deviceObj->d_B, deviceObj->evt_copyB}
+    );
+}
+
+#endif

@@ -71,3 +71,7 @@ struct GraficObject : public GraficCommon {
 };
 
 // --- Specefic overload of benchmarking function ---
+#ifdef UMA_COMPATIBILITY
+	void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D, unsigned int memSize);
+	void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D);
+#endif
