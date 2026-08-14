@@ -54,6 +54,7 @@ inline void map_unified_memory(GraficCommon* device_object, unsigned memSize, Ma
     // --- C++17 Fold Expression Unrolled at compile-time  ---
     // For each MapCL map host buffer to devcie buffer
     (( 
+        //map the buffer between cpu and gpu (cpu is faster)
         *(mapCL.hostBuffer) = static_cast<bench_t*>(
             deviceObj->queue->enqueueMapBuffer(
                 *(mapCL.deviceBuffer), CL_TRUE, CL_MAP_WRITE, 0, memSize, nullptr, mapCL.deviceEvent, &lastErr

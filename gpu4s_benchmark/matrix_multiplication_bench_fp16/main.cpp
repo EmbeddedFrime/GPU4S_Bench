@@ -60,6 +60,7 @@ int main(int argc, char *argv[]){
 	{	
 		#ifdef UMA_COMPATIBILITY
 			// map the buffzer to the gpu + cpu take the lead
+			// UMA: map buffers between device and cpu (takes the lead)
 			get_unified_memory_pointers(matrix_benck, A, B, d_C, mem_size);
 		#else
 			fprintf(stderr, "\033[1;31merror:\033[0m This framework is not compatible with unified memory. Please remove the -u arg!\n");			
@@ -128,6 +129,7 @@ int main(int argc, char *argv[]){
 	if(arguments_parameters->unified_memory)
 	{
 		#ifdef UMA_COMPATIBILITY 
+			// UMA: unmap shared buffer from host to device
 			sync_unified_memory_to_device(matrix_benck, A, B, d_C);
 		#endif
 	}
@@ -143,6 +145,7 @@ int main(int argc, char *argv[]){
 	if (arguments_parameters->unified_memory)
 	{	
 		#ifdef UMA_COMPATIBILITY
+			// UMA: map back output buffer to host
 			sync_unified_memory_to_host(matrix_benck, d_C, mem_size);
 		#endif
     } else

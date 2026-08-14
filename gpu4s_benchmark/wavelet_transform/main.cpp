@@ -65,6 +65,7 @@ int main(int argc, char *argv[]){
 		#ifdef UMA_COMPATIBILITY
 
 			// map the buffzer to the gpu + cpu take the lead
+			// UMA: map buffers between device and cpu (takes the lead)
 			get_unified_memory_pointers(wavelet_bench, A, d_B, lowpass_filter_ptr, highpass_filter_ptr, mem_size);
 
 			
@@ -152,6 +153,7 @@ int main(int argc, char *argv[]){
 	if(arguments_parameters->unified_memory)
 	{
 		#ifdef UMA_COMPATIBILITY 
+			// UMA: unmap shared buffer from host to device
 			sync_unified_memory_to_device(wavelet_bench, A, d_B, lowpass_filter_ptr, highpass_filter_ptr);
 		#endif
 	}
@@ -167,6 +169,7 @@ int main(int argc, char *argv[]){
 	if (arguments_parameters->unified_memory)
 	{	
 		#ifdef UMA_COMPATIBILITY
+			// UMA: map back output buffer to host
 			sync_unified_memory_to_host(wavelet_bench, d_B, size_matrix);
 		#endif
     } else

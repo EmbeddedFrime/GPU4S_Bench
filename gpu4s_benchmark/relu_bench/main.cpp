@@ -35,9 +35,9 @@ int main(int argc, char *argv[]){
 	unsigned int size_matrix = arguments_parameters->size * arguments_parameters->size;
 	unsigned int mem_size = sizeof(bench_t) * size_matrix;
 	// A input matrix
-	bench_t* A = NULL;
+	bench_t* A = nullptr;
 	// B input matrix
-	bench_t* d_B = NULL;
+	bench_t* d_B = nullptr;
 	bench_t* h_B = (bench_t*) malloc(mem_size);
 	// init devices
 	char device[100] = "";
@@ -58,6 +58,7 @@ int main(int argc, char *argv[]){
 	{	
 		#ifdef UMA_COMPATIBILITY
 			// map the buffer to the gpu + cpu take the lead
+			// UMA: map buffers between device and cpu (takes the lead)
 			get_unified_memory_pointers(relu_bench, A, d_B, mem_size);
 		#else
 			fprintf(stderr, "\033[1;31merror:\033[0m This framework is not compatible with unified memory. Please remove the -u arg!\n");			
@@ -129,6 +130,7 @@ int main(int argc, char *argv[]){
 	if(arguments_parameters->unified_memory)
 	{
 		#ifdef UMA_COMPATIBILITY 
+			// UMA: unmap shared buffer from host to device
 			sync_unified_memory_to_device(relu_bench, A, d_B);
 		#endif
 	}
@@ -144,6 +146,7 @@ int main(int argc, char *argv[]){
 	if (arguments_parameters->unified_memory)
 	{	
 		#ifdef UMA_COMPATIBILITY
+			// UMA: map back output buffer to host
 			sync_unified_memory_to_host(relu_bench, d_B, mem_size);
 		#endif
     } else
@@ -268,8 +271,8 @@ void init_arguments(BenchmarkParameters* arguments_parameters){
 		arguments_parameters->profiling_clock = false;
 	#endif
 }
-// Arguments part
 
+// Arguments part
 void print_usage(const char * appName)
 {
 	printf("Usage: %s -s Size -k [-v] [-e] [-o] [-t] [-d] [-i input_file_A_MATRIX input_file_B_MATRIX] \n", appName);
