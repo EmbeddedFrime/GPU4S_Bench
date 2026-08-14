@@ -121,4 +121,6 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size, un
 
 
 #ifdef UMA_COMPATIBILITY
+void get_unified_memory_pointers(GraficCommon* device_object,bench_t* &input_data, unsigned int input_mem_size,bench_t* &kernel_1, bench_t* &kernel_2, unsigned int kernel_mem_size, bench_t* &weights_1, unsigned int weights_1_mem_size, bench_t* &weights_2, unsigned int weights_2_mem_size, bench_t* &d_output, unsigned int output_mem_size);
+void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &input_data, bench_t* &kernel_1, bench_t* &kernel_2, bench_t* &weights_1, bench_t* &weights_2, bench_t* &d_output);
 #endif

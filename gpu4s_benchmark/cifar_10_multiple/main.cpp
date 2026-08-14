@@ -51,27 +51,27 @@ int main(int argc, char *argv[]){
 	// A input matrix
 	unsigned int size_A = CIFAR_10_INPUT * CIFAR_10_INPUT * arguments_parameters->size;
     unsigned int mem_size_A = sizeof(bench_t) * size_A;
-	bench_t* input_data = (bench_t*) malloc(mem_size_A);
+	bench_t* input_data = nullptr;
 	// B output matrix
-	unsigned int size_B = CIFAR_10_OUTPUT * CIFAR_10_OUTPUT * arguments_parameters->size;
+	unsigned int size_B = CIFAR_10_OUTPUT *  arguments_parameters->size;
     unsigned int mem_size_B = sizeof(bench_t) * size_B;
-	bench_t* d_output = (bench_t*) malloc(mem_size_B);
+	bench_t* d_output =  nullptr;
 	// kernel matrix 1
 	unsigned int size_k_1 = KERNEL_CON_1 * KERNEL_CON_2;
     unsigned int mem_size_k_1 = sizeof(bench_t) * size_k_1;
-	bench_t* kernel_1 = (bench_t*) malloc(mem_size_k_1);
+	bench_t* kernel_1 = nullptr;
 	// kernel matrix 2
 	unsigned int size_k_2 = KERNEL_CON_2 * KERNEL_CON_2;
     unsigned int mem_size_k_2 = sizeof(bench_t) * size_k_2;
-	bench_t* kernel_2 = (bench_t*) malloc(mem_size_k_2);
+	bench_t* kernel_2 = nullptr;
 	// weights  1
 	unsigned int size_w_1 = DENSE_1 * (((CIFAR_10_INPUT / STRIDE_1)/STRIDE_2)*((CIFAR_10_INPUT / STRIDE_1)/STRIDE_2));
     unsigned int mem_size_w_1 = sizeof(bench_t) * size_w_1;
-	bench_t* weights_1 = (bench_t*) malloc(mem_size_w_1);
+	bench_t* weights_1 = nullptr;
 	// weights  1
 	unsigned int size_w_2 = DENSE_1 * DENSE_2;
     unsigned int mem_size_w_2 = sizeof(bench_t) * size_w_2;
-	bench_t* weights_2 = (bench_t*) malloc(mem_size_w_2);
+	bench_t* weights_2 = nullptr;
 	// Outputs 
 	const unsigned int size_pooling_1 = CIFAR_10_INPUT / STRIDE_1;
     const unsigned int size_pooling_2 = size_pooling_1 / STRIDE_2;
@@ -101,13 +101,12 @@ int main(int argc, char *argv[]){
 		exit(-1);
 	}
 
-
 	// --- 3. Allocate Host Pointers ---
 	if (arguments_parameters->unified_memory)
 	{	
 		#ifdef UMA_COMPATIBILITY
 			// map the buffzer to the gpu + cpu take the lead
-			//get_unified_memory_pointers(//...);
+			get_unified_memory_pointers(cifar10_bench,input_data, mem_size_A,kernel_1, kernel_2, mem_size_k_1,weights_1, mem_size_w_1,weights_2, mem_size_w_2,d_output, mem_size_B);
 		#else
 			fprintf(stderr, "\033[1;31merror:\033[0m This framework is not compatible with unified memory. Please remove the -u arg!\n");			
 			exit(-1);
@@ -115,7 +114,12 @@ int main(int argc, char *argv[]){
 	} else
 	{
 		// normale malloc
-		///... to ne fill
+		input_data 	= (bench_t*) malloc(mem_size_A);
+		kernel_1    = (bench_t*) malloc(mem_size_k_1);
+		kernel_2    = (bench_t*) malloc(mem_size_k_2);
+		weights_1   = (bench_t*) malloc(mem_size_w_1);
+		weights_2   = (bench_t*) malloc(mem_size_w_2);
+		d_output    = (bench_t*) malloc(mem_size_B);
 	}
 
 
@@ -125,7 +129,7 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	if (strlen(arguments_parameters->input_file_A) == 0)
 	{
-	// inicialice A matrix 
+		// inicialice inputçdata matrix 
 		for (int k=0; k < arguments_parameters->size; ++k){
 			for (int i=0; i<CIFAR_10_INPUT; ++i){
 		    	for (int j=0; j<CIFAR_10_INPUT; ++j){
@@ -156,9 +160,9 @@ int main(int argc, char *argv[]){
 	  {
 	    printf("\n");
 	  }
-	// reseed por compasion reasons
-	srand (21121993);
-	// inicialice kernel 1
+		// reseed por compasion reasons
+		srand (21121993);
+		// inicialice kernel 1
 		for (int i=0; i<size_k_1; i++)
 		{
 			#ifdef INT
@@ -167,7 +171,7 @@ int main(int argc, char *argv[]){
 	        kernel_1[i] = RandomNumber();
 	        #endif
 		}
-	// inicialice kernel 2
+		// inicialice kernel 2
 		for (int i=0; i<size_k_2; i++)
 		{
 			#ifdef INT
@@ -176,7 +180,7 @@ int main(int argc, char *argv[]){
 	        kernel_2[i] = RandomNumber();
 	        #endif
 		}
-	// inicialice weights 1
+		// inicialice weights 1
 		for (int i=0; i<size_w_1; i++)
 		{
 			#ifdef INT
@@ -185,7 +189,7 @@ int main(int argc, char *argv[]){
 	        weights_1[i] = RandomNumber();
 	        #endif
 		}
-	// inicialice weights 2
+		// inicialice weights 2
 		for (int i=0; i<size_w_2; i++)
 		{
 			#ifdef INT
@@ -194,7 +198,7 @@ int main(int argc, char *argv[]){
 	        weights_2[i] = RandomNumber();
 	        #endif
 		}
-	// inicialice output
+		// reset output
 		for(int i=0; i<size_B; ++i){
 			d_output[i] = 0;
 		}
@@ -227,7 +231,7 @@ int main(int argc, char *argv[]){
 	if(arguments_parameters->unified_memory)
 	{
 		#ifdef UMA_COMPATIBILITY 
-			//sync_unified_memory_to_device(//to be fill;
+			sync_unified_memory_to_device(cifar10_bench, input_data, kernel_1, kernel_2, weights_1, weights_2, d_output);
 		#endif
 	}
 	else
@@ -243,7 +247,7 @@ int main(int argc, char *argv[]){
 	if (arguments_parameters->unified_memory)
 	{	
 		#ifdef UMA_COMPATIBILITY
-			//sync_unified_memory_to_host(// to be fill);
+			sync_unified_memory_to_host(cifar10_bench, d_output, mem_size_B);
 		#endif
     } else
 	{
@@ -338,12 +342,16 @@ int main(int argc, char *argv[]){
 	// free object memory 
 	free(arguments_parameters);
 	free(cifar10_bench);
-	free(input_data);
-	free(d_output);
-	free(kernel_1);
-	free(kernel_2);
-	free(weights_1);
-	free(weights_2);
+	if (!arguments_parameters->unified_memory) 
+	{
+        free(input_data);
+		free(d_output);
+		free(kernel_1);
+		free(kernel_2);
+		free(weights_1);
+		free(weights_2);
+    }
+
 	free(conv_1_output);
 	free(pooling_1_output);
 	free(conv_2_output);
@@ -351,7 +359,7 @@ int main(int argc, char *argv[]){
    	free(dense_layer_1_output);
 	free(dense_layer_2_output);
 	free(output_data);
-return 0;
+	return 0;
 }
 
 
