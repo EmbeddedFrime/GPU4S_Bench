@@ -44,7 +44,7 @@ bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix,
     }
     
     // Allocate the device input vector A
-    hipError_terr = hipMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
+    hipError_t err = hipMalloc((void **)&deviceObj->d_A, size_a_matrix * sizeof(bench_t));
     if (err != hipSuccess) return false;
 
     // Allocate the device input vector B

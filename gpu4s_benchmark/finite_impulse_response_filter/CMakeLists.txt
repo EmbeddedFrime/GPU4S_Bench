@@ -10,8 +10,8 @@ project(FIR_filter CXX)
 
 # ====== Include cmake module ======
 list(APPEND CMAKE_MODULE_PATH 
-    "${CMAKE_SOURCE_DIR}/../common/cmake/"
-    "${CMAKE_SOURCE_DIR}/../common/cmake/module"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../common/cmake/"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../common/cmake/module"
 )
 # Global:
 include(setup)
@@ -22,13 +22,15 @@ include(findHIP)
 include(findOpenBLAS)
 
 # show the configuration of the project
-showConfig()
+if(PROJECT_IS_TOP_LEVEL)
+    showConfig()
+endif()
 
 # ====== Compilation of the targets ======
 
 # --- CPU target ---
 compile_target(${PROJECT_NAME}_cpu
-    BENCH_DIR          ${CMAKE_SOURCE_DIR}
+    BENCH_DIR          ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES_FILES           cpu/lib_cpu.cpp 
     SHORTCUTS_NAMES         cpu CPU
 )
@@ -39,7 +41,7 @@ if(ANDROID)
     if(ANDROID_OPENCL_LIB_INC)
         # --- OpenCL ---
         compile_target(${PROJECT_NAME}_opencl
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            BENCH_DIR          ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES      opencl/lib_opencl.cpp
             COMPILE_DEFS       OPENCL
                             CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
@@ -53,7 +55,7 @@ if(ANDROID)
 
     # --- OpenMP---
     compile_target(${PROJECT_NAME}_openmp
-        BENCH_DIR          ${CMAKE_SOURCE_DIR}
+        BENCH_DIR          ${CMAKE_CURRENT_SOURCE_DIR}
         SOURCES_FILES      openmp/lib_omp.cpp
         COMPILE_DEFS       OPENMP 
         COMPILE_OPTIONS    -fopenmp  
@@ -73,7 +75,7 @@ if(NOT ANDROID)
     if(OpenCL_FOUND)
         # --- OpenCL ---
         compile_target(${PROJECT_NAME}_opencl
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            BENCH_DIR          ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES      opencl/lib_opencl.cpp
             COMPILE_DEFS       OPENCL
                                CL_HPP_TARGET_OPENCL_VERSION=${OPENCL_VERSION}
@@ -89,7 +91,7 @@ if(NOT ANDROID)
     if(OpenMP_CXX_FOUND)
         # --- OpenMP ---
         compile_target(${PROJECT_NAME}_openmp
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            BENCH_DIR          ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES      openmp/lib_omp.cpp
             COMPILE_DEFS       OPENMP
 
@@ -106,7 +108,7 @@ if(NOT ANDROID)
     if(CUDAToolkit_FOUND)
         # --- CUDA ---
         compile_target(${PROJECT_NAME}_cuda
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            BENCH_DIR          ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES      cuda/lib_cuda.cu
             COMPILE_DEFS       CUDA
             SET_CUDA           1
@@ -120,7 +122,7 @@ if(NOT ANDROID)
     if(hip_FOUND)
         # --- HIP ---²
         compile_target(${PROJECT_NAME}_hip
-            BENCH_DIR          ${CMAKE_SOURCE_DIR}
+            BENCH_DIR          ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       hip/lib_hip.cpp 
             SET_HIP_FILES       hip/lib_hip.cpp 
             COMPILE_DEFS        HIP
@@ -136,14 +138,14 @@ endif(NOT ANDROID)
 
 # --- all-opencl (Android) ---
 if(ANDROID AND ANDROID_OPENCL_LIB_INC )
-    add_custom_target(all-opencl DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
     )
 endif()
 
 # --- all-opencl---
 if(NOT ANDROID AND OpenCL_FOUND )
-    add_custom_target(all-opencl DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
     )
 endif()
@@ -151,7 +153,7 @@ endif()
 
 # --- all-openmp (Android) ---
 if(ANDROID AND ANDROID_OPENBLAS_LIB_INC  )
-    add_custom_target(all-openmp DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
         ${PROJECT_NAME}_openmp_opt 
     )
@@ -160,7 +162,7 @@ endif()
 
 # --- all-openmp---
 if(NOT ANDROID AND OpenMP_CXX_FOUND )
-    add_custom_target(all-openmp DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
     )
 endif()
@@ -168,7 +170,7 @@ endif()
 
 # --- all-hip---
 if(NOT ANDROID AND hip_FOUND)
-    add_custom_target(all-hip DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-hip DEPENDS 
         ${PROJECT_NAME}_hip 
     )
 endif()
@@ -176,7 +178,7 @@ endif()
 
 # --- all-cuda---
 if(NOT ANDROID AND CUDAToolkit_FOUND)
-    add_custom_target(all-cuda DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-cuda DEPENDS 
         ${PROJECT_NAME}_cuda 
     )
 endif()

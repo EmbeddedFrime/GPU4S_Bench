@@ -9,8 +9,8 @@ project(softmax CXX)
 
 # ====== Include cmake module ======
 list(APPEND CMAKE_MODULE_PATH 
-    "${CMAKE_SOURCE_DIR}/../common/cmake/"
-    "${CMAKE_SOURCE_DIR}/../common/cmake/module"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../common/cmake/"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../common/cmake/module"
 )
 # Global:
 include(setup)
@@ -21,12 +21,14 @@ include(findHIP)
 include(findCUDNN)
 
 # show the configuration of the project
-showConfig()
+if(PROJECT_IS_TOP_LEVEL)
+    showConfig()
+endif()
 
 
 # --- CPU target ---
 compile_target(${PROJECT_NAME}_cpu
-    BENCH_DIR               ${CMAKE_SOURCE_DIR}
+    BENCH_DIR               ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES_FILES           cpu/lib_cpu.cpp 
     SHORTCUTS_NAMES         cpu CPU
 )
@@ -37,7 +39,7 @@ if(ANDROID)
     if(ANDROID_OPENCL_LIB_INC)
         # --- OpenCL ---
         compile_target(${PROJECT_NAME}_opencl
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       opencl/lib_opencl.cpp
                                 opencl/opencl_common.cpp
 
@@ -50,7 +52,7 @@ if(ANDROID)
         )
         # --- OpenCL-opt ---
         compile_target(${PROJECT_NAME}_opencl_opt
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       opencl/lib_opencl_opt.cpp
                                 opencl/opencl_common.cpp
             COMPILE_DEFS        OPENCL   
@@ -63,7 +65,7 @@ if(ANDROID)
 
         # --- OpenCL-lib ---
         compile_target(${PROJECT_NAME}_opencl_lib
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       opencl/lib_opencl_lib.cpp
                                 opencl/opencl_common.cpp
 
@@ -79,7 +81,7 @@ if(ANDROID)
 
     # --- OpenMP---
     compile_target(${PROJECT_NAME}_openmp
-        BENCH_DIR           ${CMAKE_SOURCE_DIR}
+        BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
         SOURCES_FILES       openmp/lib_omp.cpp
                             openmp/omp_common.cpp
 
@@ -94,7 +96,7 @@ if(ANDROID)
 
     # --- OpenMP-opt ---
     compile_target(${PROJECT_NAME}_openmp_opt
-        BENCH_DIR           ${CMAKE_SOURCE_DIR}
+        BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
         SOURCES_FILES       openmp/lib_omp_opt.cpp
                             openmp/omp_common.cpp
 
@@ -115,7 +117,7 @@ if(NOT ANDROID)
     if(OpenCL_FOUND)
         # --- OpenCL ---
         compile_target(${PROJECT_NAME}_opencl
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       opencl/lib_opencl.cpp
                                 opencl/opencl_common.cpp
 
@@ -128,7 +130,7 @@ if(NOT ANDROID)
 
         # --- OpenCL-opt ---
         compile_target(${PROJECT_NAME}_opencl_opt
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       opencl/lib_opencl_opt.cpp
                                 opencl/opencl_common.cpp 
 
@@ -141,7 +143,7 @@ if(NOT ANDROID)
 
         # --- OpenCL-lib ---
         compile_target(${PROJECT_NAME}_opencl_lib
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       opencl/lib_opencl_lib.cpp
                                 opencl/opencl_common.cpp
 
@@ -158,7 +160,7 @@ if(NOT ANDROID)
     if(OpenMP_CXX_FOUND)
         # --- OpenMP ---
         compile_target(${PROJECT_NAME}_openmp
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       openmp/lib_omp.cpp
                                 openmp/omp_common.cpp
 
@@ -172,7 +174,7 @@ if(NOT ANDROID)
 
         # --- OpenMP-opt ---
         compile_target(${PROJECT_NAME}_openmp_opt
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       openmp/lib_omp_opt.cpp
                                 openmp/omp_common.cpp
 
@@ -191,7 +193,7 @@ if(NOT ANDROID)
     if(CUDAToolkit_FOUND)
         # --- CUDA ---
         compile_target(${PROJECT_NAME}_cuda
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       cuda/lib_cuda.cu
                                 cuda/cuda_common.cu
 
@@ -203,7 +205,7 @@ if(NOT ANDROID)
 
         # --- CUDA-opt ---
         compile_target(${PROJECT_NAME}_cuda_opt
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       cuda/lib_cuda_opt.cu
                                 cuda/cuda_common.cu
 
@@ -216,7 +218,7 @@ if(NOT ANDROID)
         if(CUDNN_FOUND)
             # --- CUDA-lib ---
             compile_target(${PROJECT_NAME}_cuda_lib
-                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
                 SOURCES_FILES       cuda/lib_cuda_lib.cu
                                     cuda/cuda_common.cu
 
@@ -232,7 +234,7 @@ if(NOT ANDROID)
     if(hip_FOUND)
         # --- HIP ---
         compile_target(${PROJECT_NAME}_hip
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       hip/lib_hip.cpp 
                                 hip/hip_common.cpp 
 
@@ -246,7 +248,7 @@ if(NOT ANDROID)
 
         # --- HIP-opt ---
         compile_target(${PROJECT_NAME}_hip_opt
-            BENCH_DIR           ${CMAKE_SOURCE_DIR}
+            BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES       hip/lib_hip_opt.cpp 
                                 hip/hip_common.cpp 
 
@@ -265,7 +267,7 @@ endif(NOT ANDROID)
 
 # --- all-opencl (Android) ---
 if(ANDROID AND ANDROID_OPENCL_LIB_INC )
-    add_custom_target(all-opencl DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
         ${PROJECT_NAME}_opencl_lib
@@ -274,7 +276,7 @@ endif()
 
 # --- all-opencl---
 if(NOT ANDROID AND OpenCL_FOUND )
-    add_custom_target(all-opencl DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
         ${PROJECT_NAME}_opencl_lib
@@ -284,7 +286,7 @@ endif()
 
 # --- all-openmp (Android) ---
 if(ANDROID AND ANDROID_OPENBLAS_LIB_INC  )
-    add_custom_target(all-openmp DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
         ${PROJECT_NAME}_openmp_opt 
     )
@@ -293,7 +295,7 @@ endif()
 
 # --- all-openmp---
 if(NOT ANDROID AND OpenMP_CXX_FOUND )
-    add_custom_target(all-openmp DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
         ${PROJECT_NAME}_openmp_opt 
     )
@@ -302,7 +304,7 @@ endif()
 
 # --- all-hip---
 if(NOT ANDROID AND hip_FOUND)
-    add_custom_target(all-hip DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-hip DEPENDS 
         ${PROJECT_NAME}_hip 
         ${PROJECT_NAME}_hip_opt 
     )
@@ -311,7 +313,7 @@ endif()
 
 # --- all-cuda---
 if(NOT ANDROID AND CUDAToolkit_FOUND)
-    add_custom_target(all-cuda DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-cuda DEPENDS 
         ${PROJECT_NAME}_cuda 
         ${PROJECT_NAME}_cuda_opt 
         ${PROJECT_NAME}_cuda_lib

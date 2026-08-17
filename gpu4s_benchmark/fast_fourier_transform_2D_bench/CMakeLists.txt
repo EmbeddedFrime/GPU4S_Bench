@@ -10,8 +10,8 @@ project(FFT_2D CXX)
 
 # ====== Include cmake module ======
 list(APPEND CMAKE_MODULE_PATH 
-    "${CMAKE_SOURCE_DIR}/../common/cmake/"
-    "${CMAKE_SOURCE_DIR}/../common/cmake/module"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../common/cmake/"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../common/cmake/module"
 )
 # Global:
 include(setup)
@@ -22,7 +22,9 @@ include(findFFTW)
 
 # show the configuration of the project
 set(NO_OPENMP_TARGET true) #For the list of backend
-showConfig()
+if(PROJECT_IS_TOP_LEVEL)
+    showConfig()
+endif()
 
 
 # ====== Compilation of the targets ======
@@ -34,7 +36,7 @@ if(ANDROID)
     if(ANDROID_FFTW_LIB_INC)
         # --- CPU target ---
         compile_target(${PROJECT_NAME}_cpu
-            BENCH_DIR               ${CMAKE_SOURCE_DIR}
+            BENCH_DIR               ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES           cpu/lib_cpu_lib.cpp 
             INCLUDES                ${ANDROID_INC}
             LIBRARIES               ${ANDROID_LIB}/${ANDROID_ABI}/libfftw3.a  
@@ -44,7 +46,7 @@ if(ANDROID)
         if(ANDROID_OPENCL_LIB_INC AND VKFFT_FOUND)
             # --- OpenCL-lib ---
             compile_target(${PROJECT_NAME}_opencl_lib
-                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
                 SOURCES_FILES       opencl/lib_opencl_lib.cpp
                 COMPILE_DEFS        OPENCL   
                                     OPENCL VKFFT_BACKEND=3
@@ -68,7 +70,7 @@ if(NOT ANDROID)
     if(FFTW3_FOUND)
         # --- CPU target ---
         compile_target(${PROJECT_NAME}_cpu
-            BENCH_DIR               ${CMAKE_SOURCE_DIR}
+            BENCH_DIR               ${CMAKE_CURRENT_SOURCE_DIR}
             SOURCES_FILES           cpu/lib_cpu_lib.cpp 
             LIBRARIES               fftw3
             SHORTCUTS_NAMES         cpu CPU
@@ -78,7 +80,7 @@ if(NOT ANDROID)
         if(OpenCL_FOUND AND VKFFT_FOUND)
             # --- OpenCL-lib ---
             compile_target(${PROJECT_NAME}_opencl_lib
-                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
                 SOURCES_FILES       opencl/lib_opencl_lib.cpp
                 COMPILE_DEFS        OPENCL
                                     OPENCL VKFFT_BACKEND=3
@@ -98,7 +100,7 @@ if(NOT ANDROID)
         if(CUDAToolkit_FOUND)
             # --- CUDA-lib ---
             compile_target(${PROJECT_NAME}_cuda_lib
-                BENCH_DIR           ${CMAKE_SOURCE_DIR}
+                BENCH_DIR           ${CMAKE_CURRENT_SOURCE_DIR}
                 SOURCES_FILES       cuda/lib_cuda_lib.cu
                 COMPILE_DEFS        CUDA
                 SET_CUDA            1
@@ -114,14 +116,14 @@ endif(NOT ANDROID)
 
 # --- all-opencl (Android) ---
 if(ANDROID AND ANDROID_OPENCL_LIB_INC)
-    add_custom_target(all-opencl DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl_lib
     )
 endif()
 
 # --- all-opencl---
 if(NOT ANDROID AND OpenCL_FOUND )
-    add_custom_target(all-opencl DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl_lib
     )
 endif()
@@ -129,7 +131,7 @@ endif()
 
 # --- all-cuda---
 if(NOT ANDROID AND CUDAToolkit_FOUND)
-    add_custom_target(all-cuda DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-cuda DEPENDS 
         ${PROJECT_NAME}_cuda_lib
     )
 endif()
