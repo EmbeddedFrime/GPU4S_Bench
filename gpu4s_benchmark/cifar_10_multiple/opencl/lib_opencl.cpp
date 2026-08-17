@@ -171,22 +171,25 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 
         deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
-        //activation layer dense 1
-        if(neurons_dense_1 <= BLOCK_SIZE)
+        //FIX : use the cifar_10 code
+       ///activation layer dense 1
+        /*if(neurons_dense_1 > BLOCK_SIZE * 32)
         {
             local = cl::NullRange;
-            global = cl::NDRange (neurons_dense_1/2, neurons_dense_1/2);
+            global = cl::NDRange (neurons_dense_1);
         }
         else
         {
-            local = cl::NDRange(x_local, y_local);
-            global = cl::NDRange(neurons_dense_1/2, neurons_dense_1/2);
-        }
-        kernel_add=cl::Kernel(program,"kernel_relu");
+            local = cl::NDRange(x_local*y_local);
+            global = cl::NDRange(neurons_dense_1);
+        }*/
+        local = cl::NullRange;
+        global = cl::NDRange (neurons_dense_1);
+        kernel_add=cl::Kernel(program,"kernel_relu_linear");
         kernel_add.setArg(0,*deviceObj->dense_layer_1_output);
         kernel_add.setArg(1,*deviceObj->dense_layer_1_output);
-        kernel_add.setArg(2,neurons_dense_1/2);
-        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
+        kernel_add.setArg(2,neurons_dense_1);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evtd_1_a);
 
         // dense layer 2
         if(neurons_dense_2 <= BLOCK_SIZE)
@@ -210,21 +213,23 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
         //activation layer dense 2
-        if(neurons_dense_2 < BLOCK_SIZE)
+        /*if(neurons_dense_2 < BLOCK_SIZE * BLOCK_SIZE)
         {
             local = cl::NullRange;
-            global = cl::NDRange (neurons_dense_2/2, neurons_dense_2/2);
+            global = cl::NDRange (neurons_dense_2);
         }
         else
         {
-            local = cl::NDRange(x_local, y_local);
-            global = cl::NDRange(neurons_dense_2/2, neurons_dense_2/2);
-        }
-        kernel_add=cl::Kernel(program,"kernel_relu");
+            local = cl::NDRange(x_local*y_local);
+            global = cl::NDRange(neurons_dense_2);
+        }*/
+        local = cl::NullRange;
+        global = cl::NDRange (neurons_dense_2);
+        kernel_add=cl::Kernel(program,"kernel_relu_linear");
         kernel_add.setArg(0,*deviceObj->dense_layer_2_output);
         kernel_add.setArg(1,*deviceObj->dense_layer_2_output);
-        kernel_add.setArg(2,neurons_dense_2/2);
-        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
+        kernel_add.setArg(2,neurons_dense_2);
+        deviceObj->queue->enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, deviceObj->evtd_2_a);
 
         //soft max
         if(neurons_dense_2 < BLOCK_SIZE)
@@ -237,6 +242,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
             local = cl::NDRange(1, x_local);
             global = cl::NDRange(1, neurons_dense_2);
         }
+
         cl::Kernel softmax_kernel=cl::Kernel(program,"kernel_softmax");
         softmax_kernel.setArg(0,*deviceObj->dense_layer_2_output);
         softmax_kernel.setArg(1,*aux_output_data);
@@ -252,9 +258,8 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         softmax_end_kernel.setArg(2,neurons_dense_2);
         softmax_end_kernel.setArg(3, position * output_data);
 
-        deviceObj->queue->enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, NULL);
-        deviceObj->queue->enqueueWriteBuffer(*deviceObj->sum_ouput,CL_TRUE,0,sizeof(bench_t), 0, NULL,NULL);
-        
+        deviceObj->queue->enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, NULL);        
+
     }
 
     //FIX : GPU profiling use opencl marker

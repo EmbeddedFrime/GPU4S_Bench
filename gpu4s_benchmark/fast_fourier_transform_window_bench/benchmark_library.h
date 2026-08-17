@@ -33,8 +33,8 @@ struct GraficObject : public GraficCommon {
 		#endif
    	#elif OPENCL
 		// OpenCL PART
+		cl::Event *evt_copyA;
 		cl::Event *evt_copyB;
-		cl::Event *evt_copyBr;
 		cl::Event *evt;
 		cl::Event *evt_end;
 		cl::Buffer *d_A;

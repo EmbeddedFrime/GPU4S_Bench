@@ -16,7 +16,7 @@ void init(GraficCommon* device_object, int platform, int device, char* device_na
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix)
 {
 	GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
-	deviceObj->d_B = (bench_t*) malloc ( size_b_matrix * sizeof(bench_t*));
+	deviceObj->d_B = (bench_t*) malloc ( size_b_matrix * sizeof(bench_t));
    	return true;
 }
 

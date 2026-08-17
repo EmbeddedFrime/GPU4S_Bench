@@ -48,10 +48,12 @@
     //CPU part
 #endif
 
-// --- profiling mangement ---
+// --- UMA + profiling mangement ---
 #if defined(ANDROID) && defined(OPENCL) 
-    #define PROFILING_CLOCK 
+    #define FORCE_PROFILING_CLOCK
+    #define UMA_COMPATIBILITY 
 #endif
+
 
 
 // ======= Commmon variable =======
@@ -107,10 +109,11 @@ struct GraficCommon{
 	#else
 		// --- CPU variable ---
 	#endif
-	float h2d_elapsed_time;
-	float elapsed_time;
-	float d2h_elapsed_time;
-	bool  profiling_clock = false;
+    // --- clock profiling ---
+	float h2d_elapsed_time  = 0.0f;
+	float d2h_elapsed_time  = 0.0f;
+    float elapsed_time      = 0.0f;
+	bool  profiling_clock   = false;
 };
 
 
@@ -156,3 +159,67 @@ float get_elapsed_time(GraficCommon *device_object, bool csv_format, bool csv_fo
 
 // Standard clean prototype used by every the benchmarks
 void clean(GraficCommon *device_object);
+
+
+/// --- UMA memory function ---
+#ifdef UMA_COMPATIBILITY
+
+    // --- 1 buffer ---
+    /**
+     * @brief Maps one device buffer into host-visible memory (blocking write-map).
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to receive the mapped host pointer
+     * @param memSize Size of the buffer to map, in bytes
+     */
+    void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, unsigned int memSize);
+    /**
+     * @brief Unmaps a single buffer, blocking until the device regains ownership.
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to the mapped host pointer to unmap
+     */
+    void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A);
+
+    // --- 2 buffer ---
+    /**
+     * @brief Maps two equal-sized device buffers into host-visible memory 
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to receive the first mapped host pointer
+     * @param B Reference to receive the second mapped host pointer
+     * @param memSize Size of EACH buffer to map, in bytes - both buffers share this one size
+     */
+    void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, unsigned int memSize);
+    /**
+     * @brief Unmaps two buffers, blocked for host until the device give aigain ownership 
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to the first mapped host pointer to unmap
+     * @param B Reference to the second mapped host pointer to unmap
+     */
+    void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B);
+
+    // --- 3 buffer ---
+    /**
+     * @brief Maps three equal-sized device buffers into host-visible memory
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to receive the first mapped host pointer
+     * @param B Reference to receive the second mapped host pointer
+     * @param C Reference to receive the third mapped host pointer
+     * @param memSize Size of EACH buffer, in bytes. 
+     */
+    void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned int memSize);
+    /**
+     * @brief Unmaps three buffers, blocked for host until the device give aigain ownership
+     * @param device_object Pointer to the device common structure
+     * @param A Reference to the first mapped host pointer to unmap
+     * @param B Reference to the second mapped host pointer to unmap
+     * @param C Reference to the third mapped host pointer to unmap
+     */
+    void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C);
+
+    /**
+     * @brief Maps output result buffer back to host
+     * @param device_object Pointer to the device common structure
+     * @param d_output Reference to receive the mapped output host pointer
+     * @param size_output Size of the output buffer to map, in bytes
+     */
+    void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int size_output);
+#endif
