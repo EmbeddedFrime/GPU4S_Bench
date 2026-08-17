@@ -45,7 +45,8 @@ struct BenchmarkParameters{
 	char input_file[100] = "";
 	char output_file[100] = "";
 
-	bool profiling_clock = false;};
+	bool profiling_clock = false;
+	bool unified_memory = false;};
 
 bool FFT2D(COMPLEX **c,int n,int dir, COMPLEX **exit);
 bool compare_vectors(COMPLEX **host, COMPLEX **device,  int64_t size);

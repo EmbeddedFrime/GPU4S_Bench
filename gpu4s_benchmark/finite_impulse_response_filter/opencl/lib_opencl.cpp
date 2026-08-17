@@ -3,6 +3,8 @@
 #include "../benchmark_library.h"
 #include <cstring>
 #include "kernel.cl"
+#include "../../common/opencl_common.hpp"
+
 
 void init(GraficCommon* device_object, char* device_name){
 	init(device_object, 0,0, device_name);
@@ -67,18 +69,10 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* k
     h2dCLK.start();
 
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, deviceObj->evt_copyA);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy data vector B from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy data vector B from host to device", err)) return;
     
     err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->kernel,CL_TRUE,0,sizeof(bench_t)*size_b, kernel, NULL, deviceObj->evt_copyB);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy kernel data from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy kernel data from host to device", err)) return;
 
     // Clock profilling end 
     h2dCLK.end();
@@ -90,6 +84,8 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, bench_t* k
 
 void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,unsigned int w, unsigned int kernel_size){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    //FIX: use W instead of  N the other implementation need size_matrix and this one need size_B
+    n = w;
     const unsigned int x_local= BLOCK_SIZE;
     cl::NDRange local;
     cl::NDRange global;
@@ -153,11 +149,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     d2hCLK.start();
 
     cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->d_B, CL_TRUE, 0, sizeof(bench_t)*size, h_C, NULL, deviceObj->evt_copyC);
-    if (err != CL_SUCCESS)
-    {
-        fprintf(stderr, "Failed to copy vector B from device to host (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector B from device to host", err)) return;
 
     // Clock profilling end 
     d2hCLK.end();
@@ -217,3 +209,46 @@ void clean(GraficCommon* device_object){
     delete deviceObj->evt_copyB;
     delete deviceObj->evt_copyC;
 }
+
+
+#ifdef UMA_COMPATIBILITY
+// ====== UMA function ======
+void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned sizeA, unsigned sizeB, unsigned sizeC){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    // input
+    map_unified_memory(device_object, sizeA, 
+        BufferMapCL{&A, deviceObj->d_A, nullptr}
+    );
+
+    // kernel
+    map_unified_memory(device_object, sizeB, 
+        BufferMapCL{&B, deviceObj->kernel, nullptr}
+    );
+
+    // output 
+    map_unified_memory(device_object, sizeC, 
+        BufferMapCL{&C, deviceObj->d_B, nullptr}
+    );
+}
+
+void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    unmap_unified_memory(device_object, 
+        BufferMapCL{&A, deviceObj->d_A, deviceObj->evt_copyA},
+        BufferMapCL{&B, deviceObj->kernel, deviceObj->evt_copyB},
+        BufferMapCL{&C, deviceObj->d_B, nullptr}
+    );
+} 
+
+
+void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int size_output){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    map_unified_memory_to_host(device_object, size_output, 
+        BufferMapCL{&d_output, deviceObj->d_B, deviceObj->evt_copyC}
+    );
+}
+
+#endif

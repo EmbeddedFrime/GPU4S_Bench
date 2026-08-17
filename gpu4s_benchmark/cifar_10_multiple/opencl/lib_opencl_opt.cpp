@@ -259,22 +259,23 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
 
         queues[stream].enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
+        //FIX: implement the cifar_10 code
         //activation layer dense 1
-        if ((neurons_dense_1/2) *(neurons_dense_1/2) <= BLOCK_SIZE_PLANE)
+        if ((neurons_dense_1) <= BLOCK_SIZE_PLANE)
         {
             local = cl::NullRange;
-            global = cl::NDRange((neurons_dense_1/2) *(neurons_dense_1/2));
+            global = cl::NDRange(neurons_dense_1);
         }
         else
         {
             local = cl::NullRange;
-            global = cl::NDRange((neurons_dense_1/2) *(neurons_dense_1/2));
+            global = cl::NDRange(neurons_dense_1);
         }
-        kernel_add=cl::Kernel(program,"kernel_relu");
+        kernel_add=cl::Kernel(program,"kernel_relu_linear");
         kernel_add.setArg(0,*deviceObj->dense_layer_1_output);
         kernel_add.setArg(1,*deviceObj->dense_layer_1_output);
-        kernel_add.setArg(2,neurons_dense_1/2);
-        kernel_add.setArg(3,size_lateral_2*size_lateral_2);
+        kernel_add.setArg(2,neurons_dense_1);
+        kernel_add.setArg(3,stream*neurons_dense_1);
         queues[stream].enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
         // dense layer 2
@@ -301,23 +302,23 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         queues[stream].enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
 
         //activation layer dense 2
-        if ((neurons_dense_2/2) *(neurons_dense_2/2) <= BLOCK_SIZE_PLANE)
+        if ((neurons_dense_2) <= BLOCK_SIZE_PLANE)
         {
             local = cl::NullRange;
-            global = cl::NDRange((neurons_dense_2/2) *(neurons_dense_2/2));
+            global = cl::NDRange(neurons_dense_2);
         }
         else
-        {
+        {   
             local = cl::NDRange(x_local_plane);
-            global = cl::NDRange((neurons_dense_2/2) *(neurons_dense_2/2));
+            global = cl::NDRange(neurons_dense_2);
         }
-        kernel_add=cl::Kernel(program,"kernel_relu");
+        kernel_add=cl::Kernel(program,"kernel_relu_linear");
         kernel_add.setArg(0,*deviceObj->dense_layer_2_output);
         kernel_add.setArg(1,*deviceObj->dense_layer_2_output);
-        kernel_add.setArg(2,neurons_dense_2/2);
+        kernel_add.setArg(2,neurons_dense_2);
         kernel_add.setArg(3,stream * neurons_dense_2);
         queues[stream].enqueueNDRangeKernel(kernel_add,cl::NullRange,global,local, NULL, NULL);
-
+        
         //soft max
         if((neurons_dense_2) <= BLOCK_SIZE)
         {
@@ -337,7 +338,6 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         softmax_kernel.setArg(4, position * output_data);
         softmax_kernel.setArg(5, stream * neurons_dense_2);
         softmax_kernel.setArg(6, stream);
-
         queues[stream].enqueueNDRangeKernel(softmax_kernel,cl::NullRange,global,local, NULL, NULL);
 
         cl::Kernel softmax_end_kernel=cl::Kernel(program,"kernel_softmax_end");
@@ -346,16 +346,17 @@ void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsign
         softmax_end_kernel.setArg(2,neurons_dense_2);
         softmax_end_kernel.setArg(3, position * output_data);
         softmax_end_kernel.setArg(4, stream);
-
         queues[stream].enqueueNDRangeKernel(softmax_end_kernel,cl::NullRange,global,local, NULL, NULL);
-        //deviceObj->queue->enqueueWriteBuffer(*deviceObj->sum_ouput,CL_TRUE,0,sizeof(bench_t), 0, NULL,NULL);
     }
    
      //FIX : GPU profiling use opencl marker
     deviceObj->queue->enqueueMarkerWithWaitList(NULL, deviceObj->evt_softmax_fin);
     
-    // Wait for completion before stopping the clock
-    deviceObj->queue->finish();
+    // Wait all the stream completion before stopping the clock
+    for (unsigned int i = 0; i < NUMBER_OF_STREAMS; ++i) {
+        queues[i].finish();
+    }
+    
     // Clock profilling end 
     kernelCLK.end();
 

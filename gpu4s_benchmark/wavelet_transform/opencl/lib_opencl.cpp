@@ -1,6 +1,7 @@
 // OpenCL lib code 
 #include <cmath>
 #include "../benchmark_library.h"
+#include "../../common/opencl_common.hpp"
 #include <cstring>
 #ifdef INT
 #include "GEN_kernel_integer.hcl"
@@ -78,28 +79,16 @@ void copy_memory_to_device(GraficCommon* device_object, bench_t* h_A, unsigned i
     h2dCLK.start();
 
     cl_int err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->d_A,CL_TRUE,0,sizeof(bench_t)*size_a, h_A, NULL, deviceObj->evt_copyA);
-    if (err != CL_SUCCESS) 
-    {
-        fprintf(stderr, "Failed to copy vector A from host to device (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector A from host to device", err)) return;
 
     #ifdef INT
     // if int don't add the copy of the filters
     #else
         err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->low_filter,CL_TRUE,0,sizeof(bench_t)*LOWPASSFILTERSIZE, lowpass_filter, NULL, deviceObj->evt_copyB);
-        if (err != CL_SUCCESS) 
-        {
-            fprintf(stderr, "Failed to copy low_filter from host to device (OpenCL error code %d)!\n", err);
-            return;
-        }
+        if (openclError("Failed to copy low_filter from host to device", err)) return;
 
         err = deviceObj->queue->enqueueWriteBuffer(*deviceObj->high_filter,CL_TRUE,0,sizeof(bench_t)*HIGHPASSFILTERSIZE, highpass_filter, NULL, deviceObj->evt_copyC);
-        if (err != CL_SUCCESS) 
-        {
-            fprintf(stderr, "Failed to copy high_filter from host to device (OpenCL error code %d)!\n", err);
-            return;
-        }
+        if (openclError("Failed to copy high_filter from host to device", err)) return;
     #endif
 
     // Clock profilling end 
@@ -196,11 +185,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     d2hCLK.start();
 
     cl_int err = deviceObj->queue->enqueueReadBuffer(*deviceObj->d_B, CL_TRUE, 0, sizeof(bench_t)*size, h_C, NULL, deviceObj->evt_copyC);
-    if (err != CL_SUCCESS)
-    {
-        fprintf(stderr, "Failed to copy vector B from device to host (OpenCL error code %d)!\n", err);
-        return;
-    }
+    if (openclError("Failed to copy vector B from device to host", err)) return;
     
     // Clock profilling end 
     d2hCLK.end();
@@ -269,3 +254,54 @@ void clean(GraficCommon* device_object){
     delete deviceObj->evt_copyB;
     delete deviceObj->evt_copyC;
 }
+
+
+#ifdef UMA_COMPATIBILITY
+// ====== UMA function ======
+void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D, unsigned int sizeAB){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    map_unified_memory(device_object, sizeAB, 
+        BufferMapCL{&A, deviceObj->d_A, nullptr},
+        BufferMapCL{&B, deviceObj->d_B, nullptr}
+    );
+
+    #ifndef INT
+    //lowpass_filter
+    map_unified_memory(device_object, sizeof(bench_t) * LOWPASSFILTERSIZE, 
+        BufferMapCL{&C, deviceObj->low_filter, nullptr}
+    );
+
+    //high pass_filter
+    map_unified_memory(device_object, sizeof(bench_t) * HIGHPASSFILTERSIZE, 
+        BufferMapCL{&D, deviceObj->high_filter, nullptr}
+    );
+    #endif
+}
+
+void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    unmap_unified_memory(device_object, 
+        BufferMapCL{&A, deviceObj->d_A, deviceObj->evt_copyA},
+        BufferMapCL{&B, deviceObj->d_B, nullptr}
+        #ifndef INT
+        // comma only for FLOAT or DOUBLE
+        ,BufferMapCL{&C, deviceObj->low_filter, nullptr},
+        BufferMapCL{&D, deviceObj->high_filter, nullptr}
+        #endif
+    );
+
+
+} 
+
+
+void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int size_output){
+    GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
+    // --- Call the openCL common function ---
+    map_unified_memory_to_host(device_object, size_output, 
+        BufferMapCL{&d_output, deviceObj->d_B, deviceObj->evt_copyB}
+    );
+}
+
+#endif

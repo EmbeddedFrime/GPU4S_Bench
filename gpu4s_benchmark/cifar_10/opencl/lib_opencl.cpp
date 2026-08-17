@@ -5,8 +5,6 @@
 #include "GEN_atomic_functions.hcl"
 
 
-
-
 void execute_kernel(GraficCommon* device_object, unsigned int input_data, unsigned int output_data, unsigned int kernel_1, unsigned int kernel_2, unsigned int stride_1, unsigned int stride_2, unsigned int neurons_dense_1, unsigned int neurons_dense_2){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     unsigned int x_local= BLOCK_SIZE;

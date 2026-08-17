@@ -278,6 +278,15 @@ cmake -B build-android \
   -DANDROID_ABI=arm64-v8a \
   -DANDROID_PLATFORM=android-21
 
+cmake --build build-android 
+
+adb push ./build-android/bin/* /data/local/tmp/
+adb shell chmod 755 /data/local/tmp/*
+
+
+./data/local/tmp/
+
+
 cmake --build build-android --target cpu
 cmake --build build-android --target openmp openmp-opt cl opencl-opt
 ```
@@ -288,7 +297,6 @@ cmake --build build-android --target openmp openmp-opt cl opencl-opt
 adb push ./build-android/bin/* /data/local/tmp/
 adb shell chmod 755 /data/local/tmp/*
 adb shell /data/local/tmp/matrix_mult_opencl -s 1024 -t -v
-./data/local/tmp/
 ```
 
 i=1; while [ "$i" -le 100 ]; do ./data/local/tmp/matrix_mult_opencl_opt -s 512 -c >> /data/local/tmp/results_512.csv; i=$((i + 1)); done; echo "Done!"
