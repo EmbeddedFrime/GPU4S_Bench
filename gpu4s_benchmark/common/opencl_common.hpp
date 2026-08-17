@@ -52,15 +52,15 @@ inline void map_unified_memory(GraficCommon* device_object, unsigned memSize, Ma
     mapCLK.start();
 
     // --- C++17 Fold Expression Unrolled at compile-time  ---
-    // For each MapCL map host buffer to devcie buffer
+    // For each MapCL buffer host buffer map device memory into the CPU's address space
     (( 
-        //map the buffer between cpu and gpu (cpu is faster)
+        // Map the buffer with CL_MAP_WRITE so CPU can directly use it
         *(mapCL.hostBuffer) = static_cast<bench_t*>(
             deviceObj->queue->enqueueMapBuffer(
                 *(mapCL.deviceBuffer), CL_TRUE, CL_MAP_WRITE, 0, memSize, nullptr, mapCL.deviceEvent, &lastErr
             )
         ),
-        // Update err to not miss an error
+        // Save first error, so no failures are silently ignored
         (lastErr != CL_SUCCESS ? err = lastErr : CL_SUCCESS)
     ), ...);
 
@@ -91,12 +91,12 @@ inline void unmap_unified_memory(GraficCommon* device_object, MapCL... mapCL) {
     unmapCLK.start();
 
     // --- C++17 Fold Expression Unrolled at compile-time  ---
-    // For each MapCL unmap host buffer to devcie buffer
+    // For each MapCL buffer unmap host buffer to device buffer
     ((
         lastErr = deviceObj->queue->enqueueUnmapMemObject(
             *(mapCL.deviceBuffer), *(mapCL.hostBuffer), NULL, mapCL.deviceEvent
         ),
-        // Update err to not miss an error
+        // Save first error, so no failures are silently ignored
         (lastErr != CL_SUCCESS ? err = lastErr : CL_SUCCESS)
     ), ...);
 
@@ -127,14 +127,14 @@ inline void map_unified_memory_to_host(GraficCommon* device_object, unsigned mem
     mapCLK.start();
 
     // --- C++17 Fold Expression Unrolled at compile-time  ---
-    // For each MapCL map host buffer to devcie buffer
+    // For each MapCL buffer host buffer map device memory into the CPU's address space
     (( 
         *(mapCL.hostBuffer) = static_cast<bench_t*>(
             deviceObj->queue->enqueueMapBuffer(
                 *(mapCL.deviceBuffer), CL_TRUE, CL_MAP_READ, 0, memSize, nullptr, mapCL.deviceEvent, &lastErr
             )
         ),
-        // Update err to not miss an error
+        // Save first error, so no failures are silently ignored
         (lastErr != CL_SUCCESS ? err = lastErr : CL_SUCCESS)
     ), ...);
 
