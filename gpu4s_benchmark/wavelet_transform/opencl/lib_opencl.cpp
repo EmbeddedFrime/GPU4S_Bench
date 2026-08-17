@@ -258,10 +258,10 @@ void clean(GraficCommon* device_object){
 
 #ifdef UMA_COMPATIBILITY
 // ====== UMA function ======
-void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D, unsigned int memSize){
+void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, bench_t* &D, unsigned int sizeAB){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     // --- Call the openCL common function ---
-    map_unified_memory(device_object, memSize, 
+    map_unified_memory(device_object, sizeAB, 
         BufferMapCL{&A, deviceObj->d_A, nullptr},
         BufferMapCL{&B, deviceObj->d_B, nullptr}
     );
@@ -296,10 +296,10 @@ void sync_unified_memory_to_device(GraficCommon* device_object, bench_t* &A, ben
 } 
 
 
-void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int memSize){
+void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int size_output){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     // --- Call the openCL common function ---
-    map_unified_memory_to_host(device_object, memSize, 
+    map_unified_memory_to_host(device_object, size_output, 
         BufferMapCL{&d_output, deviceObj->d_B, deviceObj->evt_copyB}
     );
 }

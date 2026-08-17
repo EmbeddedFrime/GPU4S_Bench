@@ -221,7 +221,7 @@ void get_unified_memory_pointers(GraficCommon* device_object, COMPLEX** &A, COMP
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     int64_t flatSize = sizeof(bench_t) * memSize * memSize * 2;
 
-    // Map temp flat buffer
+    //Map temp 2D buffer
     bench_t* tmp_flat_A = nullptr;
     bench_t* tmp_flat_B = nullptr;
 
@@ -243,7 +243,7 @@ void get_unified_memory_pointers(GraficCommon* device_object, COMPLEX** &A, COMP
     }
 }
 
-void sync_unified_memory_to_device(GraficCommon* device_object, COMPLEX** &A, COMPLEX** &B, int64_t memSize){
+void sync_unified_memory_to_device(GraficCommon* device_object, COMPLEX** &A, COMPLEX** &B){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
 
     bench_t* tmp_flat_A = (bench_t*)A[0];
@@ -260,7 +260,6 @@ void sync_unified_memory_to_device(GraficCommon* device_object, COMPLEX** &A, CO
 void sync_unified_memory_to_host(GraficCommon* device_object, COMPLEX** &d_output, int64_t memSize){    
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     int64_t flatSize = sizeof(bench_t) * memSize * memSize * 2;
-    
     bench_t* tmp_flat_B = nullptr;
 
     // --- Call the openCL common function ---
@@ -268,10 +267,10 @@ void sync_unified_memory_to_host(GraficCommon* device_object, COMPLEX** &d_outpu
         BufferMapCL{&tmp_flat_B, deviceObj->d_B, deviceObj->evt_copyB}
     );
 
-    // --- Cast back to bench_t ---
+    // --- Cast back to 2D complex buffer ---
     COMPLEX* flat_B = (COMPLEX*)tmp_flat_B;
 
-    // Reconnect the 2D pointer array to the newly mapped output memory
+    // Reconnect to 2D pointer array to the newly mapped output memory
     for (int i = 0; i < memSize; ++i){
         d_output[i] = flat_B + (i * memSize);
     }

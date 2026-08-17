@@ -218,8 +218,8 @@ void clean(GraficCommon *device_object);
     /**
      * @brief Maps output result buffer back to host
      * @param device_object Pointer to the device common structure
-     * @param d_output Reference to receive the mapped host pointer
-     * @param memSize Size of the buffer to map, in bytes
+     * @param d_output Reference to receive the mapped output host pointer
+     * @param size_output Size of the output buffer to map, in bytes
      */
-    void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int memSize);
+    void sync_unified_memory_to_host(GraficCommon* device_object, bench_t* &d_output, unsigned int size_output);
 #endif

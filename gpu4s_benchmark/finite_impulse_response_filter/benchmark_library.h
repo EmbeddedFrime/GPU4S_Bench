@@ -50,8 +50,6 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
 
 
 #ifdef UMA_COMPATIBILITY
-
-// --- 3 buffer, 3 sizes ---
 /**
  * @brief Maps three device buffers of three independent sizes into host-visible memory
  * 
@@ -63,7 +61,7 @@ void execute_kernel(GraficCommon* device_object, unsigned int n, unsigned int m,
  * @param memSize2 Size of B, in bytes
  * @param memSize3 Size of C, in bytes
  */
-void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned memSize, unsigned memSize2, unsigned memSize3);
+void get_unified_memory_pointers(GraficCommon* device_object, bench_t* &A, bench_t* &B, bench_t* &C, unsigned sizeA, unsigned sizeB, unsigned sizeC);
 
 /**
  * @brief Unmaps all three buffers, blocked for host until the device give aigain ownership 
