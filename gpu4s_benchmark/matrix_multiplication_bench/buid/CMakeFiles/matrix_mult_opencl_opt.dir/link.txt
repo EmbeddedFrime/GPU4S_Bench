@@ -1,1 +1,0 @@
-/usr/bin/c++ -O3 -DNDEBUG CMakeFiles/matrix_mult_opencl_opt.dir/main.cpp.o CMakeFiles/matrix_mult_opencl_opt.dir/opencl/lib_opencl_opt.cpp.o CMakeFiles/matrix_mult_opencl_opt.dir/opencl/opencl_common.cpp.o CMakeFiles/matrix_mult_opencl_opt.dir/cpu_functions/cpu_functions.cpp.o -o bin/matrix_mult_opencl_opt  /usr/lib64/libOpenCL.so 

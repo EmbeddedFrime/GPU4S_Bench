@@ -1,1 +1,0 @@
-/usr/bin/c++ -O3 -DNDEBUG CMakeFiles/matrix_mult_cpu.dir/main.cpp.o CMakeFiles/matrix_mult_cpu.dir/cpu/lib_cpu.cpp.o CMakeFiles/matrix_mult_cpu.dir/cpu_functions/cpu_functions.cpp.o -o bin/matrix_mult_cpu 
