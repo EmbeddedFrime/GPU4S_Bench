@@ -21,9 +21,6 @@
 #      SHORTCUTS_NAMES  <names...>      # Custom shortcut target aliases
 #  )
 #
-# Notes:
-#   - Always compiles main.cpp and cpu_functions/cpu_functions.cpp
-#   - DATATYPE, BLOCKSIZE, ENDIANFLAGS and CUDA_ARCH are global variables set in setup.cmake
 # =======================================================================
 function(compile_target TARGET_NAME)
 
@@ -84,7 +81,13 @@ cmake_parse_arguments(ARG "" "${singleArgs}" "${multipleArgs}" ${ARGN})
 
     # --- Create custom shortcut targets ---
     foreach(SHORTCUT IN LISTS ARG_SHORTCUTS_NAMES)
-        add_custom_target(${SHORTCUT} DEPENDS ${TARGET_NAME})
+        if(PROJECT_IS_TOP_LEVEL)
+            # Classic shortcut (framework)
+            add_custom_target(${SHORTCUT} DEPENDS ${TARGET_NAME})
+        else()
+            # compex shortcut (bench + framework)
+            add_custom_target("${PROJECT_NAME}-${SHORTCUT}" DEPENDS ${TARGET_NAME})
+        endif()
     endforeach()
 
 endfunction()

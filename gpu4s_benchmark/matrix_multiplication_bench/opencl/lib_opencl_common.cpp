@@ -45,7 +45,7 @@ void init(GraficCommon* device_object, int platform ,int device, char* device_na
     deviceObj->evt_copyA = new cl::Event;
     deviceObj->evt_copyB = new cl::Event;
     deviceObj->evt_copyC = new cl::Event;
-    
+    printf("its working lightining fast !");
 }
 
 bool device_memory_init(GraficCommon* device_object, unsigned int size_a_matrix, unsigned int size_b_matrix, unsigned int size_c_matrix){

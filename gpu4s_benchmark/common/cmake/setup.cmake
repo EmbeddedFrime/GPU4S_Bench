@@ -27,13 +27,13 @@ if(NOT DATATYPE)
     set(DATA_MESSAGE true)
 endif()
 
-# shortcut
-set(EXTERN_DIR     ${CMAKE_SOURCE_DIR}/../common/extern/)
+# extern dir
+set(EXTERN_DIR     ${CMAKE_CURRENT_SOURCE_DIR}/../common/extern/)
 
 # --- Android Variable ---
 if(ANDROID)
-    set(ANDROID_INC ${CMAKE_SOURCE_DIR}/../common/android/include/)
-    set(ANDROID_LIB ${CMAKE_SOURCE_DIR}/../common/android/libs/) 
+    set(ANDROID_INC ${CMAKE_CURRENT_SOURCE_DIR}/../common/android/include/)
+    set(ANDROID_LIB ${CMAKE_CURRENT_SOURCE_DIR}/../common/android/libs/) 
 endif(ANDROID)
 
 
@@ -106,4 +106,17 @@ else()
         set(ANDROID_OPENCL_LIB_INC FALSE)
         message(WARNING "Opencl android libs file was not found. Skipping OpenCL targets. See README.md")
     endif()
+endif()
+
+
+
+# ====== Shorcuts ======
+
+# Classic shortcut (framework)
+set(SHORTCUT_PREFIX "" CACHE INTERNAL "Prefix for shortcut targets")
+
+# --- check if global cmake is used ---
+if(NOT PROJECT_IS_TOP_LEVEL)
+    # compex shortcut (bench + framework)
+    set(SHORTCUT_PREFIX "${PROJECT_NAME}-")
 endif()
