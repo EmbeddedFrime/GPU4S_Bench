@@ -108,7 +108,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     deviceObj->d2h_elapsed_time = d2hCLK.getElapsedMS();
 }
 
-float get_elapsed_time(GraficCommon* device_object, bool csv_format){
+float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     cudaEventSynchronize(*deviceObj->stop_memory_copy_host); // wait
     
@@ -129,13 +129,16 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format){
         cudaEventElapsedTime(&milliseconds_d_h, *deviceObj->start_memory_copy_host, *deviceObj->stop_memory_copy_host);
     }
     
-    if (csv_format){
-         printf("%.10f;%.10f;%.10f;\n", milliseconds_h_d,milliseconds,milliseconds_d_h);
+    if (csv_format_timestamp){
+        printf("%.10f;%.10f;%.10f;%ld;\n", milliseconds_h_d,milliseconds,milliseconds_d_h,current_time);
+    }
+    else if (csv_format){
+        printf("%.10f;%.10f;%.10f;\n", milliseconds_h_d,milliseconds,milliseconds_d_h);
     }else{
-         printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "GPU");
-         printf("Elapsed time Host->Device: %.10f milliseconds\n", milliseconds_h_d);
-         printf("Elapsed time kernel: %.10f milliseconds\n", milliseconds);
-         printf("Elapsed time Device->Host: %.10f milliseconds\n", milliseconds_d_h);
+        printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "FALSE");
+        printf("Elapsed time Host->Device: %.10f milliseconds\n", milliseconds_h_d);
+        printf("Elapsed time kernel: %.10f milliseconds\n", milliseconds);
+        printf("Elapsed time Device->Host: %.10f milliseconds\n", milliseconds_d_h);
     }
     return milliseconds;
 }
