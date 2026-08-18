@@ -4,6 +4,8 @@
 #include <iostream>
 #include <cmath>
 #include <string.h>
+#include <sys/time.h>
+
 
 #ifndef CPU_LIB_H
 #define CPU_LIB_H
@@ -64,6 +66,6 @@ void vector_convolution(const bench_t* A, bench_t* kernel, bench_t* B,const int 
 bool compare_vectors(const bench_t* host,const bench_t* device, const int size);
 void print_double_hexadecimal_values(const char* filename, bench_t* float_vector,  unsigned int size);
 void get_double_hexadecimal_values(const char* filename, bench_t* float_vector, unsigned int size);
-
+long int get_timestamp();
 
 #endif

@@ -114,6 +114,13 @@ void print_double_hexadecimal_values(const char* filename, bench_t* float_vector
 
 }
 
+long int get_timestamp(){
+	struct timeval time_now{};
+    gettimeofday(&time_now, nullptr);
+    time_t msecs_time = (time_now.tv_sec * 1000) + (time_now.tv_usec / 1000);
+	return (long int) msecs_time;
+}
+
 void get_double_hexadecimal_values(const char* filename, bench_t* float_vector, unsigned int size){
 	// open file
 	FILE *file = fopen(filename, "r");
