@@ -154,11 +154,10 @@ int main(int argc, char *argv[]){
         copy_memory_to_host(matrix_benck, d_C, size_matrix);
     }
 	
-
 	// get time
 	if (arguments_parameters->print_timing || arguments_parameters->csv_format || arguments_parameters->csv_format_timestamp)
 	{
-		get_elapsed_time(matrix_benck, arguments_parameters->csv_format);
+		get_elapsed_time(matrix_benck, arguments_parameters->csv_format, arguments_parameters->csv_format_timestamp, get_timestamp());
 	}
 
 	// print output buffer

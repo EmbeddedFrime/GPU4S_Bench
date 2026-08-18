@@ -157,7 +157,7 @@ void copy_memory_to_host(GraficCommon* device_object, bench_t* h_C, int size){
     deviceObj->d2h_elapsed_time = d2hCLK.getElapsedNS();
 }
 
-float get_elapsed_time(GraficCommon* device_object, bool csv_format){
+float get_elapsed_time(GraficCommon* device_object, bool csv_format, bool csv_format_timestamp, long int current_time){
     GraficObject* deviceObj = static_cast<GraficObject*>(device_object);
     deviceObj->evt_copyC->wait();
 
@@ -181,15 +181,18 @@ float get_elapsed_time(GraficCommon* device_object, bool csv_format){
         //printf("Elapsed time Device->Host: %.10f \n", );
     }
 
-    if (csv_format){
-         printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0,elapsed / 1000000.0,elapsed_d_h / 1000000.0);
+    if (csv_format_timestamp){
+        printf("%.10f;%.10f;%.10f;%ld;\n", elapsed_h_d / 1000000.0, elapsed / 1000000.0,elapsed_d_h / 1000000.0, current_time);
+    }
+    else if (csv_format){
+        printf("%.10f;%.10f;%.10f;\n", elapsed_h_d / 1000000.0, elapsed / 1000000.0, elapsed_d_h / 1000000.0);
     }else{
          printf("profiling mode: %s\n", deviceObj->profiling_clock ? "CLOCK" : "GPU");
          printf("Elapsed time Host->Device: %.10f milliseconds\n", (elapsed_h_d / 1000000.0));
          printf("Elapsed time kernel: %.10f milliseconds\n", elapsed / 1000000.0);
          printf("Elapsed time Device->Host: %.10f milliseconds\n", elapsed_d_h / 1000000.0);
     }
-    return elapsed / 1000000.0; // TODO Change
+    return elapsed / 1000000.0;
 }
 
 void clean(GraficCommon* device_object){
