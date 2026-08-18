@@ -33,5 +33,39 @@ foreach(bench ${GPU4S_SUBPROJECTS})
     add_subdirectory(${bench})
 endforeach()
 
+# ====== Global aggregator targets ======
+# --- project name array ---
+set(GPU4S_PROJECT_NAME
+    cifar_10
+    cifar_10_multiple
+    convolution_2D
+    correlation_2D
+    FFT_2D
+    FFT
+    FFT_window
+    FIR_filter
+    LRN
+    matrix_mult
+    matrix_mult_fp16
+    matrix_mult_tensor
+    max_pooling
+    memory_bandwidth
+    relu
+    softmax
+    wavelet_transform
+)
+
+
+set(GPU4S_ALL_TARGETS cpu all-opencl all-openmp all-cuda all-hip)
+
+foreach(all ${GPU4S_ALL_TARGETS})
+    add_custom_target(${all})
+    foreach(bench ${GPU4S_PROJECT_NAME})
+        if(TARGET ${bench}-${all})
+            add_dependencies(${all} ${bench}-${all})
+        endif()
+    endforeach()
+endforeach()
+
 #show global config
 showConfig()

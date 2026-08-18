@@ -119,5 +119,4 @@ void set_values_file(char *input_file, double *out_C, unsigned int N);
 void get_values_file (char *input_file, bench_t *in_A, bench_t *in_B);
 long int get_timestamp();
 
-
 #endif
