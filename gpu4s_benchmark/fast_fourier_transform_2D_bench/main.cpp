@@ -125,7 +125,7 @@ int main(int argc, char *argv[]){
 	{
 		#ifdef UMA_COMPATIBILITY 
 			// UMA: unmap shared buffer from host to device
-			sync_unified_memory_to_device(fft_bench, A, d_B, size_A);
+			sync_unified_memory_to_device(fft_bench, A, d_B);
 		#endif
 	} else
 	{	

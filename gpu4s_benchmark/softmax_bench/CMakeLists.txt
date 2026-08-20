@@ -258,7 +258,7 @@ endif()
 
 
 # --- all-openmp (Android) ---
-if(ANDROID AND ANDROID_OPENBLAS_LIB_INC  )
+if(ANDROID  )
     add_custom_target(${SHORTCUT_PREFIX}all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
         ${PROJECT_NAME}_openmp_opt 
@@ -267,7 +267,7 @@ endif()
 
 
 # --- all-openmp---
-if(NOT ANDROID AND OpenMP_CXX_FOUND )
+if(NOT ANDROID)
     add_custom_target(${SHORTCUT_PREFIX}all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
         ${PROJECT_NAME}_openmp_opt 

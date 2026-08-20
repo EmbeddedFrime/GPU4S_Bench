@@ -311,7 +311,7 @@ endif(NOT ANDROID)
 
 # --- all-opencl (Android) ---
 if(ANDROID AND ANDROID_OPENCL_LIB_INC AND ANDROID_CLBLAST_LIB_INC )
-    add_custom_target(${SHORTCUT_PREFIX}${SHORTCUT_PREFIX}all-opencl DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
         ${PROJECT_NAME}_opencl_lib
@@ -320,7 +320,7 @@ endif()
 
 # --- all-opencl---
 if(NOT ANDROID AND OpenCL_FOUND AND CLBlast_FOUND )
-    add_custom_target(${SHORTCUT_PREFIX}${SHORTCUT_PREFIX}all-opencl DEPENDS 
+    add_custom_target(${SHORTCUT_PREFIX}all-opencl DEPENDS 
         ${PROJECT_NAME}_opencl
         ${PROJECT_NAME}_opencl_opt 
         ${PROJECT_NAME}_opencl_lib
@@ -329,8 +329,8 @@ endif()
 
 
 # --- all-openmp (Android) ---
-if(ANDROID AND ANDROID_OPENBLAS_LIB_INC  )
-    add_custom_target(${SHORTCUT_PREFIX}${SHORTCUT_PREFIX}all-openmp DEPENDS 
+if(ANDROID AND ANDROID_OPENBLAS_LIB_INC)
+    add_custom_target(${SHORTCUT_PREFIX}all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
         ${PROJECT_NAME}_openmp_opt 
         ${PROJECT_NAME}_openmp_lib

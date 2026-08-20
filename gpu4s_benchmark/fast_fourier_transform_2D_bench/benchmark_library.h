@@ -79,7 +79,7 @@ void copy_memory_to_host(GraficCommon* device_object, COMPLEX **h_B, int64_t siz
      * @param A Reference to the row-pointer array whose A[0] gives the mapped pointer to unmap
      * @param B Reference to the row-pointer array whose B[0] gives the mapped pointer to unmap
      */
-    void sync_unified_memory_to_device(GraficCommon* device_object, COMPLEX** &A, COMPLEX** &B, int64_t memSize);
+    void sync_unified_memory_to_device(GraficCommon* device_object, COMPLEX** &A, COMPLEX** &B);
     /**
      * @brief Maps d_B back to a host-readable pointer, then reconnects d_output[i] row
      *        pointers into that mapped block, same N-based reasoning as

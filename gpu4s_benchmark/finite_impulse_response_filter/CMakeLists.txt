@@ -155,7 +155,6 @@ endif()
 if(ANDROID AND ANDROID_OPENBLAS_LIB_INC  )
     add_custom_target(${SHORTCUT_PREFIX}all-openmp DEPENDS 
         ${PROJECT_NAME}_openmp 
-        ${PROJECT_NAME}_openmp_opt 
     )
 endif()
 
