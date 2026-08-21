@@ -80,7 +80,7 @@ When downloading the local package installer from the NVIDIA website, select you
 ### Fedora Installation
 
 ```bash
-# Download the RPM reposipackagetory for cuDNN 9.23.2
+# Download the RPM repository package for cuDNN 9.23.2
 wget https://developer.download.nvidia.com/compute/cudnn/9.23.2/local_installers/cudnn-local-repo-rhel10-9.23.2-1.0-1.x86_64.rpm
 # Install the package to register it with the package manager
 sudo rpm -i cudnn-local-repo-rhel10-9.23.2-1.0-1.x86_64.rpm
